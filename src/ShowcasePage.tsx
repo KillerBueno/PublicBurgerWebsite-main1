@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, useInView, useScroll, useTransform, AnimatePresence, useMotionValue, useAnimationFrame } from 'framer-motion';
 import { BURGERS, FRIES, ALLERGEN_LABELS, SALSE_ALLERGENS, type BurgerDef } from './menuData';
 import type { CartItem, CartFry, CartExtra } from './cartTypes';
 import BurgerConfigurator from './BurgerConfigurator';
@@ -26,37 +26,46 @@ function Reveal({ children, delay = 0, className = '', y = 24 }: { children: Rea
 function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
-  const [dur, setDur] = useState<number | null>(null);
+  const x = useMotionValue(2000); // start hidden off-screen right
+  const dims = useRef({ from: 2000, to: -2000 });
 
+  // Measure once fonts + layout settle
   useEffect(() => {
-    function calc() {
-      if (!wrapRef.current || !innerRef.current) return;
-      const cw = wrapRef.current.clientWidth;
-      const iw = innerRef.current.scrollWidth;
-      setDur((cw + iw) / 100); // 100px/s
+    function measure() {
+      const cw = wrapRef.current?.clientWidth ?? 400;
+      const iw = innerRef.current?.scrollWidth ?? 1000;
+      dims.current = { from: cw, to: -iw };
+      x.set(cw); // jump to start position (off-screen right, invisible)
     }
-    const t = setTimeout(calc, 60); // wait for fonts/layout
-    window.addEventListener('resize', calc);
-    return () => { clearTimeout(t); window.removeEventListener('resize', calc); };
+    const t = setTimeout(measure, 80);
+    window.addEventListener('resize', measure);
+    return () => { clearTimeout(t); window.removeEventListener('resize', measure); };
   }, []);
+
+  // Drive animation manually — 90px/s, reset is instant (bar is black = invisible)
+  useAnimationFrame((_, delta) => {
+    const current = x.get();
+    const next = current - (90 * delta) / 1000;
+    if (next <= dims.current.to) {
+      x.set(dims.current.from); // instant reset off-screen right
+    } else {
+      x.set(next);
+    }
+  });
 
   return (
     <div ref={wrapRef} className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
-      <div
+      <motion.div
         ref={innerRef}
         className="flex whitespace-nowrap will-change-transform"
-        style={
-          dur !== null
-            ? { animation: `ticker-enter ${dur.toFixed(2)}s linear infinite` }
-            : { transform: 'translateX(100vw)' }
-        }
+        style={{ x }}
       >
         {items.map((t, i) => (
           <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
             {t} <span className="opacity-20 mx-2">·</span>
           </span>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 }
