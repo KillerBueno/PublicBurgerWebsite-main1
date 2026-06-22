@@ -52,20 +52,20 @@ export async function setProfileOverride(
   override: number | null,
 ): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
-  // Use upsert so it works even if the row already exists
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
+  const fn = override === null ? 'reset_profile_override' : 'set_profile_override';
+  const body = override === null ? { user_email: email } : { user_email: email, new_override: override };
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${adminToken}`,
-      Prefer: 'resolution=merge-duplicates,return=representation',
     },
-    body: JSON.stringify({ email, order_count_override: override }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Supabase override failed: ${res.status} ${text}`);
+    throw new Error(`Override failed: ${res.status} ${text}`);
   }
 }
 
