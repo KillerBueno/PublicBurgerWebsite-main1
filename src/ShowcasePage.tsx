@@ -143,9 +143,10 @@ function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
         {count > 0 && (
           <motion.span
             key={count}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
+            initial={{ scale: 1.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0, opacity: 0 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 20 }}
             className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center"
           >
             {count}
@@ -153,6 +154,21 @@ function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
         )}
       </AnimatePresence>
     </motion.button>
+  );
+}
+
+function Toast({ message }: { message: string }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed bottom-24 right-6 z-50 bg-[#1a0a10] text-white px-4 py-3 shadow-2xl flex items-center gap-2 max-w-[220px]"
+    >
+      <span className="text-[#CF6990] text-base">✓</span>
+      <span className="text-[11px] uppercase tracking-[0.15em] font-medium leading-tight">{message}</span>
+    </motion.div>
   );
 }
 
@@ -569,6 +585,8 @@ export default function ShowcasePage() {
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
   const [nuggetsModal, setNuggetsModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 400);
@@ -576,8 +594,15 @@ export default function ShowcasePage() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  function showToast(msg: string) {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(msg);
+    toastTimer.current = setTimeout(() => setToast(null), 2200);
+  }
+
   function addBurger(item: CartItem) {
     setCart((prev) => [...prev, item]);
+    if (item.type === 'burger') showToast(item.burger.name);
   }
 
   function addFry(fry: typeof FRIES[0], sauces: string[]) {
@@ -594,6 +619,7 @@ export default function ShowcasePage() {
       }));
       return [...next, ...sauceItems];
     });
+    showToast(fry.name);
   }
 
   function addExtra(name: string, category: 'salsa' | 'bibita', price: number) {
@@ -882,6 +908,11 @@ export default function ShowcasePage() {
             onClose={() => setNuggetsModal(false)}
           />
         )}
+      </AnimatePresence>
+
+      {/* Toast notification */}
+      <AnimatePresence>
+        {toast && <Toast key={toast + Date.now()} message={`${toast} aggiunto`} />}
       </AnimatePresence>
 
       {/* Sticky mobile CTA */}
