@@ -52,7 +52,7 @@ export async function setProfileOverride(
   override: number | null,
 ): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
-  await fetch(
+  const res = await fetch(
     `${SUPABASE_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}`,
     {
       method: 'PATCH',
@@ -60,8 +60,29 @@ export async function setProfileOverride(
         'Content-Type': 'application/json',
         apikey: SUPABASE_KEY,
         Authorization: `Bearer ${adminToken}`,
+        Prefer: 'return=minimal',
       },
       body: JSON.stringify({ order_count_override: override }),
     },
   );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Supabase PATCH failed: ${res.status} ${text}`);
+  }
+}
+
+export async function fetchProfileByEmail(userToken: string, email: string): Promise<UserProfile | null> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}&limit=1`,
+    {
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${userToken}`,
+      },
+    },
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data[0] ?? null;
 }

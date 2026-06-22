@@ -336,22 +336,31 @@ export default function AdminPage() {
                       />
                       <button
                         onClick={async () => {
-                          const val = editValue.trim() === '' ? null : parseInt(editValue, 10);
-                          await setProfileOverride(loggedUser!.access_token, p.email, val);
-                          setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: val } : x));
-                          setEditingEmail(null);
+                          const raw = editValue.trim();
+                          const val = raw === '' ? null : parseInt(raw, 10);
+                          if (raw !== '' && isNaN(val!)) return;
+                          try {
+                            await setProfileOverride(loggedUser!.access_token, p.email, val);
+                            setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: val } : x));
+                            setEditingEmail(null);
+                          } catch {
+                            alert('Errore nel salvataggio. Controlla la connessione.');
+                          }
                         }}
                         className="px-3 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors"
                       >
                         Salva
                       </button>
                       <button
-                        onClick={() => {
+                        onClick={async () => {
                           setEditingEmail(null);
                           if (p.order_count_override !== null) {
-                            setProfileOverride(loggedUser!.access_token, p.email, null).then(() =>
-                              setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: null } : x))
-                            );
+                            try {
+                              await setProfileOverride(loggedUser!.access_token, p.email, null);
+                              setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: null } : x));
+                            } catch {
+                              alert('Errore nel reset.');
+                            }
                           }
                         }}
                         className="px-3 py-2 border border-black/12 text-black/40 text-[10px] uppercase tracking-wider rounded-xl hover:border-red-300 hover:text-red-400 transition-colors"
