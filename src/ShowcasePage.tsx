@@ -505,6 +505,51 @@ function SubNav() {
   );
 }
 
+// ─── Opening hours ────────────────────────────────────────────────────────────
+
+function isOpen(): boolean {
+  const now = new Date();
+  const day = now.getDay(); // 0=dom, 1=lun, ..., 6=sab
+  const h = now.getHours();
+  const m = now.getMinutes();
+  const mins = h * 60 + m;
+  const open = 18 * 60 + 30; // 18:30
+
+  // ven(5) e sab(6): chiude alle 02:00 del giorno dopo → chiude a 26*60
+  if (day === 5 || day === 6) {
+    return mins >= open || mins < 2 * 60;
+  }
+  // lun-gio(1-4) e dom(0): chiude a mezzanotte → 24*60 (mins non arriva mai a 24*60, usiamo 0-59 del mattino)
+  return mins >= open || mins < 60; // aperto fino alle 00:59
+}
+
+function OpeningHours() {
+  const open = isOpen();
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 1.6 }}
+      className="flex flex-col gap-1.5"
+    >
+      <div className="flex items-center gap-2">
+        <span className={`w-2 h-2 rounded-full ${open ? 'bg-green-400' : 'bg-red-400'}`}
+          style={{ boxShadow: open ? '0 0 6px #4ade80' : '0 0 6px #f87171' }}
+        />
+        <span className="text-white/90 text-[11px] uppercase tracking-[0.25em] font-semibold">
+          {open ? 'Aperto ora' : 'Chiuso'}
+        </span>
+      </div>
+      <p className="text-white/40 text-[10px] tracking-widest">
+        Lun–Gio &amp; Dom&nbsp;&nbsp;18:30–00:00
+      </p>
+      <p className="text-white/40 text-[10px] tracking-widest">
+        Ven–Sab&nbsp;&nbsp;18:30–02:00
+      </p>
+    </motion.div>
+  );
+}
+
 // ─── Burger filters ───────────────────────────────────────────────────────────
 
 type BurgerFilter = 'all' | 'veggie' | 'spicy' | 'chicken';
@@ -711,7 +756,9 @@ export default function ShowcasePage() {
 
           {/* Bottom tagline — letters stagger in */}
           <div className="px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
-            <h1 className="text-[12vw] md:text-[8vw] text-white leading-[0.85] tracking-tight uppercase font-light overflow-hidden">
+            <div>
+            <OpeningHours />
+            <h1 className="text-[12vw] md:text-[8vw] text-white leading-[0.85] tracking-tight uppercase font-light overflow-hidden mt-4">
               {'Burger\nLovers'.split('\n').map((line, li) => (
                 <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
                   {line.split('').map((ch, ci) => (
@@ -739,6 +786,7 @@ export default function ShowcasePage() {
                 </span>
               ))}
             </h1>
+            </div>
             <motion.a
               href="#menu"
               className="text-white/40 text-[10px] tracking-[0.3em] uppercase font-medium flex-shrink-0 mb-1"
