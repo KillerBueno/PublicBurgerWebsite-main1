@@ -423,12 +423,20 @@ function SubNav() {
   const [visible, setVisible] = useState(false);
   const [active, setActive] = useState('panini');
   const [user, setUser] = useState<PBUser | null>(() => getStoredUser());
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   useEffect(() => {
     const refresh = () => setUser(getStoredUser());
     window.addEventListener('pb-user-changed', refresh);
     return () => window.removeEventListener('pb-user-changed', refresh);
   }, []);
+
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const close = () => setUserMenuOpen(false);
+    document.addEventListener('click', close, { capture: true, once: true });
+    return () => document.removeEventListener('click', close, { capture: true });
+  }, [userMenuOpen]);
 
   useEffect(() => {
     function onScroll() {
@@ -495,19 +503,42 @@ function SubNav() {
           </div>
           {/* Login / user button */}
           {user ? (
-            <div className="shrink-0 pr-4 pl-2 flex items-center gap-2">
-              {user.email === 'prrsmn91@gmail.com' && (
-                <a href="/admin" className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#CF6990] border border-[#CF6990]/30 rounded-lg px-2 py-1 hover:bg-[#CF6990]/10 transition-colors">
-                  Admin
-                </a>
-              )}
-              <button onClick={() => { signOut(); setUser(null); }} className="flex flex-col items-center gap-0.5" title="Esci">
+            <div className="shrink-0 pr-4 pl-2 relative">
+              <button onClick={e => { e.stopPropagation(); setUserMenuOpen(o => !o); }} className="flex flex-col items-center gap-0.5">
                 {user.avatar_url
                   ? <img src={user.avatar_url} className="w-9 h-9 rounded-full object-cover border-2 border-[#CF6990]/30" />
                   : <span className="w-9 h-9 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
                 }
                 <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {user.name?.split(' ')[0]}</span>
               </button>
+              <AnimatePresence>
+                {userMenuOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl shadow-xl border border-black/8 overflow-hidden z-50"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <div className="px-4 py-3 border-b border-black/6">
+                      <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
+                      <p className="text-[10px] text-black/35 truncate">{user.email}</p>
+                    </div>
+                    {user.email === 'prrsmn91@gmail.com' && (
+                      <a href="/admin" className="flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-[#CF6990] hover:bg-[#fdf5f8] transition-colors border-b border-black/6">
+                        <span>⚙️</span> Dashboard Admin
+                      </a>
+                    )}
+                    <button
+                      onClick={() => { signOut(); setUser(null); }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-black/50 hover:bg-red-50 hover:text-red-500 transition-colors text-left"
+                    >
+                      <span>→</span> Esci
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ) : (
             <a
@@ -534,20 +565,46 @@ function SubNav() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-4 right-4 z-30 flex flex-col items-center gap-1"
+            className="fixed top-4 right-4 z-30"
           >
-            {user.email === 'prrsmn91@gmail.com' && (
-              <a href="/admin" className="text-[9px] uppercase tracking-[0.2em] font-bold bg-[#CF6990] text-white rounded-lg px-2.5 py-1 shadow-md mb-0.5 hover:bg-[#a8456b] transition-colors">
-                Admin
-              </a>
-            )}
-            <button onClick={() => { signOut(); setUser(null); }} className="flex flex-col items-center gap-1" title="Esci">
+            <button
+              onClick={e => { e.stopPropagation(); setUserMenuOpen(o => !o); }}
+              className="flex flex-col items-center gap-1"
+            >
               {user.avatar_url
                 ? <img src={user.avatar_url} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
                 : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{user.name?.[0]?.toUpperCase()}</span>
               }
               <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {user.name?.split(' ')[0]}</span>
             </button>
+            <AnimatePresence>
+              {userMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute right-0 top-full mt-2 w-44 bg-white rounded-2xl shadow-xl border border-black/8 overflow-hidden"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <div className="px-4 py-3 border-b border-black/6">
+                    <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
+                    <p className="text-[10px] text-black/35 truncate">{user.email}</p>
+                  </div>
+                  {user.email === 'prrsmn91@gmail.com' && (
+                    <a href="/admin" className="flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-[#CF6990] hover:bg-[#fdf5f8] transition-colors border-b border-black/6">
+                      <span>⚙️</span> Dashboard Admin
+                    </a>
+                  )}
+                  <button
+                    onClick={() => { signOut(); setUser(null); }}
+                    className="w-full flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-black/50 hover:bg-red-50 hover:text-red-500 transition-colors text-left"
+                  >
+                    <span>→</span> Esci
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         ) : (
           <motion.a
