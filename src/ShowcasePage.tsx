@@ -807,6 +807,21 @@ export default function ShowcasePage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Footer */}
+      <footer className="bg-[#1a0a10] text-white/30 py-10 px-6 md:px-12">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-center md:text-left">
+            <p className="text-white/50 font-semibold mb-1">Public Burger</p>
+            <p>Piazza De Boncompagni 18 — Isola del Liri (FR)</p>
+            <p>P.IVA 02854710601 — Titolare: Graziella Parravano</p>
+          </div>
+          <div className="flex gap-6 text-[10px] uppercase tracking-[0.3em]">
+            <a href="/privacy" className="hover:text-[#CF6990] transition-colors">Privacy Policy</a>
+            <a href="/cookie" className="hover:text-[#CF6990] transition-colors">Cookie Policy</a>
+          </div>
+        </div>
+      </footer>
     </>
   );
 }

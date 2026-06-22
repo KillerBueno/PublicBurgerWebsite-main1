@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ShowcasePage from './ShowcasePage';
 import MenuDisplay from './MenuDisplay';
+import LegalPage from './LegalPage';
 
 const AUTH_KEY = 'pb_auth';
 
@@ -11,6 +12,8 @@ export default function App() {
   const [error, setError] = useState(false);
 
   if (window.location.pathname === '/display') return <MenuDisplay />;
+  if (window.location.pathname === '/privacy') return <LegalPage page="privacy" />;
+  if (window.location.pathname === '/cookie') return <LegalPage page="cookie" />;
 
   if (!authed) {
     function handleLogin(e: React.FormEvent) {
