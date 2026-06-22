@@ -5,12 +5,14 @@ import { handleAuthCallback } from './lib/supabase';
 const MenuDisplay = lazy(() => import('./MenuDisplay'));
 const LegalPage   = lazy(() => import('./LegalPage'));
 const LoginPage   = lazy(() => import('./LoginPage'));
+const AdminPage   = lazy(() => import('./AdminPage'));
 
 const AUTH_KEY = 'pb_auth';
 
 export default function App() {
   const path = window.location.pathname;
 
+  if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
   if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
   if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
   if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;

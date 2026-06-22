@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, CartExtra } from './cartTypes';
+import { saveOrder } from './lib/orders';
+import { getStoredUser } from './lib/supabase';
 
 interface Props {
   items: CartItem[];
@@ -62,6 +64,26 @@ export default function CartPanel({ items, onRemove, onClose }: Props) {
     const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim());
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
+
+    // Save order to Supabase
+    const user = getStoredUser();
+    saveOrder({
+      customer_name: name.trim() || user?.name || 'Anonimo',
+      order_type: orderType === 'consegna' ? 'domicilio' : 'asporto',
+      items: items.map(item => {
+        if (item.type === 'burger') return {
+          type: 'burger', name: item.burger.name,
+          size: item.size ?? undefined, removed: item.removed, extras: item.extras,
+          price: item.totalPrice,
+        };
+        if (item.type === 'fry') return { type: 'fry', name: item.fry.name, qty: item.qty, price: item.totalPrice };
+        return { type: 'extra', name: (item as CartExtra).name, qty: (item as CartExtra).qty, price: item.totalPrice };
+      }),
+      total,
+      user_email: user?.email ?? null,
+      user_name: user?.name ?? null,
+      notes: time.trim() || null,
+    });
   }
 
   return (
