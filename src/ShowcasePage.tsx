@@ -23,15 +23,35 @@ function Reveal({ children, delay = 0, className = '', y = 24 }: { children: Rea
   );
 }
 
-function Ticker({ bg, text, items, duration = 22 }: { bg: string; text: string; items: string[]; duration?: number }) {
-  const set = [...items];
+function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [dur, setDur] = useState<number | null>(null);
+
+  useEffect(() => {
+    function calc() {
+      if (!wrapRef.current || !innerRef.current) return;
+      const cw = wrapRef.current.clientWidth;
+      const iw = innerRef.current.scrollWidth;
+      setDur((cw + iw) / 100); // 100px/s
+    }
+    const t = setTimeout(calc, 60); // wait for fonts/layout
+    window.addEventListener('resize', calc);
+    return () => { clearTimeout(t); window.removeEventListener('resize', calc); };
+  }, []);
+
   return (
-    <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
+    <div ref={wrapRef} className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
       <div
+        ref={innerRef}
         className="flex whitespace-nowrap will-change-transform"
-        style={{ animation: `ticker-scroll ${duration}s linear infinite` }}
+        style={
+          dur !== null
+            ? { animation: `ticker-enter ${dur.toFixed(2)}s linear infinite` }
+            : { transform: 'translateX(100vw)' }
+        }
       >
-        {[...set, ...set, ...set].map((t, i) => (
+        {items.map((t, i) => (
           <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
             {t} <span className="opacity-20 mx-2">·</span>
           </span>
@@ -814,7 +834,6 @@ export default function ShowcasePage() {
           bg="bg-[#1a0a10]"
           text="text-white/50"
           items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30']}
-          duration={4}
         />
 
         {/* ── Statement ── */}
