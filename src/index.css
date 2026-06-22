@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-33.3333%); }
+}
+
 @theme {
   --color-brand-red: #CF6990;
   --color-brand-cream: #fdf5f8;

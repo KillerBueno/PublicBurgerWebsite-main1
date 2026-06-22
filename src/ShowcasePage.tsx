@@ -718,10 +718,6 @@ export default function ShowcasePage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
-        @keyframes ticker-scroll {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-33.3333%); }
-        }
       `}</style>
 
       <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
