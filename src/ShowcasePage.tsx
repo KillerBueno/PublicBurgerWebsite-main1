@@ -497,13 +497,14 @@ function SubNav() {
           {user ? (
             <button
               onClick={() => { signOut(); setUser(null); }}
-              className="shrink-0 pr-4 pl-2 flex items-center gap-2"
+              className="shrink-0 pr-4 pl-2 flex flex-col items-center gap-0.5"
               title="Esci"
             >
               {user.avatar_url
-                ? <img src={user.avatar_url} className="w-7 h-7 rounded-full object-cover border border-black/10" />
-                : <span className="w-7 h-7 rounded-full bg-[#CF6990] text-white text-[11px] font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
+                ? <img src={user.avatar_url} className="w-10 h-10 rounded-full object-cover border-2 border-[#CF6990]/30" />
+                : <span className="w-10 h-10 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
               }
+              <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {user.name?.split(' ')[0]}</span>
             </button>
           ) : (
             <a
@@ -531,13 +532,14 @@ function SubNav() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed top-4 right-4 z-30"
+            className="fixed top-4 right-4 z-30 flex flex-col items-center gap-1"
             title="Esci"
           >
             {user.avatar_url
-              ? <img src={user.avatar_url} className="w-8 h-8 rounded-full object-cover border-2 border-white shadow-md" />
-              : <span className="w-8 h-8 rounded-full bg-[#CF6990] text-white text-[12px] font-bold flex items-center justify-center shadow-md">{user.name?.[0]?.toUpperCase()}</span>
+              ? <img src={user.avatar_url} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
+              : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{user.name?.[0]?.toUpperCase()}</span>
             }
+            <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {user.name?.split(' ')[0]}</span>
           </motion.button>
         ) : (
           <motion.a
