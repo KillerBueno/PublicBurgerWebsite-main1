@@ -489,6 +489,72 @@ function SubNav() {
   );
 }
 
+// ─── Anchor nav ───────────────────────────────────────────────────────────────
+
+const SECTIONS = [
+  { id: 'panini', label: 'Burger' },
+  { id: 'fries', label: 'Patatine' },
+  { id: 'salse', label: 'Salse' },
+  { id: 'bibite', label: 'Bibite' },
+] as const;
+
+function AnchorNav() {
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState<string>('panini');
+
+  useEffect(() => {
+    const onScroll = () => {
+      const panini = document.getElementById('panini');
+      const footer = document.querySelector('footer');
+      if (!panini) return;
+      const top = panini.getBoundingClientRect().top;
+      const footerTop = footer ? footer.getBoundingClientRect().top : Infinity;
+      setVisible(top <= 64 && footerTop > 100);
+
+      // highlight active section
+      for (const s of [...SECTIONS].reverse()) {
+        const el = document.getElementById(s.id);
+        if (el && el.getBoundingClientRect().top <= 80) {
+          setActive(s.id);
+          break;
+        }
+      }
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: -48, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -48, opacity: 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-black/6 shadow-sm"
+        >
+          <div className="flex gap-1 px-4 py-3 overflow-x-auto scrollbar-none max-w-4xl mx-auto">
+            {SECTIONS.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => document.getElementById(s.id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className={`shrink-0 px-4 py-1.5 text-[10px] uppercase tracking-[0.25em] font-semibold transition-all duration-200 rounded-full ${
+                  active === s.id
+                    ? 'bg-[#1a0a10] text-white'
+                    : 'text-black/40 hover:text-black/70'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ShowcasePage() {
@@ -650,8 +716,11 @@ export default function ShowcasePage() {
           </Reveal>
         </section>
 
+        {/* ── Anchor nav ── */}
+        <AnchorNav />
+
         {/* ── Panini ── */}
-        <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-12">
+        <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-16">
           <Reveal>
             <div className="flex items-end justify-between border-b border-black/8 pb-5">
               <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Burgers</span>
@@ -673,7 +742,7 @@ export default function ShowcasePage() {
         </section>
 
         {/* ── Fries ── */}
-        <section id="fries" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-12">
+        <section id="fries" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
@@ -706,7 +775,7 @@ export default function ShowcasePage() {
         </section>
 
         {/* ── Salse ── */}
-        <section id="salse" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-12">
+        <section id="salse" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
@@ -725,7 +794,7 @@ export default function ShowcasePage() {
         </section>
 
         {/* ── Bibite ── */}
-        <section id="bibite" className="px-6 md:px-16 pb-20 md:pb-28 scroll-mt-12">
+        <section id="bibite" className="px-6 md:px-16 pb-20 md:pb-28 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
