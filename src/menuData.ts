@@ -8,16 +8,17 @@ export interface BurgerDef {
   prices: { single: number; double: number; triple: number } | null;
   fixedPrice?: number;
   combo: number;
+  allergens: number[];
 }
 
 export interface FryDef {
   name: string;
   desc: string;
   price: number;
+  allergens: number[];
 }
 
 export const BURGERS: BurgerDef[] = [
-  // Col 1 — ancora prezzo alto in cima, badge Oklahoma, classici in fondo
   {
     name: 'Pulled Pork',
     tag: 'Slow',
@@ -26,6 +27,7 @@ export const BURGERS: BurgerDef[] = [
     prices: null,
     fixedPrice: 11,
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
   {
     name: 'Oklahoma',
@@ -34,6 +36,7 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cipolla grigliata', 'Cheddar', 'Bacon croccante', 'Pickles', 'Salsa public'],
     prices: { single: 9, double: 13, triple: 16.5 },
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
   {
     name: 'Jalapeño Popper',
@@ -42,6 +45,7 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cheddar', 'Jalapeño', 'Insalata', 'Creamy spicy sauce'],
     prices: { single: 9, double: 13, triple: 16.5 },
     combo: 3,
+    allergens: [1, 3, 7],
   },
   {
     name: 'Cheeseburger',
@@ -50,6 +54,7 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cheddar', 'Pickles', 'Ketchup'],
     prices: { single: 8, double: 12, triple: 15.5 },
     combo: 3,
+    allergens: [1, 3, 7, 12],
   },
   {
     name: 'NY Style',
@@ -58,8 +63,8 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Brioche bun', 'Hamburger di manzo', 'Insalata', 'Pomodoro', 'Ketchup', 'Maionese'],
     prices: { single: 8, double: 12, triple: 15.5 },
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
-  // Col 2 — Fake Burger ad alto margine in cima, Ingordo, American, poi pollo insieme
   {
     name: 'Fake Burger',
     tag: 'Veggie',
@@ -68,6 +73,7 @@ export const BURGERS: BurgerDef[] = [
     prices: null,
     fixedPrice: 9.5,
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
   {
     name: 'Ingordo',
@@ -76,6 +82,7 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Bun classico', 'Hamburger di manzo', 'Scamorza', 'Cipolle caramellate', 'Anelli di cipolla fritti', 'Maionese', 'Salsa BBQ'],
     prices: { single: 9, double: 13, triple: 16.5 },
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
   {
     name: 'American Burger',
@@ -84,6 +91,7 @@ export const BURGERS: BurgerDef[] = [
     ingredients: ['Bun classico', 'Hamburger di manzo', 'Cheddar', 'Bacon', 'Patatine dolci', 'Uovo fritto', 'Salsa BBQ'],
     prices: { single: 9, double: 13, triple: 16.5 },
     combo: 3,
+    allergens: [1, 3, 7, 10, 12],
   },
   {
     name: 'Chicken Burger',
@@ -93,6 +101,7 @@ export const BURGERS: BurgerDef[] = [
     prices: null,
     fixedPrice: 8.5,
     combo: 3,
+    allergens: [1, 3, 6, 7, 10],
   },
   {
     name: 'Chicken Wrap',
@@ -102,15 +111,16 @@ export const BURGERS: BurgerDef[] = [
     prices: null,
     fixedPrice: 8.5,
     combo: 3,
+    allergens: [1, 3, 6, 10],
   },
 ];
 
 export const FRIES: FryDef[] = [
-  { name: 'Patatine', desc: 'Classiche fritte croccanti', price: 3.5 },
-  { name: 'Onion Rings', desc: 'Anelli di cipolla in pastella', price: 4.0 },
-  { name: 'Cheese Bacon', desc: 'Patatine con cheddar e bacon croccante', price: 4.5 },
-  { name: 'Sweet Potatoes', desc: 'Patatine di patata dolce', price: 4.0 },
-  { name: 'Nuggets', desc: 'Croccanti e dorati', price: 6 },
+  { name: 'Patatine', desc: 'Classiche fritte croccanti', price: 3.5, allergens: [] },
+  { name: 'Onion Rings', desc: 'Anelli di cipolla in pastella', price: 4.0, allergens: [1, 2, 4, 6, 7, 10, 14] },
+  { name: 'Cheese Bacon', desc: 'Patatine con cheddar e bacon croccante', price: 4.5, allergens: [7] },
+  { name: 'Sweet Potatoes', desc: 'Patatine di patata dolce', price: 4.0, allergens: [] },
+  { name: 'Nuggets', desc: 'Croccanti e dorati', price: 6, allergens: [1, 3, 6, 10] },
 ];
 
 // All unique toppings/sauces that can be added as extras
@@ -127,3 +137,31 @@ export const DRINKS = [
   { name: 'Fanta', extra: 0 },
   { name: 'Birra', extra: 1 },
 ];
+
+export const ALLERGEN_LABELS: Record<number, string> = {
+  1: 'Glutine',
+  2: 'Crostacei',
+  3: 'Uova',
+  4: 'Pesce',
+  5: 'Arachidi',
+  6: 'Soia',
+  7: 'Latte',
+  8: 'Frutta a guscio',
+  9: 'Sedano',
+  10: 'Senape',
+  11: 'Semi di sesamo',
+  12: 'Solfiti',
+  13: 'Lupini',
+  14: 'Molluschi',
+};
+
+export const SALSE_ALLERGENS: Record<string, number[]> = {
+  'Ketchup': [12],
+  'Maionese': [3, 10],
+  'BBQ': [10, 12],
+  'Salsa Burger': [],
+  'Salsa Smokey': [10, 12],
+  'Salsa Public': [3, 10, 12],
+  'Senape': [10, 12],
+  'Salsa Piccante': [12],
+};

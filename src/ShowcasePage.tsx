@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { BURGERS, FRIES, type BurgerDef } from './menuData';
+import { BURGERS, FRIES, ALLERGEN_LABELS, SALSE_ALLERGENS, type BurgerDef } from './menuData';
 import type { CartItem, CartFry, CartExtra } from './cartTypes';
 import BurgerConfigurator from './BurgerConfigurator';
 import CartPanel from './CartPanel';
@@ -156,6 +156,17 @@ function Toast({ message }: { message: string }) {
   );
 }
 
+// ─── Allergen tag ─────────────────────────────────────────────────────────────
+
+function AllergenTag({ allergens }: { allergens: number[] }) {
+  if (!allergens.length) return null;
+  return (
+    <p className="text-[9px] text-black/25 tracking-wider mt-1.5">
+      Allergeni: {allergens.join(', ')}
+    </p>
+  );
+}
+
 // ─── Burger row ───────────────────────────────────────────────────────────────
 
 function BurgerRow({ burger, index, onAdd }: {
@@ -192,9 +203,11 @@ function BurgerRow({ burger, index, onAdd }: {
       </div>
 
       {/* Ingredients */}
-      <p className="text-sm text-black/40 leading-relaxed mb-5 max-w-lg">
+      <p className="text-sm text-black/40 leading-relaxed max-w-lg">
         {burger.ingredients.join(', ')}
       </p>
+      <AllergenTag allergens={burger.allergens} />
+      <div className="mb-5" />
 
       {/* Size buttons or add button */}
       {burger.prices ? (
@@ -226,7 +239,7 @@ function BurgerRow({ burger, index, onAdd }: {
 
 // ─── Extra row (salse / bibite) ───────────────────────────────────────────────
 
-function ExtraRow({ name, price, onAdd, cart }: { name: string; price: number; onAdd: () => void; cart: CartItem[] }) {
+function ExtraRow({ name, price, onAdd, cart, allergens }: { name: string; price: number; onAdd: () => void; cart: CartItem[]; allergens?: number[] }) {
   const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra[])
     .reduce((s, i) => s + i.qty, 0);
   const [flash, setFlash] = useState(false);
@@ -240,7 +253,12 @@ function ExtraRow({ name, price, onAdd, cart }: { name: string; price: number; o
   return (
     <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-xl shadow-sm border border-black/5 mb-2">
       <div className="flex items-center gap-4">
-        <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{name}</span>
+        <div>
+          <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{name}</span>
+          {allergens && allergens.length > 0 && (
+            <p className="text-[9px] text-black/25 tracking-wider mt-0.5">Allergeni: {allergens.join(', ')}</p>
+          )}
+        </div>
         {qty > 0 && (
           <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
         )}
@@ -531,6 +549,50 @@ function OpeningHours() {
         Ven–Sab&nbsp;&nbsp;18:30–02:00
       </p>
     </motion.div>
+  );
+}
+
+// ─── Allergen Legend ──────────────────────────────────────────────────────────
+
+function AllergenLegend() {
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="px-6 md:px-16 pb-10 max-w-4xl mx-auto">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between py-4 border-t border-black/8 group"
+      >
+        <span className="text-[10px] uppercase tracking-[0.25em] text-black/40 group-hover:text-[#CF6990] transition-colors font-semibold">
+          Informazioni sugli allergeni
+        </span>
+        <span className={`text-black/25 text-lg transition-transform duration-300 ${open ? 'rotate-180' : ''}`}>↓</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="pb-6">
+              <p className="text-[10px] text-black/35 leading-relaxed mb-4 max-w-xl">
+                I numeri indicati accanto a ogni prodotto si riferiscono agli allergeni presenti secondo il Reg. UE 1169/2011. Per allergie o intolleranze gravi si prega di informare il personale.
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {Object.entries(ALLERGEN_LABELS).map(([num, label]) => (
+                  <div key={num} className="flex items-center gap-2 py-1.5 px-3 bg-[#fafafa] rounded-xl border border-black/5">
+                    <span className="text-[10px] font-bold text-[#CF6990] w-4 shrink-0">{num}</span>
+                    <span className="text-[10px] text-black/50 uppercase tracking-wide">{label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
   );
 }
 
@@ -844,6 +906,7 @@ export default function ShowcasePage() {
                   <div>
                     <div className="text-xl md:text-2xl tracking-tight text-[#1a0a10] uppercase font-semibold leading-none mb-1">{f.name}</div>
                     <div className="text-xs text-black/35">{f.desc}</div>
+                    <AllergenTag allergens={f.allergens} />
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
@@ -868,7 +931,7 @@ export default function ShowcasePage() {
             </Reveal>
             {SALSE_LIST.map((s, i) => (
               <Reveal key={s} delay={i * 0.05}>
-                <ExtraRow name={s} price={0.5} onAdd={() => addExtra(s, 'salsa', 0.5)} cart={cart} />
+                <ExtraRow name={s} price={0.5} onAdd={() => addExtra(s, 'salsa', 0.5)} cart={cart} allergens={SALSE_ALLERGENS[s] ?? []} />
               </Reveal>
             ))}
           </div>
@@ -892,6 +955,9 @@ export default function ShowcasePage() {
             })}
           </div>
         </section>
+
+        {/* ── Allergen Legend ── */}
+        <AllergenLegend />
 
         {/* ── Footer ── */}
         <footer className="bg-[#120608] border-t border-white/5 px-6 md:px-16 py-10 md:py-14">
@@ -952,7 +1018,7 @@ export default function ShowcasePage() {
           <NuggetsModal
             onConfirm={(label, price, sauces) => {
               setCart((prev) => {
-                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price }, qty: 1, totalPrice: price };
+                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price, allergens: [1, 3, 6, 10] }, qty: 1, totalPrice: price };
                 const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0 }));
                 return [...prev, item, ...sauceItems];
               });
