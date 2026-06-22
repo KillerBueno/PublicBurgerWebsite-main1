@@ -484,8 +484,16 @@ function SubNav() {
             );
           })}
           </div>
-          {/* Spacer destra per bilanciare il logo */}
-          <div className="shrink-0 w-16" />
+          {/* Login button */}
+          <a
+            href="/login"
+            className="shrink-0 pr-4 pl-2 flex items-center gap-1.5 text-[10px] uppercase tracking-[0.2em] font-semibold text-black/40 hover:text-[#CF6990] transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Accedi
+          </a>
         </motion.div>
       )}
     </AnimatePresence>
