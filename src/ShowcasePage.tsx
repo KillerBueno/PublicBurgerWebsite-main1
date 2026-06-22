@@ -731,8 +731,11 @@ export default function ShowcasePage() {
         {/* ── Hero ── */}
         <section
           ref={heroRef}
-          className="relative min-h-screen flex flex-col overflow-hidden"
-          style={{ background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)' }}
+          className="relative flex flex-col overflow-hidden"
+          style={{
+            height: '100svh',
+            background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
+          }}
         >
           {/* Subtle grid overlay */}
           <div className="absolute inset-0 opacity-[0.03]" style={{
@@ -750,15 +753,15 @@ export default function ShowcasePage() {
             </span>
           </motion.div>
 
-          {/* Logo centrato nell'hero — rimpicciolisce e sfuma scrollando */}
+          {/* Logo — occupa lo spazio centrale, rimpicciolisce scrollando */}
           <motion.div
-            className="flex-1 flex flex-col items-center justify-center"
+            className="flex-1 flex items-center justify-center min-h-0"
             style={{ opacity: useTransform(scrollYProgress, [0, 0.45], [1, 0]) }}
           >
             <motion.img
               src="/logo-public-burger.png"
               alt="Public Burger"
-              className="w-44 md:w-64 drop-shadow-2xl pointer-events-none select-none"
+              className="w-52 md:w-72 drop-shadow-2xl pointer-events-none select-none"
               style={{ scale: useTransform(scrollYProgress, [0, 0.45], [1, 0.55]) }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -766,38 +769,38 @@ export default function ShowcasePage() {
             />
           </motion.div>
 
-          {/* Bottom tagline — letters stagger in */}
-          <div className="px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
+          {/* Bottom — orari + Burger Lovers, sempre visibile */}
+          <div className="shrink-0 px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
             <div>
-            <OpeningHours />
-            <h1 className="text-[12vw] md:text-[8vw] text-white leading-[0.85] tracking-tight uppercase font-light overflow-hidden mt-4">
-              {'Burger\nLovers'.split('\n').map((line, li) => (
-                <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
-                  {line.split('').map((ch, ci) => (
-                    <motion.span
-                      key={ci}
-                      className="inline-block"
-                      style={{ whiteSpace: ch === ' ' ? 'pre' : undefined }}
-                      initial={{ y: '110%', opacity: 0 }}
-                      animate={{ y: '0%', opacity: 1 }}
-                      transition={{ duration: 0.8, delay: 0.6 + li * 0.15 + ci * 0.035, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      {ch}
-                    </motion.span>
-                  ))}
-                  {li === 1 && (
-                    <motion.span
-                      className="inline-block ml-3"
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.6, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
-                    >
-                      🧡🍔
-                    </motion.span>
-                  )}
-                </span>
-              ))}
-            </h1>
+              <OpeningHours />
+              <h1 className="text-[11vw] md:text-[7vw] text-white leading-[0.88] tracking-tight uppercase font-light overflow-hidden mt-3">
+                {'Burger\nLovers'.split('\n').map((line, li) => (
+                  <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
+                    {line.split('').map((ch, ci) => (
+                      <motion.span
+                        key={ci}
+                        className="inline-block"
+                        style={{ whiteSpace: ch === ' ' ? 'pre' : undefined }}
+                        initial={{ y: '110%', opacity: 0 }}
+                        animate={{ y: '0%', opacity: 1 }}
+                        transition={{ duration: 0.8, delay: 0.6 + li * 0.15 + ci * 0.035, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        {ch}
+                      </motion.span>
+                    ))}
+                    {li === 1 && (
+                      <motion.span
+                        className="inline-block ml-3"
+                        initial={{ opacity: 0, scale: 0.5 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        🧡🍔
+                      </motion.span>
+                    )}
+                  </span>
+                ))}
+              </h1>
             </div>
             <motion.a
               href="#menu"
