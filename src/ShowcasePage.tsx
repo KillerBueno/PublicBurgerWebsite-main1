@@ -24,20 +24,22 @@ function Reveal({ children, delay = 0, className = '', y = 24 }: { children: Rea
 }
 
 function Ticker({ bg, text, items, duration = 22 }: { bg: string; text: string; items: string[]; duration?: number }) {
-  const repeated = [...items, ...items, ...items];
+  const set = [...items];
   return (
     <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
-      <motion.div
-        className="flex gap-10 whitespace-nowrap"
-        animate={{ x: ['0%', '-33.33%'] }}
-        transition={{ duration, repeat: Infinity, ease: 'linear' }}
-      >
-        {repeated.map((t, i) => (
-          <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 ${text}`}>
+      <div className="flex whitespace-nowrap" style={{ animation: `ticker ${duration}s linear infinite` }}>
+        {[...set, ...set].map((t, i) => (
+          <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
             {t} <span className="opacity-20 mx-2">·</span>
           </span>
         ))}
-      </motion.div>
+      </div>
+      <style>{`
+        @keyframes ticker {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
     </div>
   );
 }
