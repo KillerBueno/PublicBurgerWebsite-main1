@@ -502,6 +502,13 @@ export default function ShowcasePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
   const [nuggetsModal, setNuggetsModal] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 400);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   function addBurger(item: CartItem) {
     setCart((prev) => [...prev, item]);
@@ -805,6 +812,35 @@ export default function ShowcasePage() {
             }}
             onClose={() => setNuggetsModal(false)}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Sticky mobile CTA */}
+      <AnimatePresence>
+        {scrolled && !cartOpen && (
+          <motion.button
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            onClick={() => setCartOpen(true)}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden flex items-center gap-3 bg-[#1a0a10] text-white px-6 py-4 shadow-2xl rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.962-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+            </svg>
+            Ordina ora
+            {cart.length > 0 && (
+              <motion.span
+                key={cart.length}
+                initial={{ scale: 1.4 }}
+                animate={{ scale: 1 }}
+                className="bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"
+              >
+                {cart.length}
+              </motion.span>
+            )}
+          </motion.button>
         )}
       </AnimatePresence>
 
