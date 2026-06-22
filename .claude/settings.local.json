@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.cheebo.it)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm run *)",
+      "Bash(npx vite *)",
+      "Bash(npm install *)",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(mkdir -p /Users/simone/Desktop/PublicBurgerWebsite-main/.claude)",
+      "Bash(npx tsc *)",
+      "Bash(node_modules/.bin/vite build *)",
+      "Bash(CLAUDE_CODE_TMPDIR=/tmp grep -n \"NIENTE\" /Users/simone/Desktop/PublicBurgerWebsite-main/src/ShowcasePage.tsx)",
+      "Bash(ls /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/)",
+      "Bash(node screenshot.mjs)",
+      "Bash(brew install *)",
+      "Bash(ffmpeg -version)",
+      "Bash(brew list *)",
+      "Bash(/opt/homebrew/bin/brew install *)",
+      "Bash(find /usr/local /opt -name \"brew\" 2>/dev/null | head -3; find /usr/local /opt -name \"ffmpeg\" 2>/dev/null | head -3)",
+      "WebSearch",
+      "WebFetch(domain:share.google)",
+      "WebFetch(domain:www.google.com)"
+    ]
+  }
+}

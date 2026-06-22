@@ -1,0 +1,18 @@
+{
+    "$schema": "../node_modules/wrangler/config-schema.json",
+    "name": "publicburger-api",
+    "main": "index.ts",
+    "account_id": "0a7722fa241cf9eca5a7a4d8a6e3543f",
+    "compatibility_date": "2024-04-01",
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "publicburger-db",
+            "database_id": "31fcc349-4160-4431-9cbc-4dd1bb695152",
+            "preview_database_id": "31fcc349-4160-4431-9cbc-4dd1bb695152"
+        }
+    ],
+    "observability": {
+        "enabled": true
+    }
+}

@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-red: #CF6990;
+  --color-brand-cream: #fdf5f8;
+  --color-brand-dark: #111111;
+  --color-brand-muted: #666666;
+  --color-brand-border: #ecdde4;
+  --color-brand-yellow: #F2C438;
+  --color-brand-pink: #CF6990;
+  --color-premium-dark: #111111;
+  --color-premium-light: #ffffff;
+  --font-sans: 'Inter', sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-brand-dark font-sans antialiased overflow-x-hidden;
+  }
+
+  button,
+  a,
+  [role="button"],
+  input[type="submit"],
+  input[type="button"],
+  select,
+  label[for] {
+    cursor: pointer;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-brand-dark;
+  }
+
+  html {
+    @apply overflow-x-hidden;
+  }
+
+  #root {
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar:horizontal {
+    height: 0px !important;
+    display: none !important;
+  }
+
+  .kitchen-fullscreen aside { display: none !important; }
+  .kitchen-fullscreen nav { display: none !important; }
+  .kitchen-fullscreen main { padding: 1rem !important; margin: 0 !important; max-width: 100% !important; }
+  .kitchen-fullscreen .mobile-bottom-nav { display: none !important; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-dark text-white px-8 py-4 font-semibold tracking-wide hover:bg-brand-red transition-all duration-300 cursor-pointer rounded-none inline-block;
+  }
+
+  .btn-outline {
+    @apply border border-brand-dark text-brand-dark px-8 py-4 font-semibold tracking-wide hover:bg-brand-dark hover:text-white transition-all duration-300 cursor-pointer rounded-none inline-block;
+  }
+
+  .card-pop {
+    @apply bg-white border border-brand-border hover:border-brand-dark transition-all duration-300 relative overflow-hidden;
+  }
+
+  .section-cream {
+    @apply bg-brand-cream;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #999; }
+}

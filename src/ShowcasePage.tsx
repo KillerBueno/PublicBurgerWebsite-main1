@@ -1,0 +1,856 @@
+import { useRef, useState, useEffect } from 'react';
+import { motion, useInView, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { BURGERS, FRIES, type BurgerDef } from './menuData';
+import type { CartItem, CartFry, CartExtra } from './cartTypes';
+import BurgerConfigurator from './BurgerConfigurator';
+import CartPanel from './CartPanel';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function Reveal({ children, delay = 0, className = '', y = 24 }: { children: React.ReactNode; delay?: number; className?: string; y?: number }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
+  const repeated = [...items, ...items, ...items];
+  return (
+    <div className={`overflow-hidden py-3 ${bg}`}>
+      <motion.div
+        className="flex gap-12 whitespace-nowrap"
+        animate={{ x: ['0%', '-33.33%'] }}
+        transition={{ duration: 22, repeat: Infinity, ease: 'linear' }}
+      >
+        {repeated.map((t, i) => (
+          <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-medium shrink-0 ${text}`}>
+            {t} <span className="opacity-30 mx-2">—</span>
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Clip-path title reveal ───────────────────────────────────────────────────
+
+function ClipReveal({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-80px' });
+  return (
+    <motion.div
+      ref={ref}
+      className={`overflow-hidden ${className}`}
+      initial={{ clipPath: 'inset(0 100% 0 0)' }}
+      animate={inView ? { clipPath: 'inset(0 0% 0 0)' } : {}}
+      transition={{ duration: 1.1, delay, ease: [0.16, 1, 0.3, 1] }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Word-by-word stagger ────────────────────────────────────────────────────
+
+function WordReveal({ text, className = '' }: { text: string; className?: string }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const words = text.split(' ');
+  return (
+    <p ref={ref} className={className}>
+      {words.map((word, i) => (
+        <motion.span
+          key={i}
+          className="inline-block mr-[0.25em]"
+          initial={{ opacity: 0, y: 12 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {word}
+        </motion.span>
+      ))}
+    </p>
+  );
+}
+
+// ─── Parallax section wrapper ────────────────────────────────────────────────
+
+function ParallaxSection({ children, className = '', speed = 0.15 }: { children: React.ReactNode; className?: string; speed?: number }) {
+  const ref = useRef(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  const y = useTransform(scrollYProgress, [0, 1], ['0%', `${speed * 100}%`]);
+  return (
+    <motion.div ref={ref} style={{ y }} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Animated Logo ────────────────────────────────────────────────────────────
+
+function AnimatedLogo() {
+  const { scrollY } = useScroll();
+
+  const LARGE = typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.42, 220) : 180;
+  const SMALL = 40;
+  // Fade out when subnav appears (scroll > 70% of hero)
+  const logoOpacity = useTransform(scrollY, [
+    typeof window !== 'undefined' ? window.innerHeight * 0.6 : 500,
+    typeof window !== 'undefined' ? window.innerHeight * 0.75 : 650,
+  ], [1, 0]);
+
+  const [origin, setOrigin] = useState(() => ({
+    x: typeof window !== 'undefined' ? window.innerWidth / 2 - LARGE / 2 : 300,
+    y: typeof window !== 'undefined' ? window.innerHeight * 0.38 - LARGE / 2 : 180,
+  }));
+
+  useEffect(() => {
+    const update = () => setOrigin({
+      x: window.innerWidth / 2 - LARGE / 2,
+      y: window.innerHeight * 0.38 - LARGE / 2,
+    });
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, [LARGE]);
+
+  const w = useTransform(scrollY, [0, 380], [LARGE, SMALL]);
+  const x = useTransform(scrollY, [0, 380], [origin.x, 20]);
+  const y = useTransform(scrollY, [0, 380], [origin.y, 16]);
+
+  return (
+    <motion.button
+      className="fixed z-50 cursor-pointer origin-top-left focus:outline-none"
+      style={{ left: 0, top: 0, x, y, width: w, opacity: logoOpacity }}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      title="Torna su"
+    >
+      <img src="/logo-public-burger.png" alt="Public Burger" className="w-full drop-shadow-2xl" />
+    </motion.button>
+  );
+}
+
+// ─── Cart FAB ─────────────────────────────────────────────────────────────────
+
+function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <motion.button
+      onClick={onClick}
+      whileTap={{ scale: 0.93 }}
+      className="fixed bottom-6 right-6 z-40 bg-[#1a0a10] text-white w-14 h-14 flex items-center justify-center shadow-2xl hover:bg-[#CF6990] transition-colors duration-300"
+    >
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
+      </svg>
+      <AnimatePresence>
+        {count > 0 && (
+          <motion.span
+            key={count}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+            className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center"
+          >
+            {count}
+          </motion.span>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  );
+}
+
+// ─── Burger row ───────────────────────────────────────────────────────────────
+
+function BurgerRow({ burger, index, onAdd }: {
+  burger: BurgerDef;
+  index: number;
+  onAdd: (b: BurgerDef, size?: import('./menuData').BurgerSize) => void;
+}) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-40px' });
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 20 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
+      className="border-b border-black/6 py-8"
+    >
+      {/* Name row */}
+      <div className="flex items-baseline justify-between gap-4 mb-2">
+        <div className="flex items-center gap-3">
+          <h3 className="text-2xl md:text-3xl tracking-tight text-[#1a0a10] uppercase leading-none">
+            {burger.name}
+          </h3>
+          {burger.spicy && <span className="text-sm leading-none">🌶️</span>}
+        </div>
+        <div className="shrink-0 text-right">
+          {burger.prices ? (
+            <span className="text-sm text-[#CF6990] tracking-widest">da €{burger.prices.single}</span>
+          ) : (
+            <span className="text-sm text-[#CF6990] tracking-widest">€{burger.fixedPrice}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Ingredients */}
+      <p className="text-sm text-black/40 leading-relaxed mb-5 max-w-lg">
+        {burger.ingredients.join(', ')}
+      </p>
+
+      {/* Size buttons or add button */}
+      {burger.prices ? (
+        <div className="flex flex-wrap gap-2">
+          {(['single', 'double', 'triple'] as const).map((s) => (
+            <button
+              key={s}
+              onClick={() => onAdd(burger, s)}
+              className="text-[10px] tracking-[0.2em] uppercase font-semibold border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+            >
+              {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
+              <span className="ml-2 text-black/30">€{burger.prices[s]}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button
+          onClick={() => onAdd(burger)}
+          className="text-[10px] tracking-[0.2em] uppercase font-semibold border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+        >
+          Singolo
+          <span className="ml-2 text-black/30">€{burger.fixedPrice}</span>
+        </button>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Fry row ─────────────────────────────────────────────────────────────────
+
+function FryRow({ fry, index, onAdd }: { fry: typeof FRIES[0]; index: number; onAdd: () => void }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-30px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 16 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
+      className="flex items-center justify-between py-5 border-b border-white/10"
+    >
+      <div className="flex items-baseline gap-5">
+        <span className="text-[10px] text-white/25 w-5 shrink-0">{String(index + 1).padStart(2, '0')}</span>
+        <div>
+          <div className="text-base tracking-wide text-white uppercase">{fry.name}</div>
+          <div className="text-xs text-white/35 mt-0.5">{fry.desc}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 shrink-0">
+        <span className="text-white/60 text-sm">€{fry.price.toFixed(1)}</span>
+        <button
+          onClick={onAdd}
+          className="w-7 h-7 border border-white/20 text-white/50 hover:border-white/60 hover:text-white text-base flex items-center justify-center transition-all duration-200 leading-none"
+        >
+          +
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Extra row (salse / bibite) ───────────────────────────────────────────────
+
+function ExtraRow({ name, price, onAdd, cart }: { name: string; price: number; onAdd: () => void; cart: CartItem[] }) {
+  const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra[])
+    .reduce((s, i) => s + i.qty, 0);
+  const [flash, setFlash] = useState(false);
+
+  function handleAdd() {
+    onAdd();
+    setFlash(true);
+    setTimeout(() => setFlash(false), 600);
+  }
+
+  return (
+    <div className="flex items-center justify-between py-4 border-b border-black/6">
+      <div className="flex items-center gap-4">
+        <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{name}</span>
+        {qty > 0 && (
+          <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
+        )}
+      </div>
+      <div className="flex items-center gap-3 shrink-0">
+        <span className="text-sm text-[#CF6990] tracking-widest">€{price % 1 === 0 ? price : price.toFixed(1)}</span>
+        <motion.button
+          onClick={handleAdd}
+          animate={flash ? { scale: [1, 1.3, 1] } : {}}
+          transition={{ duration: 0.4 }}
+          className="w-7 h-7 border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-colors duration-200 leading-none"
+        >
+          +
+        </motion.button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Fry Modal ────────────────────────────────────────────────────────────────
+
+const SALSE_LIST = ['Ketchup', 'Maionese', 'BBQ', 'Salsa Burger', 'Salsa Smokey', 'Salsa Public', 'Senape', 'Salsa Piccante'];
+
+function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm: (sauces: string[]) => void; onClose: () => void }) {
+  const [selected, setSelected] = useState<string[]>([]);
+  function toggle(s: string) { setSelected((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose} />
+      <motion.div className="relative w-full md:max-w-md bg-white flex flex-col max-h-[80vh] shadow-2xl"
+        initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
+        <div className="px-6 pt-6 pb-4 border-b border-black/8 flex items-start justify-between shrink-0">
+          <div>
+            <p className="text-[9px] tracking-[0.35em] uppercase text-[#CF6990] font-medium mb-1">Aggiungi al carrello</p>
+            <h3 className="text-xl tracking-tight uppercase font-semibold">{fry.name}</h3>
+            <p className="text-xs text-black/40 mt-0.5">{fry.desc}</p>
+          </div>
+          <button onClick={onClose} className="text-black/20 hover:text-black/60 text-2xl leading-none mt-1">×</button>
+        </div>
+        <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+          <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-3">Vuoi aggiungere una salsa?</p>
+          <button onClick={() => { onConfirm([]); onClose(); }}
+            className="w-full flex items-center gap-3 px-4 py-3 mb-3 border border-black/8 hover:border-black/25 text-left transition-all duration-150">
+            <span className="w-3.5 h-3.5 border border-black/20 rounded-full flex-shrink-0" />
+            <span className="text-sm text-black/40">Nessuna salsa</span>
+          </button>
+          <div className="space-y-1.5">
+            {SALSE_LIST.map((s) => {
+              const active = selected.includes(s);
+              return (
+                <button key={s} onClick={() => toggle(s)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 border transition-all duration-150 text-left ${
+                    active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 hover:border-black/20'}`}>
+                  <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
+                    active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20'}`} />
+                  <span className={`text-sm ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{s}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-black/8 shrink-0 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[9px] tracking-[0.3em] uppercase text-black/25 mb-0.5">Totale</div>
+            <div className="text-lg font-semibold text-[#CF6990]">€{fry.price.toFixed(1)}</div>
+          </div>
+          <button onClick={() => { onConfirm(selected); onClose(); }}
+            className="text-[10px] tracking-[0.2em] uppercase font-bold bg-[#1a0a10] text-white px-6 py-3 hover:bg-[#CF6990] transition-colors duration-300">
+            Aggiungi al carrello
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Nuggets Modal ────────────────────────────────────────────────────────────
+
+const NUGGETS_SIZES = [
+  { label: '6 pezzi', qty: 6, price: 6 },
+  { label: '12 pezzi', qty: 12, price: 8.5 },
+  { label: '20 pezzi', qty: 20, price: 15 },
+];
+
+function NuggetsModal({ onConfirm, onClose }: { onConfirm: (label: string, price: number, sauces: string[]) => void; onClose: () => void }) {
+  const [step, setStep] = useState<'size' | 'salse'>('size');
+  const [chosenSize, setChosenSize] = useState<{ label: string; price: number } | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  function toggle(s: string) { setSelected((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+      <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        onClick={onClose} />
+      <motion.div className="relative w-full md:max-w-md bg-white flex flex-col max-h-[80vh] shadow-2xl"
+        initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
+        <div className="px-6 pt-6 pb-4 border-b border-black/8 flex items-start justify-between shrink-0">
+          <div>
+            <p className="text-[9px] tracking-[0.35em] uppercase text-[#CF6990] font-medium mb-1">
+              {step === 'size' ? 'Quanti nuggets?' : 'Aggiungi una salsa'}
+            </p>
+            <h3 className="text-xl tracking-tight uppercase font-semibold">Nuggets</h3>
+            {step === 'salse' && chosenSize && (
+              <p className="text-xs text-black/40 mt-0.5">{chosenSize.label} — €{chosenSize.price}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="text-black/20 hover:text-black/60 text-2xl leading-none mt-1">×</button>
+        </div>
+
+        {step === 'size' ? (
+          <div className="px-6 py-5 space-y-2">
+            {NUGGETS_SIZES.map(({ label, qty, price }) => (
+              <button key={qty}
+                onClick={() => { setChosenSize({ label, price }); setStep('salse'); }}
+                className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group">
+                <span className="text-sm uppercase tracking-widest font-semibold text-black/70 group-hover:text-[#1a0a10]">{label}</span>
+                <span className="text-lg text-[#CF6990] font-semibold">€{price}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+              <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-3">Vuoi aggiungere una salsa?</p>
+              <button onClick={() => { onConfirm(`Nuggets ${chosenSize!.label}`, chosenSize!.price, []); onClose(); }}
+                className="w-full flex items-center gap-3 px-4 py-3 mb-3 border border-black/8 hover:border-black/25 text-left transition-all duration-150">
+                <span className="w-3.5 h-3.5 border border-black/20 rounded-full flex-shrink-0" />
+                <span className="text-sm text-black/40">Nessuna salsa</span>
+              </button>
+              <div className="space-y-1.5">
+                {SALSE_LIST.map((s) => {
+                  const active = selected.includes(s);
+                  return (
+                    <button key={s} onClick={() => toggle(s)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 border transition-all duration-150 text-left ${active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 hover:border-black/20'}`}>
+                      <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 ${active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20'}`} />
+                      <span className={`text-sm ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{s}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-black/8 shrink-0 flex items-center justify-between gap-3">
+              <button onClick={() => setStep('size')} className="text-black/30 hover:text-black/60 text-lg">←</button>
+              <div className="text-center">
+                <div className="text-[9px] tracking-[0.3em] uppercase text-black/25 mb-0.5">Totale</div>
+                <div className="text-lg font-semibold text-[#CF6990]">€{chosenSize!.price}</div>
+              </div>
+              <button onClick={() => { onConfirm(`Nuggets ${chosenSize!.label}`, chosenSize!.price, selected); onClose(); }}
+                className="text-[10px] tracking-[0.2em] uppercase font-bold bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300">
+                Aggiungi
+              </button>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Sub nav ─────────────────────────────────────────────────────────────────
+
+const SUB_ITEMS = [
+  { id: 'panini', label: 'Panini' },
+  { id: 'fries', label: 'Fries' },
+  { id: 'salse', label: 'Salse' },
+  { id: 'bibite', label: 'Bibite' },
+] as const;
+
+function SubNav() {
+  const [visible, setVisible] = useState(false);
+  const [active, setActive] = useState('panini');
+
+  useEffect(() => {
+    function onScroll() {
+      const v = window.scrollY;
+      setVisible(v > window.innerHeight * 0.65);
+      const mid = v + window.innerHeight * 0.4;
+      const sections = ['bibite', 'salse', 'fries', 'panini'];
+      for (const id of sections) {
+        const el = document.getElementById(id);
+        if (el && mid >= el.offsetTop) { setActive(id); break; }
+      }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  function handleClick(id: string) {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          initial={{ y: -48, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: -48, opacity: 0 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          className="fixed top-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-b border-black/6 flex items-center"
+        >
+          {/* Logo dentro la barra */}
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="shrink-0 pl-4 pr-2 py-2"
+          >
+            <img src="/logo-public-burger.png" alt="Public" className="h-8" />
+          </button>
+
+          {/* Voci centrate nel resto dello spazio */}
+          <div className="flex-1 flex items-center justify-center">
+          {SUB_ITEMS.map(({ id, label }) => {
+            const isActive = active === id;
+            return (
+              <button
+                key={id}
+                onClick={() => handleClick(id)}
+                className={`relative px-5 md:px-8 py-4 text-xs md:text-sm tracking-[0.15em] uppercase font-bold transition-colors duration-200 ${
+                  isActive ? 'text-[#CF6990]' : 'text-black/40 hover:text-black/70'
+                }`}
+              >
+                {label}
+                {isActive && (
+                  <motion.div
+                    layoutId="subnav-indicator"
+                    className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#CF6990]"
+                    transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  />
+                )}
+              </button>
+            );
+          })}
+          </div>
+          {/* Spacer destra per bilanciare il logo */}
+          <div className="shrink-0 w-16" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function ShowcasePage() {
+  const heroRef = useRef(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const logoY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%']);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [configuringBurger, setConfiguringBurger] = useState<{ burger: BurgerDef; size?: import('./menuData').BurgerSize } | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
+  const [nuggetsModal, setNuggetsModal] = useState(false);
+
+  function addBurger(item: CartItem) {
+    setCart((prev) => [...prev, item]);
+  }
+
+  function addFry(fry: typeof FRIES[0], sauces: string[]) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.type === 'fry' && i.fry.name === fry.name) as CartFry | undefined;
+      const next = existing
+        ? prev.map((i) => i.id === existing.id
+            ? { ...existing, qty: existing.qty + 1, totalPrice: (existing.qty + 1) * fry.price }
+            : i)
+        : [...prev, { id: crypto.randomUUID(), type: 'fry', fry, qty: 1, totalPrice: fry.price } as CartFry];
+      // add selected sauces as extras
+      const sauceItems: CartExtra[] = sauces.map((name) => ({
+        id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0,
+      }));
+      return [...next, ...sauceItems];
+    });
+  }
+
+  function addExtra(name: string, category: 'salsa' | 'bibita', price: number) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra | undefined;
+      if (existing) {
+        return prev.map((i) => i.id === existing.id ? { ...existing, qty: existing.qty + 1, totalPrice: existing.totalPrice + price } : i);
+      }
+      return [...prev, { id: crypto.randomUUID(), type: 'extra', name, category, qty: 1, totalPrice: price } as CartExtra];
+    });
+  }
+
+  function removeItem(id: string) {
+    setCart((prev) => prev.filter((i) => i.id !== id));
+  }
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        * { font-family: 'Inter', system-ui, sans-serif; }
+        html { scroll-behavior: smooth; }
+      `}</style>
+
+      <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
+
+        {/* ── Nav ── (empty, logo handled by AnimatedLogo) */}
+
+        {/* ── Hero ── */}
+        <section
+          ref={heroRef}
+          className="relative min-h-screen flex flex-col overflow-hidden"
+          style={{ background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)' }}
+        >
+          {/* Subtle grid overlay */}
+          <div className="absolute inset-0 opacity-[0.03]" style={{
+            backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+            backgroundSize: '60px 60px'
+          }} />
+
+          {/* Large background text */}
+          <motion.div
+            style={{ opacity: heroOpacity }}
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
+          >
+            <span className="text-[35vw] font-semibold text-white/5 leading-none tracking-tighter uppercase whitespace-nowrap">
+              PUBLIC
+            </span>
+          </motion.div>
+
+          {/* Spacer + tagline location — logo is handled by AnimatedLogo */}
+          <motion.div
+            style={{ y: logoY }}
+            className="flex-1 flex flex-col items-center justify-center pt-20"
+          >
+          </motion.div>
+
+          {/* Bottom tagline — letters stagger in */}
+          <div className="px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
+            <h1 className="text-[12vw] md:text-[8vw] text-white leading-[0.85] tracking-tight uppercase font-light overflow-hidden">
+              {'Burger\nLovers'.split('\n').map((line, li) => (
+                <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
+                  {line.split('').map((ch, ci) => (
+                    <motion.span
+                      key={ci}
+                      className="inline-block"
+                      style={{ whiteSpace: ch === ' ' ? 'pre' : undefined }}
+                      initial={{ y: '110%', opacity: 0 }}
+                      animate={{ y: '0%', opacity: 1 }}
+                      transition={{ duration: 0.8, delay: 0.6 + li * 0.15 + ci * 0.035, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      {ch}
+                    </motion.span>
+                  ))}
+                  {li === 1 && (
+                    <motion.span
+                      className="inline-block ml-3"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.6, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                    >
+                      🧡🍔
+                    </motion.span>
+                  )}
+                </span>
+              ))}
+            </h1>
+            <motion.a
+              href="#menu"
+              className="text-white/40 text-[10px] tracking-[0.3em] uppercase font-medium flex-shrink-0 mb-1"
+              animate={{ y: [0, 5, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              Scorri ↓
+            </motion.a>
+          </div>
+        </section>
+
+        {/* ── Ticker ── */}
+        <Ticker
+          bg="bg-[#1a0a10]"
+          text="text-white/50"
+          items={['Public Burger', 'Isola del Liri', 'Ingredienti freschi', 'Made with love', '+39 342 000 6928']}
+        />
+
+        {/* ── Statement ── */}
+        <section className="px-6 md:px-16 py-16 md:py-24 max-w-5xl mx-auto">
+          <WordReveal
+            text="Ingredienti freschi, ricette dirette. Il panino che non dimentichi."
+            className="text-2xl md:text-4xl lg:text-5xl text-[#1a0a10]/80 leading-tight font-light tracking-tight max-w-3xl"
+          />
+          <Reveal delay={0.3} className="mt-8">
+            <motion.div
+              className="h-px bg-[#CF6990]"
+              initial={{ width: 0 }}
+              whileInView={{ width: 48 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            />
+          </Reveal>
+        </section>
+
+        {/* ── Panini ── */}
+        <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-12">
+          <Reveal>
+            <div className="flex items-end justify-between border-b border-black/8 pb-5">
+              <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Burgers</span>
+            </div>
+          </Reveal>
+
+          {BURGERS.map((b, i) => (
+            <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} />
+          ))}
+
+          <Reveal delay={0.1} className="mt-6">
+            <div className="flex gap-3 items-start bg-[#F2C438]/10 border border-[#F2C438]/30 px-5 py-4">
+              <span className="text-[#F2C438] text-base leading-none mt-0.5">◆</span>
+              <p className="text-xs text-black/40 leading-relaxed">
+                Il <span className="text-black/70 font-medium">Combo</span> include patatine classiche e bibita a tua scelta.
+              </p>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* ── Fries ── */}
+        <section id="fries" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-12">
+          <div className="max-w-4xl mx-auto">
+            <Reveal>
+              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
+                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
+              </div>
+            </Reveal>
+            <ClipReveal delay={0.05} className="pt-5 pb-6">
+              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Fries</h2>
+            </ClipReveal>
+            {FRIES.map((f, i) => (
+              <Reveal key={f.name} delay={i * 0.07}>
+                <div className="flex items-center justify-between py-5 border-b border-black/6">
+                  <div className="flex items-baseline gap-5">
+                    <div>
+                      <div className="text-base tracking-wide text-[#1a0a10] uppercase font-semibold">{f.name}</div>
+                      <div className="text-xs text-black/35 mt-0.5">{f.desc}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4 shrink-0">
+                    <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
+                    <button onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
+                      className="w-7 h-7 border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none">
+                      +
+                    </button>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Salse ── */}
+        <section id="salse" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-12">
+          <div className="max-w-4xl mx-auto">
+            <Reveal>
+              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
+                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Salse</span>
+              </div>
+            </Reveal>
+            <ClipReveal delay={0.05} className="pt-5 pb-6">
+              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Salse</h2>
+            </ClipReveal>
+            {SALSE_LIST.map((s, i) => (
+              <Reveal key={s} delay={i * 0.05}>
+                <ExtraRow name={s} price={0.5} onAdd={() => addExtra(s, 'salsa', 0.5)} cart={cart} />
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Bibite ── */}
+        <section id="bibite" className="px-6 md:px-16 pb-20 md:pb-28 scroll-mt-12">
+          <div className="max-w-4xl mx-auto">
+            <Reveal>
+              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
+                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Drinks</span>
+              </div>
+            </Reveal>
+            <ClipReveal delay={0.05} className="pt-5 pb-6">
+              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Bibite</h2>
+            </ClipReveal>
+            {['Coca-Cola', 'Coca-Cola Zero', 'Fanta', 'Sprite', 'Fuze Tea Limone', 'Fuze Tea Pesca', 'Acqua Liscia', 'Acqua Frizzante'].map((b, i) => {
+              const drinkPrice = (b === 'Acqua Liscia' || b === 'Acqua Frizzante') ? 1 : 2.5;
+              return (
+                <Reveal key={b} delay={i * 0.05}>
+                  <ExtraRow name={b} price={drinkPrice} onAdd={() => addExtra(b, 'bibita', drinkPrice)} cart={cart} />
+                </Reveal>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ── Footer ── */}
+        <footer className="bg-[#120608] border-t border-white/5 px-6 md:px-16 py-10 md:py-14">
+          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <img src="/logo-public-burger.png" alt="Public" className="h-8 opacity-70" />
+            <div className="text-white/20 text-xs leading-relaxed text-left md:text-right">
+              <p className="text-white/40 font-medium mb-1">Public Burger — Isola del Liri (FR)</p>
+              <p className="text-white/30 mb-1">+39 342 000 6928</p>
+              © {new Date().getFullYear()} — I prezzi potrebbero subire variazioni.
+            </div>
+          </div>
+        </footer>
+
+      </div>
+
+      {/* ── Sub nav ── */}
+      <SubNav />
+
+      {/* ── Animated Logo ── */}
+      <AnimatedLogo />
+
+      {/* ── Cart FAB ── */}
+      <CartFAB count={cart.length} onClick={() => setCartOpen(true)} />
+
+      <AnimatePresence>
+        {configuringBurger && (
+          <BurgerConfigurator
+            burger={configuringBurger.burger}
+            preselectedSize={configuringBurger.size}
+            onConfirm={addBurger}
+            onClose={() => setConfiguringBurger(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {cartOpen && (
+          <CartPanel
+            items={cart}
+            onRemove={removeItem}
+            onClose={() => setCartOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {fryModal && (
+          <FryModal
+            fry={fryModal}
+            onConfirm={(sauces) => addFry(fryModal, sauces)}
+            onClose={() => setFryModal(null)}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {nuggetsModal && (
+          <NuggetsModal
+            onConfirm={(label, price, sauces) => {
+              setCart((prev) => {
+                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price }, qty: 1, totalPrice: price };
+                const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0 }));
+                return [...prev, item, ...sauceItems];
+              });
+            }}
+            onClose={() => setNuggetsModal(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+}
