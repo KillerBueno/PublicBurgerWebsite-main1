@@ -1,10 +1,13 @@
-import { createClient } from '@supabase/supabase-js';
+// Supabase is loaded dynamically to avoid build issues when not configured
+export const supabaseReady = !!(
+  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
-
-export const supabaseReady = !!(supabaseUrl && supabaseAnonKey);
-
-export const supabase = supabaseReady
-  ? createClient(supabaseUrl!, supabaseAnonKey!)
-  : createClient('https://placeholder.supabase.co', 'placeholder');
+export async function getSupabase() {
+  if (!supabaseReady) return null;
+  const { createClient } = await import('@supabase/supabase-js');
+  return createClient(
+    import.meta.env.VITE_SUPABASE_URL as string,
+    import.meta.env.VITE_SUPABASE_ANON_KEY as string,
+  );
+}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { supabase, supabaseReady } from './lib/supabase';
+import { getSupabase, supabaseReady } from './lib/supabase';
 
 type Provider = 'google' | 'apple' | 'facebook';
 
@@ -49,7 +49,9 @@ const PROVIDERS: { id: Provider; label: string; icon: React.ReactNode; bg: strin
 ];
 
 async function signInWith(provider: Provider) {
-  await supabase.auth.signInWithOAuth({
+  const client = await getSupabase();
+  if (!client) return;
+  await client.auth.signInWithOAuth({
     provider,
     options: { redirectTo: REDIRECT_URL },
   });
