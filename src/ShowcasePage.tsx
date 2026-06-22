@@ -83,18 +83,6 @@ function WordReveal({ text, className = '' }: { text: string; className?: string
   );
 }
 
-// ─── Parallax section wrapper ────────────────────────────────────────────────
-
-function ParallaxSection({ children, className = '', speed = 0.15 }: { children: React.ReactNode; className?: string; speed?: number }) {
-  const ref = useRef(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const y = useTransform(scrollYProgress, [0, 1], ['0%', `${speed * 100}%`]);
-  return (
-    <motion.div ref={ref} style={{ y }} className={className}>
-      {children}
-    </motion.div>
-  );
-}
 
 // ─── Animated Logo ────────────────────────────────────────────────────────────
 
@@ -218,7 +206,7 @@ function BurgerRow({ burger, index, onAdd }: {
               className="text-[10px] tracking-[0.2em] uppercase font-semibold border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
-              <span className="ml-2 text-black/30">€{burger.prices[s]}</span>
+              <span className="ml-2 text-black/30">€{burger.prices![s]}</span>
             </button>
           ))}
         </div>
@@ -235,38 +223,6 @@ function BurgerRow({ burger, index, onAdd }: {
   );
 }
 
-// ─── Fry row ─────────────────────────────────────────────────────────────────
-
-function FryRow({ fry, index, onAdd }: { fry: typeof FRIES[0]; index: number; onAdd: () => void }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-30px' });
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 16 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      className="flex items-center justify-between py-5 border-b border-white/10"
-    >
-      <div className="flex items-baseline gap-5">
-        <span className="text-[10px] text-white/25 w-5 shrink-0">{String(index + 1).padStart(2, '0')}</span>
-        <div>
-          <div className="text-base tracking-wide text-white uppercase">{fry.name}</div>
-          <div className="text-xs text-white/35 mt-0.5">{fry.desc}</div>
-        </div>
-      </div>
-      <div className="flex items-center gap-4 shrink-0">
-        <span className="text-white/60 text-sm">€{fry.price.toFixed(1)}</span>
-        <button
-          onClick={onAdd}
-          className="w-7 h-7 border border-white/20 text-white/50 hover:border-white/60 hover:text-white text-base flex items-center justify-center transition-all duration-200 leading-none"
-        >
-          +
-        </button>
-      </div>
-    </motion.div>
-  );
-}
 
 // ─── Extra row (salse / bibite) ───────────────────────────────────────────────
 
