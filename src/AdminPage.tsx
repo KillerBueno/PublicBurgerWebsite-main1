@@ -55,9 +55,8 @@ export default function AdminPage() {
     if (!token && !isAdminUser) return;
     setLoading(true);
     // Use stored Supabase token if logged in as admin, else use anon key
-    const authToken = sessionStorage.getItem('pb_user')
-      ? JSON.parse(sessionStorage.getItem('pb_user')!).access_token
-      : null;
+    const storedUser = getStoredUser();
+    const authToken = storedUser?.access_token ?? null;
     fetchOrders(authToken ?? import.meta.env.VITE_SUPABASE_ANON_KEY)
       .then(data => { setOrders(data); setLoading(false); })
       .catch(() => { setErr('Errore nel caricamento ordini'); setLoading(false); });

@@ -10,6 +10,7 @@ export interface PBUser {
   email: string;
   name: string;
   avatar_url: string;
+  access_token: string;
 }
 
 // Parse token from URL hash after OAuth redirect
@@ -36,6 +37,7 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
       email: data.email,
       name: data.user_metadata?.full_name || data.email,
       avatar_url: data.user_metadata?.avatar_url || '',
+      access_token: accessToken,
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
     return user;
