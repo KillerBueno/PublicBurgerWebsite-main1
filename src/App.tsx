@@ -23,7 +23,7 @@ export default function App() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (window.location.hash.includes('access_token')) {
+    if (window.location.hash.includes('access_token') || sessionStorage.getItem('pb_oauth_hash')) {
       handleAuthCallback().then(() => {
         window.dispatchEvent(new Event('pb-user-changed'));
       });
