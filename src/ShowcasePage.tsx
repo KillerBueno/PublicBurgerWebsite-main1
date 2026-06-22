@@ -175,6 +175,8 @@ function BurgerRow({ burger, index, onAdd }: {
             {burger.name}
           </h3>
           {burger.spicy && <span className="text-sm leading-none">🌶️</span>}
+          {(burger.tag === 'Chicken' || burger.tag === 'Wrap') && <span className="text-sm leading-none">🍗</span>}
+          {burger.tag === 'Veggie' && <span className="text-sm leading-none">🌿</span>}
         </div>
         <div className="shrink-0 text-right">
           {burger.prices ? (
