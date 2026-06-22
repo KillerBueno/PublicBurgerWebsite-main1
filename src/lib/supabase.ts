@@ -1,12 +1,65 @@
-// Stub — login social verrà attivato quando le env vars Supabase saranno configurate
-export const supabaseReady = !!(
-  import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+
+export const supabaseReady = !!(SUPABASE_URL && SUPABASE_KEY);
+
+const SESSION_KEY = 'pb_user';
+
+export interface PBUser {
+  id: string;
+  email: string;
+  name: string;
+  avatar_url: string;
+}
+
+// Parse token from URL hash after OAuth redirect
+export async function handleAuthCallback(): Promise<PBUser | null> {
+  const hash = window.location.hash;
+  if (!hash || !SUPABASE_URL) return null;
+  const params = new URLSearchParams(hash.slice(1));
+  const accessToken = params.get('access_token');
+  if (!accessToken) return null;
+
+  // Clean hash from URL
+  window.history.replaceState(null, '', window.location.pathname);
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        apikey: SUPABASE_KEY!,
+      },
+    });
+    const data = await res.json();
+    const user: PBUser = {
+      id: data.id,
+      email: data.email,
+      name: data.user_metadata?.full_name || data.email,
+      avatar_url: data.user_metadata?.avatar_url || '',
+    };
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    return user;
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredUser(): PBUser | null {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function signOut() {
+  sessionStorage.removeItem(SESSION_KEY);
+  window.location.href = '/';
+}
 
 export async function signInWithProvider(provider: 'google' | 'apple' | 'facebook') {
-  const url = import.meta.env.VITE_SUPABASE_URL;
-  const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  if (!url || !key) throw new Error('Supabase non configurato');
+  if (!SUPABASE_URL) throw new Error('Supabase non configurato');
   const redirect = encodeURIComponent(window.location.origin);
-  window.location.href = `${url}/auth/v1/authorize?provider=${provider}&redirect_to=${redirect}`;
+  window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=${provider}&redirect_to=${redirect}`;
 }

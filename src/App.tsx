@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ShowcasePage from './ShowcasePage';
 import MenuDisplay from './MenuDisplay';
 import LegalPage from './LegalPage';
 import LoginPage from './LoginPage';
+import { handleAuthCallback } from './lib/supabase';
 
 const AUTH_KEY = 'pb_auth';
 
@@ -17,6 +18,16 @@ export default function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(false);
+
+  // Handle OAuth callback token in URL hash
+  useEffect(() => {
+    if (window.location.hash.includes('access_token')) {
+      handleAuthCallback().then(() => {
+        // force re-render so SubNav picks up new user
+        window.dispatchEvent(new Event('pb-user-changed'));
+      });
+    }
+  }, []);
 
   if (!authed) {
     function handleLogin(e: React.FormEvent) {
