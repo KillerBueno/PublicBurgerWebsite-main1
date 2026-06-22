@@ -840,17 +840,15 @@ export default function ShowcasePage() {
             </Reveal>
             {FRIES.map((f, i) => (
               <Reveal key={f.name} delay={i * 0.07}>
-                <div className="flex items-center justify-between py-5 border-b border-black/6">
-                  <div className="flex items-baseline gap-5">
-                    <div>
-                      <div className="text-base tracking-wide text-[#1a0a10] uppercase font-semibold">{f.name}</div>
-                      <div className="text-xs text-black/35 mt-0.5">{f.desc}</div>
-                    </div>
+                <div className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-5 mb-3 flex items-center justify-between">
+                  <div>
+                    <div className="text-xl md:text-2xl tracking-tight text-[#1a0a10] uppercase font-semibold leading-none mb-1">{f.name}</div>
+                    <div className="text-xs text-black/35">{f.desc}</div>
                   </div>
                   <div className="flex items-center gap-4 shrink-0">
                     <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
                     <button onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
-                      className="w-7 h-7 border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none">
+                      className="w-8 h-8 rounded-full border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none">
                       +
                     </button>
                   </div>
