@@ -134,7 +134,7 @@ function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
     <motion.button
       onClick={onClick}
       whileTap={{ scale: 0.93 }}
-      className="fixed bottom-6 right-6 z-40 bg-[#1a0a10] text-white w-14 h-14 flex items-center justify-center shadow-2xl hover:bg-[#CF6990] transition-colors duration-300"
+      className="fixed bottom-6 right-6 z-40 bg-[#1a0a10] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-[#CF6990] transition-colors duration-300"
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -188,7 +188,7 @@ function BurgerRow({ burger, index, onAdd }: {
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      className="border-b border-black/6 py-8"
+      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3"
     >
       {/* Name row */}
       <div className="flex items-baseline justify-between gap-4 mb-2">
@@ -219,7 +219,7 @@ function BurgerRow({ burger, index, onAdd }: {
             <button
               key={s}
               onClick={() => onAdd(burger, s)}
-              className="text-[10px] tracking-[0.2em] uppercase font-semibold border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+              className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
               <span className="ml-2 text-black/30">€{burger.prices![s]}</span>
@@ -229,7 +229,7 @@ function BurgerRow({ burger, index, onAdd }: {
       ) : (
         <button
           onClick={() => onAdd(burger)}
-          className="text-[10px] tracking-[0.2em] uppercase font-semibold border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+          className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
         >
           Singolo
           <span className="ml-2 text-black/30">€{burger.fixedPrice}</span>
@@ -254,7 +254,7 @@ function ExtraRow({ name, price, onAdd, cart }: { name: string; price: number; o
   }
 
   return (
-    <div className="flex items-center justify-between py-4 border-b border-black/6">
+    <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-xl shadow-sm border border-black/5 mb-2">
       <div className="flex items-center gap-4">
         <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{name}</span>
         {qty > 0 && (
@@ -267,7 +267,7 @@ function ExtraRow({ name, price, onAdd, cart }: { name: string; price: number; o
           onClick={handleAdd}
           animate={flash ? { scale: [1, 1.3, 1] } : {}}
           transition={{ duration: 0.4 }}
-          className="w-7 h-7 border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-colors duration-200 leading-none"
+          className="w-7 h-7 rounded-full border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-colors duration-200 leading-none"
         >
           +
         </motion.button>
@@ -288,10 +288,10 @@ function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm
       <motion.div className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={onClose} />
-      <motion.div className="relative w-full md:max-w-md bg-white flex flex-col max-h-[80vh] shadow-2xl"
+      <motion.div className="relative w-full md:max-w-md bg-white flex flex-col max-h-[80vh] shadow-2xl rounded-t-3xl md:rounded-3xl overflow-hidden"
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}>
-        <div className="px-6 pt-6 pb-4 border-b border-black/8 flex items-start justify-between shrink-0">
+        <div className="px-6 pt-6 pb-4 border-b border-black/6 flex items-start justify-between shrink-0">
           <div>
             <p className="text-[9px] tracking-[0.35em] uppercase text-[#CF6990] font-medium mb-1">Aggiungi al carrello</p>
             <h3 className="text-xl tracking-tight uppercase font-semibold">{fry.name}</h3>
@@ -302,7 +302,7 @@ function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm
         <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
           <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-3">Vuoi aggiungere una salsa?</p>
           <button onClick={() => { onConfirm([]); onClose(); }}
-            className="w-full flex items-center gap-3 px-4 py-3 mb-3 border border-black/8 hover:border-black/25 text-left transition-all duration-150">
+            className="w-full flex items-center gap-3 px-4 py-3 mb-3 rounded-xl border border-black/8 hover:border-black/25 text-left transition-all duration-150">
             <span className="w-3.5 h-3.5 border border-black/20 rounded-full flex-shrink-0" />
             <span className="text-sm text-black/40">Nessuna salsa</span>
           </button>
@@ -387,7 +387,7 @@ function NuggetsModal({ onConfirm, onClose }: { onConfirm: (label: string, price
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
               <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-3">Vuoi aggiungere una salsa?</p>
               <button onClick={() => { onConfirm(`Nuggets ${chosenSize!.label}`, chosenSize!.price, []); onClose(); }}
-                className="w-full flex items-center gap-3 px-4 py-3 mb-3 border border-black/8 hover:border-black/25 text-left transition-all duration-150">
+                className="w-full flex items-center gap-3 px-4 py-3 mb-3 rounded-xl border border-black/8 hover:border-black/25 text-left transition-all duration-150">
                 <span className="w-3.5 h-3.5 border border-black/20 rounded-full flex-shrink-0" />
                 <span className="text-sm text-black/40">Nessuna salsa</span>
               </button>
@@ -660,7 +660,7 @@ export default function ShowcasePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
   const [nuggetsModal, setNuggetsModal] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const [, setScrolled] = useState(false);
   const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -999,35 +999,6 @@ export default function ShowcasePage() {
       {/* Toast notification */}
       <AnimatePresence>
         {toast && <Toast key={toast + Date.now()} message={`${toast} aggiunto`} />}
-      </AnimatePresence>
-
-      {/* Sticky mobile CTA */}
-      <AnimatePresence>
-        {scrolled && !cartOpen && (
-          <motion.button
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            onClick={() => setCartOpen(true)}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 md:hidden flex items-center gap-3 bg-[#1a0a10] text-white px-6 py-4 shadow-2xl rounded-full text-[11px] uppercase tracking-[0.2em] font-semibold"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.836l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.962-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
-            </svg>
-            Ordina ora
-            {cart.length > 0 && (
-              <motion.span
-                key={cart.length}
-                initial={{ scale: 1.4 }}
-                animate={{ scale: 1 }}
-                className="bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center"
-              >
-                {cart.length}
-              </motion.span>
-            )}
-          </motion.button>
-        )}
       </AnimatePresence>
 
       {/* Footer */}

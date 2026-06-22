@@ -86,7 +86,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
       />
 
       <motion.div
-        className="relative w-full md:max-w-md bg-white flex flex-col max-h-[92vh] shadow-2xl"
+        className="relative w-full md:max-w-md bg-white flex flex-col max-h-[92vh] shadow-2xl rounded-t-3xl md:rounded-3xl overflow-hidden"
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
@@ -136,7 +136,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                     <button
                       key={s}
                       onClick={() => { setSize(s); goNext(); }}
-                      className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
+                      className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
                     >
                       <span className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">
                         {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
@@ -152,7 +152,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                 <div className="space-y-2">
                   <button
                     onClick={() => { setCombo(true); goNext(); }}
-                    className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
+                    className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
                   >
                     <div className="text-left">
                       <div className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">Combo</div>
@@ -162,7 +162,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                   </button>
                   <button
                     onClick={() => { setCombo(false); setDrink(null); goNext(); }}
-                    className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
+                    className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
                   >
                     <div className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">Solo il panino</div>
                     <span className="text-black/20">—</span>
@@ -181,7 +181,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                         <button
                           key={ing}
                           onClick={() => toggleRemove(ing)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 border transition-all duration-150 text-left ${
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
                             active
                               ? 'border-black/8 bg-white hover:border-black/20'
                               : 'border-red-100 bg-red-50/50'
@@ -211,7 +211,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                         <button
                           key={ing}
                           onClick={() => toggleExtra(ing)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 border transition-all duration-150 text-left ${
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
                             active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
                           }`}
                         >
@@ -250,7 +250,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                           });
                           onClose();
                         }}
-                        className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
+                        className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
                       >
                         <span className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">{d.name}</span>
                         {d.extra > 0
@@ -282,7 +282,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
           {isLast ? (
             <button
               onClick={handleConfirm}
-              className="text-[10px] tracking-[0.2em] uppercase font-semibold bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300"
+              className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300"
             >
               Aggiungi
             </button>
