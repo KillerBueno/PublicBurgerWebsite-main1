@@ -1,29 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import ShowcasePage from './ShowcasePage';
-import MenuDisplay from './MenuDisplay';
-import LegalPage from './LegalPage';
-import LoginPage from './LoginPage';
 import { handleAuthCallback } from './lib/supabase';
+
+const MenuDisplay = lazy(() => import('./MenuDisplay'));
+const LegalPage   = lazy(() => import('./LegalPage'));
+const LoginPage   = lazy(() => import('./LoginPage'));
 
 const AUTH_KEY = 'pb_auth';
 
 export default function App() {
   const path = window.location.pathname;
 
-  if (path === '/display') return <MenuDisplay />;
-  if (path === '/privacy') return <LegalPage page="privacy" />;
-  if (path === '/cookie') return <LegalPage page="cookie" />;
-  if (path === '/login') return <LoginPage />;
+  if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
+  if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
+  if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
+  if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
 
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(false);
 
-  // Handle OAuth callback token in URL hash
   useEffect(() => {
     if (window.location.hash.includes('access_token')) {
       handleAuthCallback().then(() => {
-        // force re-render so SubNav picks up new user
         window.dispatchEvent(new Event('pb-user-changed'));
       });
     }
