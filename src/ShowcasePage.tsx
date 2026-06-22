@@ -44,24 +44,6 @@ function Ticker({ bg, text, items, duration = 22 }: { bg: string; text: string; 
   );
 }
 
-// ─── Clip-path title reveal ───────────────────────────────────────────────────
-
-function ClipReveal({ children, className = '', delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-80px' });
-  return (
-    <motion.div
-      ref={ref}
-      className={`overflow-hidden ${className}`}
-      initial={{ clipPath: 'inset(0 100% 0 0)' }}
-      animate={inView ? { clipPath: 'inset(0 0% 0 0)' } : {}}
-      transition={{ duration: 1.1, delay, ease: [0.16, 1, 0.3, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
 // ─── Word-by-word stagger ────────────────────────────────────────────────────
 
 function WordReveal({ text, className = '' }: { text: string; className?: string }) {
