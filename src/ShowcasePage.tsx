@@ -27,19 +27,16 @@ function Ticker({ bg, text, items, duration = 22 }: { bg: string; text: string; 
   const set = [...items];
   return (
     <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
-      <div className="flex whitespace-nowrap" style={{ animation: `ticker ${duration}s linear infinite` }}>
-        {[...set, ...set].map((t, i) => (
+      <div
+        className="flex whitespace-nowrap will-change-transform"
+        style={{ animation: `ticker-scroll ${duration}s linear infinite` }}
+      >
+        {[...set, ...set, ...set].map((t, i) => (
           <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
             {t} <span className="opacity-20 mx-2">·</span>
           </span>
         ))}
       </div>
-      <style>{`
-        @keyframes ticker {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-      `}</style>
     </div>
   );
 }
@@ -67,49 +64,6 @@ function WordReveal({ text, className = '' }: { text: string; className?: string
   );
 }
 
-
-// ─── Animated Logo ────────────────────────────────────────────────────────────
-
-function AnimatedLogo() {
-  const { scrollY } = useScroll();
-
-  const LARGE = typeof window !== 'undefined' ? Math.min(window.innerWidth * 0.42, 220) : 180;
-  const SMALL = 40;
-  // Fade out when subnav appears (scroll > 70% of hero)
-  const logoOpacity = useTransform(scrollY, [
-    typeof window !== 'undefined' ? window.innerHeight * 0.6 : 500,
-    typeof window !== 'undefined' ? window.innerHeight * 0.75 : 650,
-  ], [1, 0]);
-
-  const [origin, setOrigin] = useState(() => ({
-    x: typeof window !== 'undefined' ? window.innerWidth / 2 - LARGE / 2 : 300,
-    y: typeof window !== 'undefined' ? window.innerHeight * 0.38 - LARGE / 2 : 180,
-  }));
-
-  useEffect(() => {
-    const update = () => setOrigin({
-      x: window.innerWidth / 2 - LARGE / 2,
-      y: window.innerHeight * 0.38 - LARGE / 2,
-    });
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, [LARGE]);
-
-  const w = useTransform(scrollY, [0, 380], [LARGE, SMALL]);
-  const x = useTransform(scrollY, [0, 380], [origin.x, 20]);
-  const y = useTransform(scrollY, [0, 380], [origin.y, 16]);
-
-  return (
-    <motion.button
-      className="fixed z-50 cursor-pointer origin-top-left focus:outline-none"
-      style={{ left: 0, top: 0, x, y, width: w, opacity: logoOpacity }}
-      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      title="Torna su"
-    >
-      <img src="/logo-public-burger.png" alt="Public Burger" className="w-full drop-shadow-2xl" />
-    </motion.button>
-  );
-}
 
 // ─── Cart FAB ─────────────────────────────────────────────────────────────────
 
@@ -698,7 +652,6 @@ function AnchorNav() {
 export default function ShowcasePage() {
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
-  const logoY = useTransform(scrollYProgress, [0, 1], ['0%', '-25%']);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -765,6 +718,10 @@ export default function ShowcasePage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
+        @keyframes ticker-scroll {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-33.3333%); }
+        }
       `}</style>
 
       <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
@@ -793,11 +750,20 @@ export default function ShowcasePage() {
             </span>
           </motion.div>
 
-          {/* Spacer + tagline location — logo is handled by AnimatedLogo */}
+          {/* Logo centrato nell'hero — rimpicciolisce e sfuma scrollando */}
           <motion.div
-            style={{ y: logoY }}
-            className="flex-1 flex flex-col items-center justify-center pt-20"
+            className="flex-1 flex flex-col items-center justify-center"
+            style={{ opacity: useTransform(scrollYProgress, [0, 0.45], [1, 0]) }}
           >
+            <motion.img
+              src="/logo-public-burger.png"
+              alt="Public Burger"
+              className="w-44 md:w-64 drop-shadow-2xl pointer-events-none select-none"
+              style={{ scale: useTransform(scrollYProgress, [0, 0.45], [1, 0.55]) }}
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            />
           </motion.div>
 
           {/* Bottom tagline — letters stagger in */}
@@ -976,8 +942,6 @@ export default function ShowcasePage() {
       {/* ── Sub nav ── */}
       <SubNav />
 
-      {/* ── Animated Logo ── */}
-      <AnimatedLogo />
 
       {/* ── Cart FAB ── */}
       <CartFAB count={cart.length} onClick={() => setCartOpen(true)} />
