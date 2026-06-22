@@ -495,17 +495,20 @@ function SubNav() {
           </div>
           {/* Login / user button */}
           {user ? (
-            <button
-              onClick={() => { signOut(); setUser(null); }}
-              className="shrink-0 pr-4 pl-2 flex flex-col items-center gap-0.5"
-              title="Esci"
-            >
-              {user.avatar_url
-                ? <img src={user.avatar_url} className="w-10 h-10 rounded-full object-cover border-2 border-[#CF6990]/30" />
-                : <span className="w-10 h-10 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
-              }
-              <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {user.name?.split(' ')[0]}</span>
-            </button>
+            <div className="shrink-0 pr-4 pl-2 flex items-center gap-2">
+              {user.email === 'prrsmn91@gmail.com' && (
+                <a href="/admin" className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#CF6990] border border-[#CF6990]/30 rounded-lg px-2 py-1 hover:bg-[#CF6990]/10 transition-colors">
+                  Admin
+                </a>
+              )}
+              <button onClick={() => { signOut(); setUser(null); }} className="flex flex-col items-center gap-0.5" title="Esci">
+                {user.avatar_url
+                  ? <img src={user.avatar_url} className="w-9 h-9 rounded-full object-cover border-2 border-[#CF6990]/30" />
+                  : <span className="w-9 h-9 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
+                }
+                <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {user.name?.split(' ')[0]}</span>
+              </button>
+            </div>
           ) : (
             <a
               href="/login"
@@ -525,22 +528,27 @@ function SubNav() {
     <AnimatePresence>
       {!visible && (
         user ? (
-          <motion.button
+          <motion.div
             key="avatar-fixed"
-            onClick={() => { signOut(); setUser(null); }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed top-4 right-4 z-30 flex flex-col items-center gap-1"
-            title="Esci"
           >
-            {user.avatar_url
-              ? <img src={user.avatar_url} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
-              : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{user.name?.[0]?.toUpperCase()}</span>
-            }
-            <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {user.name?.split(' ')[0]}</span>
-          </motion.button>
+            {user.email === 'prrsmn91@gmail.com' && (
+              <a href="/admin" className="text-[9px] uppercase tracking-[0.2em] font-bold bg-[#CF6990] text-white rounded-lg px-2.5 py-1 shadow-md mb-0.5 hover:bg-[#a8456b] transition-colors">
+                Admin
+              </a>
+            )}
+            <button onClick={() => { signOut(); setUser(null); }} className="flex flex-col items-center gap-1" title="Esci">
+              {user.avatar_url
+                ? <img src={user.avatar_url} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
+                : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{user.name?.[0]?.toUpperCase()}</span>
+              }
+              <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {user.name?.split(' ')[0]}</span>
+            </button>
+          </motion.div>
         ) : (
           <motion.a
             key="login-fixed"

@@ -20,6 +20,11 @@
   <title>Public Burger</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
+    // Save OAuth token to sessionStorage then clean URL before React renders
+    if (window.location.hash && window.location.hash.includes('access_token')) {
+      sessionStorage.setItem('pb_oauth_hash', window.location.hash);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
     document.addEventListener('touchmove', function(e) {
       if (e.touches.length > 1) e.preventDefault();
     }, { passive: false });

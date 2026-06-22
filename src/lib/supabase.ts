@@ -13,15 +13,15 @@ export interface PBUser {
   access_token: string;
 }
 
-// Parse token from URL hash after OAuth redirect
+// Parse token from URL hash after OAuth redirect (hash already cleaned in index.html)
 export async function handleAuthCallback(): Promise<PBUser | null> {
-  const hash = window.location.hash;
-  if (!hash || !SUPABASE_URL) return null;
-  const params = new URLSearchParams(hash.slice(1));
+  const saved = sessionStorage.getItem('pb_oauth_hash') || window.location.hash;
+  if (!saved || !SUPABASE_URL) return null;
+  const params = new URLSearchParams(saved.startsWith('#') ? saved.slice(1) : saved);
   const accessToken = params.get('access_token');
   if (!accessToken) return null;
 
-  // Clean hash from URL
+  sessionStorage.removeItem('pb_oauth_hash');
   window.history.replaceState(null, '', window.location.pathname);
 
   try {
