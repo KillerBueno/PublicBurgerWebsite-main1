@@ -803,7 +803,7 @@ export default function ShowcasePage() {
           bg="bg-[#1a0a10]"
           text="text-white/50"
           items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30']}
-          duration={14}
+          duration={7}
         />
 
         {/* ── Statement ── */}
