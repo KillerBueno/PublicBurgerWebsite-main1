@@ -846,14 +846,6 @@ export default function ShowcasePage() {
             <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} />
           ))}
 
-          <Reveal delay={0.1} className="mt-6">
-            <div className="flex gap-3 items-start bg-[#F2C438]/10 border border-[#F2C438]/30 px-5 py-4">
-              <span className="text-[#F2C438] text-base leading-none mt-0.5">◆</span>
-              <p className="text-xs text-black/40 leading-relaxed">
-                Il <span className="text-black/70 font-medium">Combo</span> include patatine classiche e bibita a tua scelta.
-              </p>
-            </div>
-          </Reveal>
         </section>
 
         {/* ── Fries ── */}
