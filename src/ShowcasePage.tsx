@@ -505,6 +505,37 @@ function SubNav() {
   );
 }
 
+// ─── Burger filters ───────────────────────────────────────────────────────────
+
+type BurgerFilter = 'all' | 'veggie' | 'spicy' | 'chicken';
+
+const FILTERS: { id: BurgerFilter; label: string }[] = [
+  { id: 'all', label: 'Tutti' },
+  { id: 'spicy', label: '🌶 Spicy' },
+  { id: 'veggie', label: '🌿 Veggie' },
+  { id: 'chicken', label: '🍗 Chicken' },
+];
+
+function BurgerFilters({ active, onChange }: { active: BurgerFilter; onChange: (f: BurgerFilter) => void }) {
+  return (
+    <div className="flex gap-1.5 flex-wrap">
+      {FILTERS.map((f) => (
+        <button
+          key={f.id}
+          onClick={() => onChange(f.id)}
+          className={`px-3 py-1 text-[10px] uppercase tracking-[0.2em] font-semibold border transition-all duration-200 ${
+            active === f.id
+              ? 'bg-[#1a0a10] text-white border-[#1a0a10]'
+              : 'border-black/10 text-black/40 hover:border-black/30 hover:text-black/60'
+          }`}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ─── Anchor nav ───────────────────────────────────────────────────────────────
 
 const SECTIONS = [
@@ -585,6 +616,7 @@ export default function ShowcasePage() {
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
   const [nuggetsModal, setNuggetsModal] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -748,12 +780,18 @@ export default function ShowcasePage() {
         {/* ── Panini ── */}
         <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-16">
           <Reveal>
-            <div className="flex items-end justify-between border-b border-black/8 pb-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/8 pb-5">
               <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Burgers</span>
+              <BurgerFilters active={burgerFilter} onChange={setBurgerFilter} />
             </div>
           </Reveal>
 
-          {BURGERS.map((b, i) => (
+          {BURGERS.filter((b) => {
+            if (burgerFilter === 'veggie') return b.tag === 'Veggie';
+            if (burgerFilter === 'spicy') return b.spicy;
+            if (burgerFilter === 'chicken') return b.tag === 'Chicken' || b.tag === 'Wrap';
+            return true;
+          }).map((b, i) => (
             <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} />
           ))}
 
