@@ -832,7 +832,7 @@ export default function ShowcasePage() {
         <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-16">
           <Reveal>
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/8 pb-5">
-              <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Burgers</span>
+              <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Burgers</span>
               <BurgerFilters active={burgerFilter} onChange={setBurgerFilter} />
             </div>
           </Reveal>
@@ -853,12 +853,9 @@ export default function ShowcasePage() {
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
+                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
               </div>
             </Reveal>
-            <ClipReveal delay={0.05} className="pt-5 pb-6">
-              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Fries</h2>
-            </ClipReveal>
             {FRIES.map((f, i) => (
               <Reveal key={f.name} delay={i * 0.07}>
                 <div className="flex items-center justify-between py-5 border-b border-black/6">
@@ -886,12 +883,9 @@ export default function ShowcasePage() {
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Salse</span>
+                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Salse</span>
               </div>
             </Reveal>
-            <ClipReveal delay={0.05} className="pt-5 pb-6">
-              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Salse</h2>
-            </ClipReveal>
             {SALSE_LIST.map((s, i) => (
               <Reveal key={s} delay={i * 0.05}>
                 <ExtraRow name={s} price={0.5} onAdd={() => addExtra(s, 'salsa', 0.5)} cart={cart} />
@@ -905,12 +899,9 @@ export default function ShowcasePage() {
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-xs tracking-[0.3em] uppercase text-[#CF6990] font-bold">Drinks</span>
+                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Bibite</span>
               </div>
             </Reveal>
-            <ClipReveal delay={0.05} className="pt-5 pb-6">
-              <h2 className="text-5xl md:text-7xl tracking-tight text-[#1a0a10] leading-none uppercase font-bold">Bibite</h2>
-            </ClipReveal>
             {['Coca-Cola', 'Coca-Cola Zero', 'Fanta', 'Sprite', 'Fuze Tea Limone', 'Fuze Tea Pesca', 'Acqua Liscia', 'Acqua Frizzante'].map((b, i) => {
               const drinkPrice = (b === 'Acqua Liscia' || b === 'Acqua Frizzante') ? 1 : 2.5;
               return (
