@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchOrders, type Order } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
+import { fetchProfiles, setProfileOverride, effectiveCount, type UserProfile } from './lib/profiles';
+import { getTier, TIERS } from './lib/gamification';
 
 const ADMIN_EMAIL = 'prrsmn91@gmail.com';
 
@@ -25,6 +27,7 @@ function Badge({ type }: { type: string }) {
 }
 
 export default function AdminPage() {
+  const [tab, setTab] = useState<'ordini' | 'profili'>('ordini');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -32,6 +35,10 @@ export default function AdminPage() {
   const [typeFilter, setTypeFilter] = useState<string>('tutti');
   const [dateFilter, setDateFilter] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [profiles, setProfiles] = useState<UserProfile[]>([]);
+  const [profilesLoading, setProfilesLoading] = useState(true);
+  const [editingEmail, setEditingEmail] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
 
   const loggedUser = getStoredUser();
   const isAdmin = loggedUser?.email === ADMIN_EMAIL;
@@ -72,9 +79,20 @@ export default function AdminPage() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     setLoading(true);
-    fetchOrders(loggedUser!.access_token)
-      .then(data => { setOrders(data); setLoading(false); })
-      .catch(() => { setErr('Errore nel caricamento ordini'); setLoading(false); });
+    Promise.all([
+      fetchOrders(loggedUser!.access_token),
+      fetchProfiles(loggedUser!.access_token),
+    ]).then(([ordersData, profilesData]) => {
+      setOrders(ordersData);
+      // Merge real order count from orders table
+      const countMap: Record<string, number> = {};
+      for (const o of ordersData) {
+        if (o.user_email) countMap[o.user_email] = (countMap[o.user_email] ?? 0) + 1;
+      }
+      setProfiles(profilesData.map(p => ({ ...p, real_order_count: countMap[p.email] ?? 0 })));
+      setProfilesLoading(false);
+      setLoading(false);
+    }).catch(() => { setErr('Errore nel caricamento dati'); setLoading(false); setProfilesLoading(false); });
   }, []);
 
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -126,8 +144,23 @@ export default function AdminPage() {
         ))}
       </div>
 
+      {/* Tabs */}
+      <div className="flex bg-white border-b border-black/8">
+        {(['ordini', 'profili'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex-1 py-3 text-[11px] uppercase tracking-[0.25em] font-semibold transition-colors ${
+              tab === t ? 'text-[#CF6990] border-b-2 border-[#CF6990]' : 'text-black/30 hover:text-black/60'
+            }`}
+          >
+            {t === 'ordini' ? `Ordini (${filtered.length})` : `Profili (${profiles.length})`}
+          </button>
+        ))}
+      </div>
+
       {/* Filters */}
-      <div className="px-4 py-3 bg-white border-b border-black/6 flex flex-wrap gap-2 sticky top-0 z-10 shadow-sm">
+      <div className={`px-4 py-3 bg-white border-b border-black/6 flex flex-wrap gap-2 sticky top-0 z-10 shadow-sm${tab !== 'ordini' ? ' hidden' : ''}`}>
         <input
           type="text" value={search} placeholder="🔍  Cerca cliente o email…"
           onChange={e => setSearch(e.target.value)}
@@ -155,7 +188,7 @@ export default function AdminPage() {
       </div>
 
       {/* Orders */}
-      <div className="p-4 space-y-3 max-w-2xl mx-auto pb-16">
+      <div className={`p-4 space-y-3 max-w-2xl mx-auto pb-16${tab !== 'ordini' ? ' hidden' : ''}`}>
         {loading && (
           <div className="text-center py-16">
             <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -238,6 +271,109 @@ export default function AdminPage() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Profiles tab */}
+      {tab === 'profili' && (
+        <div className="p-4 space-y-3 max-w-2xl mx-auto pb-16">
+          {profilesLoading && (
+            <div className="text-center py-16">
+              <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            </div>
+          )}
+          {!profilesLoading && profiles.length === 0 && (
+            <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun profilo ancora</p>
+          )}
+          {profiles.map((p) => {
+            const count = effectiveCount(p);
+            const tier = getTier(count);
+            const nextTier = tier ? TIERS.find(t => t.min === tier.nextMin) ?? null : TIERS[0];
+            const isEditing = editingEmail === p.email;
+            return (
+              <motion.div
+                key={p.email}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl border border-black/6 px-5 py-4 shadow-sm"
+              >
+                <div className="flex items-center gap-3">
+                  {p.avatar_url
+                    ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border border-black/8 shrink-0" />
+                    : <span className="w-10 h-10 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center shrink-0">{p.name?.[0]?.toUpperCase()}</span>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-sm text-[#1a0a10] truncate">{p.name}</p>
+                    <p className="text-[11px] text-black/35 truncate">{p.email}</p>
+                    <p className="text-[10px] text-black/25 mt-0.5">
+                      Prima visita: {new Date(p.first_seen).toLocaleDateString('it-IT')}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    {tier ? (
+                      <p className="text-[11px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
+                    ) : nextTier ? (
+                      <p className="text-[10px] text-black/25">→ {nextTier.name}</p>
+                    ) : null}
+                    <p className="text-xl font-bold text-[#1a0a10]">{count}</p>
+                    <p className="text-[9px] text-black/25 uppercase tracking-wide">ordini</p>
+                    {p.order_count_override !== null && (
+                      <p className="text-[9px] text-[#CF6990]">override</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Edit row */}
+                <div className="mt-3 pt-3 border-t border-black/6">
+                  {isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="0"
+                        value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        placeholder="Punteggio override…"
+                        className="flex-1 border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
+                        autoFocus
+                      />
+                      <button
+                        onClick={async () => {
+                          const val = editValue.trim() === '' ? null : parseInt(editValue, 10);
+                          await setProfileOverride(loggedUser!.access_token, p.email, val);
+                          setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: val } : x));
+                          setEditingEmail(null);
+                        }}
+                        className="px-3 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors"
+                      >
+                        Salva
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingEmail(null);
+                          if (p.order_count_override !== null) {
+                            setProfileOverride(loggedUser!.access_token, p.email, null).then(() =>
+                              setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: null } : x))
+                            );
+                          }
+                        }}
+                        className="px-3 py-2 border border-black/12 text-black/40 text-[10px] uppercase tracking-wider rounded-xl hover:border-red-300 hover:text-red-400 transition-colors"
+                      >
+                        {p.order_count_override !== null ? 'Reset' : 'Annulla'}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => { setEditingEmail(p.email); setEditValue(p.order_count_override?.toString() ?? ''); }}
+                      className="text-[10px] uppercase tracking-[0.2em] text-black/30 hover:text-[#CF6990] transition-colors"
+                    >
+                      ✏ Modifica punteggio
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
+

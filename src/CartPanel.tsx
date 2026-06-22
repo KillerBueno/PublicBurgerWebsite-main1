@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
+import { incrementOrderCount } from './lib/gamification';
 
 interface Props {
   items: CartItem[];
@@ -64,6 +65,7 @@ export default function CartPanel({ items, onRemove, onClose }: Props) {
     const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim());
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
+    incrementOrderCount();
 
     // Save order to Supabase
     const user = getStoredUser();

@@ -40,6 +40,10 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
       access_token: accessToken,
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    // Upsert profile in background (non-blocking)
+    import('./profiles').then(({ upsertProfile }) =>
+      upsertProfile({ email: user.email, name: user.name, avatar_url: user.avatar_url })
+    ).catch(() => {});
     return user;
   } catch {
     return null;

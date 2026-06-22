@@ -5,6 +5,7 @@ import type { CartItem, CartFry, CartExtra } from './cartTypes';
 import BurgerConfigurator from './BurgerConfigurator';
 import CartPanel from './CartPanel';
 import { getStoredUser, signOut, type PBUser } from './lib/supabase';
+import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,110 @@ function WordReveal({ text, className = '' }: { text: string; className?: string
   );
 }
 
+
+// ─── Order Counter (top-left iOS pill) ───────────────────────────────────────
+
+function OrderCounter({ hidden }: { hidden: boolean }) {
+  const [count, setCount] = useState(() => getOrderCount());
+  const [prevTier, setPrevTier] = useState<Tier | null>(() => getTier(getOrderCount()));
+  const [unlocked, setUnlocked] = useState(false);
+
+  useEffect(() => {
+    function onChanged() {
+      const newCount = getOrderCount();
+      const newTier = getTier(newCount);
+      const oldTier = getTier(count);
+      if (newTier?.name !== oldTier?.name && newTier) {
+        setUnlocked(true);
+        setTimeout(() => setUnlocked(false), 3000);
+      }
+      setCount(newCount);
+      setPrevTier(newTier);
+    }
+    window.addEventListener('pb-orders-changed', onChanged);
+    return () => window.removeEventListener('pb-orders-changed', onChanged);
+  }, [count]);
+
+  const tier = getTier(count);
+  const nextTier = tier ? TIERS.find(t => t.min === tier.nextMin) ?? null : TIERS[0];
+  const nextMin = tier?.nextMin ?? (TIERS[0]?.min ?? 5);
+  const prevMin = tier?.min ?? 0;
+  const progress = tier
+    ? tier.nextMin ? Math.min(1, (count - prevMin) / (tier.nextMin - prevMin)) : 1
+    : Math.min(1, count / nextMin);
+
+  void prevTier;
+
+  return (
+    <AnimatePresence>
+      {!hidden && (
+        <motion.div
+          key="order-counter"
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.25 }}
+          className="fixed top-4 left-4 z-30"
+        >
+          <AnimatePresence>
+            {unlocked && tier && (
+              <motion.div
+                key="tier-unlock"
+                initial={{ opacity: 0, y: -8, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -8, scale: 0.9 }}
+                transition={{ duration: 0.3 }}
+                className="absolute -top-10 left-0 whitespace-nowrap px-3 py-1.5 rounded-xl text-[11px] font-bold tracking-wide shadow-lg"
+                style={{ background: tier.color, color: '#1a0a10' }}
+              >
+                🎉 {tier.name} sbloccato!
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div
+            className="flex flex-col gap-1 px-3 py-2 rounded-2xl backdrop-blur-md shadow-lg"
+            style={{ background: 'rgba(26,10,16,0.75)', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {/* Number + tier label */}
+            <div className="flex items-center gap-2">
+              <motion.span
+                key={count}
+                initial={{ scale: 1.4, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+                className="text-white font-bold text-xl leading-none tabular-nums"
+              >
+                {count}
+              </motion.span>
+              <div>
+                <p className="text-white/35 text-[8px] uppercase tracking-[0.2em] leading-none">ordini</p>
+                {tier && (
+                  <p className="text-[10px] font-semibold leading-none mt-0.5" style={{ color: tier.color }}>
+                    {tier.name}
+                  </p>
+                )}
+                {!tier && nextTier && (
+                  <p className="text-white/25 text-[9px] leading-none mt-0.5">→ {nextTier.name} a {nextTier.min}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-[2px] rounded-full bg-white/10 overflow-hidden w-full min-w-[60px]">
+              <motion.div
+                className="h-full rounded-full"
+                animate={{ width: `${progress * 100}%` }}
+                transition={{ duration: 0.6, ease: 'easeOut' }}
+                style={{ background: tier ? tier.color : 'rgba(255,255,255,0.25)' }}
+              />
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 // ─── Cart FAB ─────────────────────────────────────────────────────────────────
 
@@ -821,6 +926,7 @@ export default function ShowcasePage() {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
+  const [orderCount, setOrderCount] = useState(() => getOrderCount());
   const [cart, setCart] = useState<CartItem[]>([]);
   const [configuringBurger, setConfiguringBurger] = useState<{ burger: BurgerDef; size?: import('./menuData').BurgerSize } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -835,6 +941,12 @@ export default function ShowcasePage() {
     const onScroll = () => setScrolled(window.scrollY > 400);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    const onOrders = () => setOrderCount(getOrderCount());
+    window.addEventListener('pb-orders-changed', onOrders);
+    return () => window.removeEventListener('pb-orders-changed', onOrders);
   }, []);
 
   function showToast(msg: string) {
@@ -885,6 +997,34 @@ export default function ShowcasePage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
+        @keyframes shimmer-bronze {
+          0%,100% { filter: drop-shadow(0 0 12px #cd7f32) sepia(0.7) saturate(2.5) hue-rotate(355deg) brightness(1); }
+          50% { filter: drop-shadow(0 0 24px #e8a050) sepia(0.9) saturate(3) hue-rotate(5deg) brightness(1.15); }
+        }
+        @keyframes shimmer-silver {
+          0%,100% { filter: drop-shadow(0 0 12px #b8c4cc) grayscale(0.15) brightness(1.3) contrast(1.05); }
+          50% { filter: drop-shadow(0 0 28px #dde8ee) grayscale(0) brightness(1.6) contrast(1.1); }
+        }
+        @keyframes shimmer-gold {
+          0%,100% { filter: drop-shadow(0 0 14px #ffd700) sepia(0.9) saturate(3.5) hue-rotate(3deg) brightness(1.1); }
+          50% { filter: drop-shadow(0 0 32px #ffe566) sepia(1) saturate(5) hue-rotate(8deg) brightness(1.25); }
+        }
+        @keyframes shimmer-platinum {
+          0%,100% { filter: drop-shadow(0 0 16px #94a3b8) brightness(1.4) saturate(0.4) hue-rotate(200deg); }
+          50% { filter: drop-shadow(0 0 36px #cbd5e1) brightness(1.8) saturate(0.6) hue-rotate(210deg); }
+        }
+        @keyframes shimmer-diamond {
+          0% { filter: drop-shadow(0 0 18px #a5f3fc) brightness(1.3) hue-rotate(180deg) saturate(1.5); }
+          25% { filter: drop-shadow(0 0 24px #f9a8d4) brightness(1.4) hue-rotate(270deg) saturate(2); }
+          50% { filter: drop-shadow(0 0 30px #fde68a) brightness(1.5) hue-rotate(60deg) saturate(2.5); }
+          75% { filter: drop-shadow(0 0 24px #6ee7b7) brightness(1.4) hue-rotate(135deg) saturate(2); }
+          100% { filter: drop-shadow(0 0 18px #a5f3fc) brightness(1.3) hue-rotate(180deg) saturate(1.5); }
+        }
+        .tier-bronze  { animation: shimmer-bronze  2.5s ease-in-out infinite; }
+        .tier-silver  { animation: shimmer-silver  2.5s ease-in-out infinite; }
+        .tier-gold    { animation: shimmer-gold    2s   ease-in-out infinite; }
+        .tier-platinum{ animation: shimmer-platinum 2s   ease-in-out infinite; }
+        .tier-diamond { animation: shimmer-diamond  3s   linear      infinite; }
       `}</style>
 
       <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
@@ -924,7 +1064,7 @@ export default function ShowcasePage() {
             <motion.img
               src="/logo-public-burger.png"
               alt="Public Burger"
-              className="w-52 md:w-72 drop-shadow-2xl pointer-events-none select-none"
+              className={`w-52 md:w-72 pointer-events-none select-none${getTier(orderCount) ? ' ' + getTier(orderCount)!.shimmerClass : ' drop-shadow-2xl'}`}
               style={{ scale: useTransform(scrollYProgress, [0, 0.45], [1, 0.55]) }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -1103,6 +1243,9 @@ export default function ShowcasePage() {
         </footer>
 
       </div>
+
+      {/* ── Order counter ── */}
+      <OrderCounter hidden={false} />
 
       {/* ── Sub nav ── */}
       <SubNav />
