@@ -11,64 +11,91 @@ const AdminPage   = lazy(() => import('./AdminPage'));
 const AUTH_KEY = 'pb_auth';
 
 const LOADING_MESSAGES = [
-  '🔥 Accendendo la griglia...',
-  '🍔 Formando i burger...',
-  '🧅 Friggendo gli onion rings...',
-  '🍟 Friggendo le patatine...',
-  '🥓 Croccantizzando il bacon...',
-  '🧀 Sciogliendo il cheddar...',
+  'ACCENDENDO\nLA GRIGLIA',
+  'FORMANDO\nI BURGER',
+  'FRIGGENDO\nLE PATATINE',
+  'CROCCANTIZZANDO\nIL BACON',
+  'SCIOGLIENDO\nIL CHEDDAR',
 ];
+
+const STEP_DURATION = 700; // ms per messaggio
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [msgIndex, setMsgIndex] = useState(0);
+  const [phase, setPhase] = useState<'in' | 'out'>('in'); // in=entra, out=esce
   const [visible, setVisible] = useState(true);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setMsgIndex((i) => {
-        if (i >= LOADING_MESSAGES.length - 1) {
-          clearInterval(intervalRef.current!);
-          setTimeout(() => {
-            onDone();           // avvia subito il logoTransition overlay
-            setVisible(false);  // poi svanisce lo splash
-          }, 600);
-          return i;
+    // Ogni messaggio: entra (300ms) → pausa (STEP_DURATION) → esce (200ms) → prossimo
+    let timeout: ReturnType<typeof setTimeout>;
+
+    if (phase === 'in') {
+      timeout = setTimeout(() => setPhase('out'), STEP_DURATION);
+    } else {
+      timeout = setTimeout(() => {
+        if (msgIndex >= LOADING_MESSAGES.length - 1) {
+          onDone();
+          setVisible(false);
+        } else {
+          setMsgIndex((i) => i + 1);
+          setPhase('in');
         }
-        return i + 1;
-      });
-    }, 520);
-    return () => clearInterval(intervalRef.current!);
-  }, []);
+      }, 250);
+    }
+    return () => clearTimeout(timeout);
+  }, [msgIndex, phase]);
+
+  const fromLeft = msgIndex % 2 === 0;
+  const lines = LOADING_MESSAGES[msgIndex].split('\n');
 
   return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        transition: 'opacity 0.4s ease',
-        opacity: visible ? 1 : 0,
-        pointerEvents: visible ? 'all' : 'none',
-      }}
-    >
-      <img src="/logo-public-burger.png" alt="Public Burger" style={{ height: 80, marginBottom: 40 }} />
-      <div style={{
-        fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)',
-        letterSpacing: '0.05em', textAlign: 'center',
-        minHeight: 24, transition: 'opacity 0.2s',
-      }}>
-        {LOADING_MESSAGES[msgIndex]}
-      </div>
-      <div style={{ marginTop: 28, display: 'flex', gap: 6 }}>
-        {LOADING_MESSAGES.map((_, i) => (
-          <div key={i} style={{
-            width: 5, height: 5, borderRadius: '50%',
-            background: i <= msgIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
-            transition: 'background 0.3s',
-          }} />
-        ))}
-      </div>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 9999,
+      background: '#1a0a10',
+      overflow: 'hidden',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      transition: 'opacity 0.3s ease',
+      opacity: visible ? 1 : 0,
+      pointerEvents: visible ? 'all' : 'none',
+    }}>
+      {/* Testo grande */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={msgIndex}
+          style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            padding: '0 6vw',
+            pointerEvents: 'none',
+          }}
+          initial={{ x: fromLeft ? '-100%' : '100%', opacity: 0 }}
+          animate={phase === 'in' ? { x: 0, opacity: 1 } : { x: fromLeft ? '100%' : '-100%', opacity: 0 }}
+          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {lines.map((line, i) => (
+            <div key={i} style={{
+              fontSize: 'clamp(2rem, 9vw, 7rem)',
+              fontWeight: 900,
+              color: 'white',
+              textTransform: 'uppercase',
+              letterSpacing: '-0.03em',
+              lineHeight: 0.9,
+              textAlign: 'center',
+              fontFamily: 'Inter, system-ui, sans-serif',
+            }}>
+              {line}
+            </div>
+          ))}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Logo fisso in basso */}
+      <img
+        src="/logo-public-burger.png"
+        alt="Public Burger"
+        style={{ position: 'absolute', bottom: 40, left: '50%', transform: 'translateX(-50%)', zIndex: 2, height: 48, opacity: 0.7 }}
+      />
     </div>
   );
 }
