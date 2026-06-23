@@ -281,7 +281,7 @@ function BurgerRow({ burger, index, onAdd }: {
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/40 hover:shadow-md transition-all duration-200"
+      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-all duration-300"
       onClick={() => onAdd(burger)}
     >
       {/* Name row */}
