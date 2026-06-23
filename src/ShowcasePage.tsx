@@ -276,9 +276,9 @@ function BurgerRow({ burger, index, onAdd }: {
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 14 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: Math.min(index * 0.04, 0.2), ease: [0.25, 0.46, 0.45, 0.94] }}
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.4, delay: Math.min(index * 0.03, 0.15), ease: 'easeOut' }}
       className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-all duration-300"
       onClick={() => onAdd(burger)}
     >
@@ -1325,14 +1325,14 @@ export default function ShowcasePage() {
             {FRIES.map((f, i) => {
               const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
               return (
-                <Reveal key={f.name} delay={i * 0.04}>
-                  <motion.button
-                    onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full text-left rounded-2xl border transition-all duration-200 mb-3 px-5 py-5 flex items-center justify-between ${
-                      fryQty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/5 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
-                    }`}
-                  >
+                <motion.button
+                  key={f.name}
+                  onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full text-left rounded-2xl border transition-all duration-200 mb-3 px-5 py-5 flex items-center justify-between ${
+                    fryQty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/5 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                  }`}
+                >
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <div className="text-xl md:text-2xl tracking-tight text-[#1a0a10] uppercase font-semibold leading-none">{f.name}</div>
@@ -1357,8 +1357,7 @@ export default function ShowcasePage() {
                         +
                       </div>
                     </div>
-                  </motion.button>
-                </Reveal>
+                </motion.button>
               );
             })}
           </div>
@@ -1375,14 +1374,14 @@ export default function ShowcasePage() {
             {SALSE_LIST.map((s, i) => {
               const qty = (cart.filter((ci) => ci.type === 'extra' && (ci as CartExtra).name === s) as CartExtra[]).reduce((acc, ci) => acc + ci.qty, 0);
               return (
-                <Reveal key={s} delay={i * 0.03}>
-                  <motion.button
-                    onClick={() => addExtra(s, 'salsa', 0.5)}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
-                      qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
-                    }`}
-                  >
+                <motion.button
+                  key={s}
+                  onClick={() => addExtra(s, 'salsa', 0.5)}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
+                    qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                  }`}
+                >
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{s}</span>
                       {qty > 0 && (
@@ -1403,8 +1402,7 @@ export default function ShowcasePage() {
                         </button>
                       )}
                     </div>
-                  </motion.button>
-                </Reveal>
+                </motion.button>
               );
             })}
           </div>
@@ -1431,14 +1429,14 @@ export default function ShowcasePage() {
             ].map(({ name: b, price: drinkPrice }, i) => {
               const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === b) as CartExtra[]).reduce((s, i) => s + i.qty, 0);
               return (
-                <Reveal key={b} delay={i * 0.03}>
-                  <motion.button
-                    onClick={() => addExtra(b, 'bibita', drinkPrice)}
-                    whileTap={{ scale: 0.98 }}
-                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
-                      qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
-                    }`}
-                  >
+                <motion.button
+                  key={b}
+                  onClick={() => addExtra(b, 'bibita', drinkPrice)}
+                  whileTap={{ scale: 0.98 }}
+                  className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
+                    qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                  }`}
+                >
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{b}</span>
                       {qty > 0 && (
@@ -1456,8 +1454,7 @@ export default function ShowcasePage() {
                         </button>
                       )}
                     </div>
-                  </motion.button>
-                </Reveal>
+                </motion.button>
               );
             })}
           </div>
