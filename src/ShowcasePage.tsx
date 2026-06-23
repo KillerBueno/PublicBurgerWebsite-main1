@@ -281,7 +281,8 @@ function BurgerRow({ burger, index, onAdd }: {
       initial={{ opacity: 0, y: 20 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
-      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3"
+      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/40 hover:shadow-md transition-all duration-200"
+      onClick={() => onAdd(burger)}
     >
       {/* Name row */}
       <div className="flex items-baseline justify-between gap-4 mb-2">
@@ -315,7 +316,7 @@ function BurgerRow({ burger, index, onAdd }: {
           {(['single', 'double', 'triple'] as const).map((s) => (
             <button
               key={s}
-              onClick={() => onAdd(burger, s)}
+              onClick={(e) => { e.stopPropagation(); onAdd(burger, s); }}
               className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
@@ -325,7 +326,7 @@ function BurgerRow({ burger, index, onAdd }: {
         </div>
       ) : (
         <button
-          onClick={() => onAdd(burger)}
+          onClick={(e) => { e.stopPropagation(); onAdd(burger); }}
           className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
         >
           Singolo
