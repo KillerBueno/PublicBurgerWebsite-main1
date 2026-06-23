@@ -13,6 +13,15 @@ interface Props {
 
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
 
+// Ingredienti non removibili (bun e carne)
+const NON_REMOVABLE = [
+  'Brioche bun',
+  'Hamburger di manzo',
+  'Spalla di maiale sfilacciata',
+  'Petto di pollo',
+  'Hamburger di pollo',
+];
+
 const STEP_LABELS: Record<Step, string> = {
   size: 'Grandezza', combo: 'Combo', remove: 'Rimuovi', extras: 'Aggiunte', drink: 'Bibita',
 };
@@ -53,6 +62,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
     let base = burger.prices ? burger.prices[size] : (burger.fixedPrice ?? 0);
     if (combo) base += burger.combo;
     if (drink) base += DRINKS.find((d) => d.name === drink)?.extra ?? 0;
+    base += extras.length; // €1 per ogni extra
     return base;
   }
 
@@ -184,7 +194,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                 <div>
                   <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-4">Tocca per rimuovere</p>
                   <div className="space-y-1.5">
-                    {burger.ingredients.map((ing) => {
+                    {burger.ingredients.filter((ing) => !NON_REMOVABLE.includes(ing)).map((ing) => {
                       const active = !removed.includes(ing);
                       return (
                         <button
@@ -212,9 +222,36 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
               {/* EXTRAS */}
               {currentStep === 'extras' && (
                 <div>
-                  <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-4">Tocca per aggiungere</p>
+                  <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-4">Tocca per aggiungere · +€1 cad.</p>
+                  {/* Doppia porzione ingredienti già nel panino */}
+                  {burger.ingredients.filter((ing) => !NON_REMOVABLE.includes(ing)).length > 0 && (
+                    <>
+                      <p className="text-[9px] tracking-[0.25em] uppercase text-black/20 mb-2">Doppia porzione</p>
+                      <div className="space-y-1.5 mb-4">
+                        {burger.ingredients.filter((ing) => !NON_REMOVABLE.includes(ing)).map((ing) => {
+                          const active = extras.includes(ing);
+                          return (
+                            <button
+                              key={`double-${ing}`}
+                              onClick={() => toggleExtra(ing)}
+                              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
+                                active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
+                              }`}
+                            >
+                              <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
+                                active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
+                              }`} />
+                              <span className={`text-sm flex-1 ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
+                              <span className="text-xs text-black/25">+€1</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9px] tracking-[0.25em] uppercase text-black/20 mb-2">Aggiunte extra</p>
+                    </>
+                  )}
                   <div className="space-y-1.5">
-                    {ALL_EXTRAS.filter((e) => !burger.ingredients.includes(e)).map((ing) => {
+                    {ALL_EXTRAS.filter((e) => !burger.ingredients.includes(e) && !NON_REMOVABLE.includes(e)).map((ing) => {
                       const active = extras.includes(ing);
                       return (
                         <button
@@ -227,7 +264,8 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                           <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
                             active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
                           }`} />
-                          <span className={`text-sm ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
+                          <span className={`text-sm flex-1 ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
+                          <span className="text-xs text-black/25">+€1</span>
                         </button>
                       );
                     })}
@@ -249,6 +287,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                           let base = burger.prices ? burger.prices[size] : (burger.fixedPrice ?? 0);
                           base += burger.combo;
                           base += drinkExtra;
+                          base += extras.length;
                           onConfirm({
                             id: crypto.randomUUID(), type: 'burger', burger,
                             size: burger.prices ? size : null,
