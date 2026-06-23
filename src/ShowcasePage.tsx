@@ -1777,10 +1777,11 @@ export default function ShowcasePage() {
                 <button onClick={() => setReorderDismissed(true)} className="text-white/25 hover:text-white/60 text-lg leading-none -mt-0.5 shrink-0">×</button>
               </div>
               <p className="text-[11px] text-white/45 mb-3 leading-snug">
-                {lastOrder.slice(0, 2).map(i =>
-                  i.type === 'burger' ? i.burger.name : i.type === 'fry' ? i.fry.name : i.name
-                ).join(', ')}
-                {lastOrder.length > 2 ? ` +${lastOrder.length - 2}` : ''}
+                {(() => {
+                  const first = lastOrder[0];
+                  const name = first.type === 'burger' ? first.burger.name : first.type === 'fry' ? first.fry.name : first.name;
+                  return lastOrder.length > 1 ? `${name} + altri ${lastOrder.length - 1}` : name;
+                })()}
               </p>
               <button
                 onClick={() => {
