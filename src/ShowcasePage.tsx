@@ -26,47 +26,45 @@ function Reveal({ children, delay = 0, className = '', y = 24 }: { children: Rea
 }
 
 function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(2000); // start hidden off-screen right
-  const dims = useRef({ from: 2000, to: -2000 });
+  const halfRef = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const halfWidth = useRef(0);
 
-  // Measure once fonts + layout settle
+  // Measure the width of one copy of the items
   useEffect(() => {
     function measure() {
-      const cw = wrapRef.current?.clientWidth ?? 400;
-      const iw = innerRef.current?.scrollWidth ?? 1000;
-      dims.current = { from: cw, to: -iw };
-      x.set(cw); // jump to start position (off-screen right, invisible)
+      halfWidth.current = halfRef.current?.scrollWidth ?? 600;
     }
-    const t = setTimeout(measure, 80);
+    const t = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => { clearTimeout(t); window.removeEventListener('resize', measure); };
   }, []);
 
-  // Drive animation manually — 90px/s, reset is instant (bar is black = invisible)
+  // Scroll left at 60px/s — when one full copy has passed, reset to 0 (seamless)
   useAnimationFrame((_, delta) => {
-    const current = x.get();
-    const next = current - (90 * delta) / 1000;
-    if (next <= dims.current.to) {
-      x.set(dims.current.from); // instant reset off-screen right
+    const next = x.get() - (60 * delta) / 1000;
+    if (halfWidth.current > 0 && next <= -halfWidth.current) {
+      x.set(next + halfWidth.current);
     } else {
       x.set(next);
     }
   });
 
+  // Render items twice side by side for seamless loop
+  const row = items.map((t, i) => (
+    <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
+      {t} <span className="opacity-20 mx-2">·</span>
+    </span>
+  ));
+
   return (
-    <div ref={wrapRef} className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
+    <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
       <motion.div
-        ref={innerRef}
         className="flex whitespace-nowrap will-change-transform"
         style={{ x }}
       >
-        {items.map((t, i) => (
-          <span key={i} className={`text-[10px] tracking-[0.3em] uppercase font-semibold shrink-0 px-5 ${text}`}>
-            {t} <span className="opacity-20 mx-2">·</span>
-          </span>
-        ))}
+        <div ref={halfRef} className="flex shrink-0">{row}</div>
+        <div className="flex shrink-0">{row}</div>
       </motion.div>
     </div>
   );
