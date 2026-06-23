@@ -89,9 +89,18 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
         className="relative w-full md:max-w-md bg-white flex flex-col max-h-[92vh] shadow-2xl rounded-t-3xl md:rounded-3xl overflow-hidden"
         initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        drag="y"
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_e, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose(); }}
       >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0 md:hidden">
+          <div className="w-10 h-1 rounded-full bg-black/15" />
+        </div>
+
         {/* Header */}
-        <div className="px-7 pt-6 pb-5 border-b border-black/6 shrink-0">
+        <div className="px-7 pt-4 pb-5 border-b border-black/6 shrink-0">
           <div className="flex items-start justify-between mb-5">
             <div>
               <p className="text-[9px] tracking-[0.35em] uppercase text-[#CF6990] font-medium mb-1">
