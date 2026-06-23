@@ -19,62 +19,39 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
   const SIZE: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
 
-  const burgers = items.filter(i => i.type === 'burger');
-  const fries   = items.filter(i => i.type === 'fry');
-  const extras  = items.filter(i => i.type === 'extra');
-
   const lines: string[] = [];
+  lines.push('Ciao! Ordine Public Burger:');
+  lines.push('');
 
-  lines.push(`*ORDINE - PUBLIC BURGER*`);
-  lines.push(`--------------------`);
-
-  if (burgers.length) {
-    lines.push(`*BURGER*`);
-    for (const item of burgers) {
-      if (item.type !== 'burger') continue;
+  let n = 1;
+  for (const item of items) {
+    if (item.type === 'burger') {
       const size = item.size ? ` (${SIZE[item.size] ?? item.size})` : '';
-      const comboTag = item.combo ? ` [COMBO]` : '';
-      lines.push(`1x ${item.burger.name}${size}${comboTag}  -  EUR ${item.totalPrice.toFixed(2)}`);
-      if (item.combo && item.drink)
-        lines.push(`   Bibita: ${item.drink}${item.drinkExtra > 0 ? ` (+EUR ${item.drinkExtra.toFixed(2)})` : ''}`);
+      const combo = item.combo ? ' [COMBO]' : '';
+      lines.push(`${n++}. ${item.burger.name}${size}${combo} - EUR ${item.totalPrice.toFixed(2)}`);
+      if (item.combo && item.drink) lines.push(`   Bibita: ${item.drink}`);
       for (const r of item.removed) lines.push(`   - ${r}`);
       for (const e of item.extras)  lines.push(`   + ${e}`);
+    } else if (item.type === 'fry') {
+      lines.push(`${n++}. ${item.fry.name} x${item.qty} - EUR ${item.totalPrice.toFixed(2)}`);
+    } else if (item.type === 'extra') {
+      lines.push(`${n++}. ${item.name} x${item.qty} - EUR ${item.totalPrice.toFixed(2)}`);
     }
   }
 
-  if (fries.length) {
-    if (burgers.length) lines.push(``);
-    lines.push(`*FRIES / ANTIPASTI*`);
-    for (const item of fries) {
-      if (item.type !== 'fry') continue;
-      lines.push(`${item.qty}x ${item.fry.name}  -  EUR ${item.totalPrice.toFixed(2)}`);
-    }
-  }
-
-  if (extras.length) {
-    if (burgers.length || fries.length) lines.push(``);
-    lines.push(`*EXTRA*`);
-    for (const item of extras) {
-      if (item.type !== 'extra') continue;
-      lines.push(`${item.qty}x ${item.name}  -  EUR ${item.totalPrice.toFixed(2)}`);
-    }
-  }
-
-  lines.push(`--------------------`);
-  lines.push(`*TOTALE: EUR ${total.toFixed(2)}*`);
-  lines.push(``);
+  lines.push('');
+  lines.push(`Totale: EUR ${total.toFixed(2)}`);
+  lines.push('');
 
   if (orderType === 'asporto') {
-    lines.push(`*Asporto*`);
+    lines.push('Asporto');
     if (name) lines.push(`Nome: ${name}`);
-    if (time) lines.push(`Orario: ${time}`);
   } else {
-    lines.push(`*Consegna a domicilio*`);
-    if (time) lines.push(`Orario: ${time}`);
+    lines.push('Consegna a domicilio');
   }
-
-  lines.push(``);
-  lines.push(`Grazie mille!`);
+  if (time) lines.push(`Orario: ${time}`);
+  lines.push('');
+  lines.push('Grazie!');
 
   return lines.join('\n');
 }
