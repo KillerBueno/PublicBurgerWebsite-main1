@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order, type StatusEntry } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
@@ -604,10 +604,10 @@ export default function AdminPage() {
   const [editValue, setEditValue] = useState('');
   const [newOrderCount, setNewOrderCount] = useState(0);
   const lastOrderId = useRef<string | null>(null);
+  const tokenRef = useRef<string | null>(loggedUser?.access_token ?? null);
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [savingAdmins, setSavingAdmins] = useState(false);
   const [notifPerm, setNotifPerm] = useState<NotificationPermission>('default');
-  // Per note admin inline
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteValue, setNoteValue] = useState('');
   const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
@@ -616,13 +616,14 @@ export default function AdminPage() {
     if ('Notification' in window) setNotifPerm(Notification.permission);
   }, []);
 
-  const loadData = useCallback(async () => {
-    if (!loggedUser) return;
+  const loadData = async () => {
+    const token = tokenRef.current;
+    if (!token) return;
     setLoading(true);
     try {
       const [ordersData, profilesData] = await Promise.all([
-        fetchOrders(loggedUser.access_token),
-        fetchProfiles(loggedUser.access_token),
+        fetchOrders(token),
+        fetchProfiles(token),
       ]);
       setOrders(ordersData);
       if (lastOrderId.current && ordersData[0]?.id !== lastOrderId.current) {
@@ -636,14 +637,14 @@ export default function AdminPage() {
       setProfilesLoading(false);
     } catch { setErr('Errore nel caricamento dati'); }
     setLoading(false);
-  }, [loggedUser]);
+  };
 
   useEffect(() => {
     if (!isAdmin || !adminEmailsLoaded) return;
     loadData();
     const interval = setInterval(loadData, 60000);
     return () => clearInterval(interval);
-  }, [isAdmin, adminEmailsLoaded, loadData]);
+  }, [isAdmin, adminEmailsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => orders.filter(o => {
     const matchSearch = !search || o.customer_name.toLowerCase().includes(search.toLowerCase()) || (o.user_email ?? '').toLowerCase().includes(search.toLowerCase());
