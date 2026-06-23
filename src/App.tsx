@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import ShowcasePage from './ShowcasePage';
 import { handleAuthCallback } from './lib/supabase';
 
@@ -86,9 +87,13 @@ export default function App() {
   const [pass, setPass] = useState('');
   const [error, setError] = useState(false);
 
+  const [logoTransition, setLogoTransition] = useState(false);
+
   function handleSplashDone() {
     sessionStorage.setItem('pb_splash_done', '1');
     setSplash(false);
+    setLogoTransition(true);
+    setTimeout(() => setLogoTransition(false), 1000);
   }
 
   useEffect(() => {
@@ -149,6 +154,31 @@ export default function App() {
   return (
     <>
       {splash && <SplashScreen onDone={handleSplashDone} />}
+      <AnimatePresence>
+        {logoTransition && (
+          <motion.div
+            key="logo-transition"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9998,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              pointerEvents: 'none',
+              background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
+            }}
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <motion.img
+              src="/logo-public-burger.png"
+              alt=""
+              initial={{ scale: 1, x: 0, y: 0 }}
+              animate={{ scale: 0.12, x: '-42vw', y: '-44vh' }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              style={{ width: 280 }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <ShowcasePage />
     </>
   );
