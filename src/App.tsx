@@ -74,11 +74,11 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
           {lines.map((line, i) => (
             <div key={i} style={{
               fontSize: 'clamp(2rem, 9vw, 7rem)',
-              fontWeight: 900,
-              color: 'white',
+              fontWeight: 800,
+              color: i === 0 ? '#CF6990' : 'white',
               textTransform: 'uppercase',
-              letterSpacing: '-0.03em',
-              lineHeight: 0.9,
+              letterSpacing: '-0.02em',
+              lineHeight: 0.95,
               textAlign: 'center',
               fontFamily: 'Inter, system-ui, sans-serif',
             }}>

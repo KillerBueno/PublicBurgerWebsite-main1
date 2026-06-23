@@ -872,21 +872,60 @@ export default function AdminPage() {
                             </div>
                           )}
 
-                          {/* Items */}
-                          <div className="space-y-2">
-                            {order.items.map((item, i) => (
-                              <div key={i} className="flex items-start justify-between gap-2">
-                                <div className="flex-1">
-                                  <span className="text-sm font-medium text-[#1a0a10]">{item.name}</span>
-                                  {item.size && <span className="text-[11px] text-black/40 ml-1.5">({item.size})</span>}
-                                  {item.qty && item.qty > 1 && <span className="text-[11px] text-black/40 ml-1.5">×{item.qty}</span>}
-                                  {item.removed?.length ? <p className="text-[11px] text-black/40 mt-0.5">Senza: {item.removed.join(', ')}</p> : null}
-                                  {item.extras?.length ? <p className="text-[11px] text-[#CF6990] mt-0.5">+ {item.extras.join(', ')}</p> : null}
-                                </div>
-                                <span className="text-sm font-semibold text-[#1a0a10] shrink-0">€{item.price.toFixed(2)}</span>
+                          {/* Items — raggruppati per categoria */}
+                          {(() => {
+                            const burgerNames = new Set(BURGERS.map(b => b.name));
+                            const friesNames  = new Set(FRIES.map(f => f.name));
+                            const categories: { label: string; items: typeof order.items }[] = [];
+                            const byLabel: Record<string, typeof order.items> = {};
+                            for (const item of order.items) {
+                              const cat = burgerNames.has(item.name) ? 'Burger' : friesNames.has(item.name) ? 'Fries / Antipasti' : 'Extra';
+                              if (!byLabel[cat]) { byLabel[cat] = []; categories.push({ label: cat, items: byLabel[cat] }); }
+                              byLabel[cat].push(item);
+                            }
+                            const sizeLabel: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
+                            return (
+                              <div className="space-y-3">
+                                {categories.map(({ label, items }) => (
+                                  <div key={label}>
+                                    <p className="text-[9px] uppercase tracking-[0.25em] text-[#CF6990] font-bold mb-1.5">{label}</p>
+                                    <div className="space-y-2">
+                                      {items.map((item, i) => (
+                                        <div key={i} className="bg-white rounded-xl border border-black/6 px-3 py-2.5">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-baseline gap-1.5 flex-wrap">
+                                                <span className="text-[10px] font-bold text-black/30">{item.qty ?? 1}×</span>
+                                                <span className="text-sm font-semibold text-[#1a0a10]">{item.name}</span>
+                                                {item.size && (
+                                                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-black/5 text-black/40 font-semibold">
+                                                    {sizeLabel[item.size] ?? item.size}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              {item.removed?.map((r, ri) => (
+                                                <div key={ri} className="flex items-center gap-1 mt-1">
+                                                  <span className="text-[11px] font-bold text-black/30">−</span>
+                                                  <span className="text-[11px] text-black/40">{r}</span>
+                                                </div>
+                                              ))}
+                                              {item.extras?.map((e, ei) => (
+                                                <div key={ei} className="flex items-center gap-1 mt-1">
+                                                  <span className="text-[11px] font-bold text-[#CF6990]">+</span>
+                                                  <span className="text-[11px] text-[#CF6990]">{e}</span>
+                                                </div>
+                                              ))}
+                                            </div>
+                                            <span className="text-sm font-bold text-[#1a0a10] shrink-0 tabular-nums">€{item.price.toFixed(2)}</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
-                          </div>
+                            );
+                          })()}
 
                           {order.notes && <p className="text-[11px] text-black/40 pt-2 border-t border-black/6 italic">⏱ {order.notes}</p>}
                           <div className="flex items-center justify-between pt-2 border-t border-black/10">
