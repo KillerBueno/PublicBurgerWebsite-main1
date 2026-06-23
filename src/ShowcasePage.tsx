@@ -10,17 +10,21 @@ import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
-      transition={{ duration: 0.5, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
-      className={className}
-    >
-      {children}
-    </motion.div>
-  );
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.style.animationDelay = `${delay}s`;
+        el.classList.add('pb-visible');
+        obs.disconnect();
+      }
+    }, { threshold: 0.05 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [delay]);
+  return <div ref={ref} className={`pb-reveal ${className}`}>{children}</div>;
 }
 
 function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
@@ -268,13 +272,25 @@ function BurgerRow({ burger, index, onAdd }: {
   index: number;
   onAdd: (b: BurgerDef, size?: import('./menuData').BurgerSize) => void;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        el.style.animationDelay = `${Math.min(index * 0.03, 0.12)}s`;
+        el.classList.add('pb-visible');
+        obs.disconnect();
+      }
+    }, { threshold: 0.05 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [index]);
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '0px' }}
-      transition={{ duration: 0.45, delay: Math.min(index * 0.03, 0.15), ease: [0.25, 0.46, 0.45, 0.94] }}
-      className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-all duration-300"
+    <div
+      ref={ref}
+      className="pb-reveal bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-colors duration-300"
       onClick={() => onAdd(burger)}
     >
       {/* Name row */}
@@ -331,7 +347,7 @@ function BurgerRow({ burger, index, onAdd }: {
           <span className="ml-2 text-black/30">€{burger.fixedPrice}</span>
         </button>
       )}
-    </motion.div>
+    </div>
   );
 }
 
@@ -932,53 +948,19 @@ function AnchorNav() {
 function FornitoriSection() {
   return (
     <div className="py-10 px-6 flex flex-col items-center gap-5">
-      <motion.p
-        className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '0px' }}
-        transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
+      <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">
         Materie prime di qualità
-      </motion.p>
-      <motion.p
-        className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug"
-        initial={{ opacity: 0, y: 10 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: '0px' }}
-        transition={{ duration: 0.5, delay: 0.08, ease: [0.25, 0.46, 0.45, 0.94] }}
-      >
+      </p>
+      <p className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug">
         Scegliamo con cura i nostri fornitori per portarti ingredienti freschi e selezionati, ogni giorno.
-      </motion.p>
-      <motion.p
-        className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: '0px' }}
-        transition={{ duration: 0.4, delay: 0.14 }}
-      >
+      </p>
+      <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">
         I nostri fornitori
-      </motion.p>
+      </p>
       <div className="flex flex-wrap items-center justify-center gap-10">
-        <motion.img
-          src="/logo-non-solo-pane.jpg"
-          alt="Non Solo Pane"
-          className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 0.5, scale: 1 }}
-          viewport={{ once: true, margin: '0px' }}
-          transition={{ duration: 0.5, delay: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-        />
+        <img src="/logo-non-solo-pane.jpg" alt="Non Solo Pane" className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
         <div className="w-px h-10 bg-black/8" />
-        <motion.img
-          src="/logo-macelleria.png"
-          alt="Macelleria Franco Capobianco"
-          className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-          initial={{ opacity: 0, scale: 0.9 }}
-          whileInView={{ opacity: 0.5, scale: 1 }}
-          viewport={{ once: true, margin: '0px' }}
-          transition={{ duration: 0.5, delay: 0.28, ease: [0.25, 0.46, 0.45, 0.94] }}
-        />
+        <img src="/logo-macelleria.png" alt="Macelleria Franco Capobianco" className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
       </div>
     </div>
   );
@@ -1136,6 +1118,12 @@ export default function ShowcasePage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
+        @keyframes pbFadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .pb-reveal { opacity: 0; }
+        .pb-visible { animation: pbFadeUp 0.45s ease-out forwards; }
         @keyframes shimmer-bronze {
           0%   { filter: sepia(1) hue-rotate(340deg) saturate(3) brightness(0.9) drop-shadow(0 0 10px #cd7f32); }
           30%  { filter: sepia(1) hue-rotate(340deg) saturate(5) brightness(1.3) drop-shadow(0 0 30px #e8a050) contrast(1.2); }
