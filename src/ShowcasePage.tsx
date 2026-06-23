@@ -1065,7 +1065,7 @@ export default function ShowcasePage() {
       <AnimatePresence>
         {smashPopup && (
           <motion.div
-            className="fixed inset-0 z-[100] flex items-end md:items-center justify-center"
+            className="fixed inset-0 z-[100] flex items-center justify-center"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           >
             {/* Overlay */}
@@ -1083,8 +1083,8 @@ export default function ShowcasePage() {
               {/* Header band */}
               <div className="px-7 pt-8 pb-6 text-center" style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)' }}>
                 <p className="text-[10px] tracking-[0.4em] uppercase text-[#CF6990] font-bold mb-2">Ogni lunedì</p>
-                <h2 className="text-[42px] font-black uppercase leading-none tracking-tight text-white">SMASH</h2>
                 <h2 className="text-[42px] font-black uppercase leading-none tracking-tight" style={{ color: '#CF6990' }}>MONDAY</h2>
+                <h2 className="text-[42px] font-black uppercase leading-none tracking-tight text-white">SMASH</h2>
                 <p className="text-[12px] text-white/40 mt-3 font-medium leading-relaxed">
                   Il lunedì il menu cambia tutto.<br />Solo carne smashata, solo questi tre.
                 </p>
