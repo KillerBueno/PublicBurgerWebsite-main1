@@ -9,15 +9,15 @@ import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function Reveal({ children, delay = 0, className = '', y = 24 }: { children: React.ReactNode; delay?: number; className?: string; y?: number }) {
+function Reveal({ children, delay = 0, className = '', y = 14 }: { children: React.ReactNode; delay?: number; className?: string; y?: number }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const inView = useInView(ref, { once: true, margin: '0px' });
   return (
     <motion.div
       ref={ref}
       initial={{ opacity: 0, y }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.8, delay, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.55, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
       className={className}
     >
       {children}
@@ -74,7 +74,7 @@ function Ticker({ bg, text, items }: { bg: string; text: string; items: string[]
 
 function WordReveal({ text, className = '' }: { text: string; className?: string }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const inView = useInView(ref, { once: true, margin: '0px' });
   const words = text.split(' ');
   return (
     <p ref={ref} className={className}>
@@ -271,14 +271,14 @@ function BurgerRow({ burger, index, onAdd }: {
   onAdd: (b: BurgerDef, size?: import('./menuData').BurgerSize) => void;
 }) {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-40px' });
+  const inView = useInView(ref, { once: true, margin: '0px' });
 
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.6, delay: index * 0.07, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.5, delay: Math.min(index * 0.04, 0.2), ease: [0.25, 0.46, 0.45, 0.94] }}
       className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-all duration-300"
       onClick={() => onAdd(burger)}
     >
@@ -936,7 +936,7 @@ function AnchorNav() {
 
 function FornitoriSection() {
   const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
+  const inView = useInView(ref, { once: true, margin: '0px' });
 
   return (
     <div ref={ref} className="py-10 px-6 flex flex-col items-center gap-5">
@@ -1325,7 +1325,7 @@ export default function ShowcasePage() {
             {FRIES.map((f, i) => {
               const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
               return (
-                <Reveal key={f.name} delay={i * 0.07}>
+                <Reveal key={f.name} delay={i * 0.04}>
                   <motion.button
                     onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
                     whileTap={{ scale: 0.98 }}
@@ -1375,7 +1375,7 @@ export default function ShowcasePage() {
             {SALSE_LIST.map((s, i) => {
               const qty = (cart.filter((ci) => ci.type === 'extra' && (ci as CartExtra).name === s) as CartExtra[]).reduce((acc, ci) => acc + ci.qty, 0);
               return (
-                <Reveal key={s} delay={i * 0.05}>
+                <Reveal key={s} delay={i * 0.03}>
                   <motion.button
                     onClick={() => addExtra(s, 'salsa', 0.5)}
                     whileTap={{ scale: 0.98 }}
@@ -1431,7 +1431,7 @@ export default function ShowcasePage() {
             ].map(({ name: b, price: drinkPrice }, i) => {
               const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === b) as CartExtra[]).reduce((s, i) => s + i.qty, 0);
               return (
-                <Reveal key={b} delay={i * 0.04}>
+                <Reveal key={b} delay={i * 0.03}>
                   <motion.button
                     onClick={() => addExtra(b, 'bibita', drinkPrice)}
                     whileTap={{ scale: 0.98 }}
