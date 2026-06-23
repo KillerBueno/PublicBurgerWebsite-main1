@@ -1075,8 +1075,8 @@ export default function ShowcasePage() {
             />
             {/* Card */}
             <motion.div
-              className="relative w-full md:max-w-md mx-4 md:mx-auto overflow-hidden rounded-t-3xl md:rounded-3xl shadow-2xl"
-              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              className="relative w-[92%] max-w-md mx-auto overflow-hidden rounded-3xl shadow-2xl"
+              initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
               transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
               style={{ background: '#1a0a10' }}
             >
