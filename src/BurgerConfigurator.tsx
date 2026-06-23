@@ -16,10 +16,14 @@ type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
 // Ingredienti non removibili (bun e carne)
 const NON_REMOVABLE = [
   'Brioche bun',
+  'Bun classico',
+  'Piadina',
   'Hamburger di manzo',
+  'Hamburger vegetale',
   'Spalla di maiale sfilacciata',
   'Petto di pollo',
   'Hamburger di pollo',
+  'Cotoletta di pollo croccante',
 ];
 
 const STEP_LABELS: Record<Step, string> = {
