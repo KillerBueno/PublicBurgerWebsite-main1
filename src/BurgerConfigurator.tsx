@@ -352,9 +352,10 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
           {isLast ? (
             <button
               onClick={handleConfirm}
-              className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300"
+              disabled={currentStep === 'drink' && !drink}
+              className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              Aggiungi
+              {currentStep === 'drink' && !drink ? 'Scegli bibita' : 'Aggiungi'}
             </button>
           ) : isMultiSelect ? (
             <button onClick={goNext} className="w-10 h-10 flex items-center justify-center bg-black/10 hover:bg-[#CF6990] text-black/70 hover:text-white transition-all duration-200 rounded-full text-xl font-black">
