@@ -1185,7 +1185,6 @@ export default function ShowcasePage() {
                   alt="Non Solo Pane"
                   className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
                 />
-                <span className="text-[9px] tracking-[0.25em] uppercase text-black/25 font-medium">Fornitore bun</span>
               </div>
             </div>
           </div>
