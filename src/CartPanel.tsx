@@ -9,6 +9,7 @@ interface Props {
   items: CartItem[];
   onRemove: (id: string) => void;
   onClose: () => void;
+  onOrderSent?: (items: CartItem[]) => void;
 }
 
 type OrderType = 'asporto' | 'consegna';
@@ -137,7 +138,7 @@ function ItemCard({ item, onRemove }: { item: CartItem; onRemove: () => void }) 
   );
 }
 
-export default function CartPanel({ items, onRemove, onClose }: Props) {
+export default function CartPanel({ items, onRemove, onClose, onOrderSent }: Props) {
   const [orderType, setOrderType] = useState<OrderType>('asporto');
   const [name, setName] = useState('');
   const [time, setTime] = useState('');
@@ -150,6 +151,7 @@ export default function CartPanel({ items, onRemove, onClose }: Props) {
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     incrementOrderCount();
+    onOrderSent?.(items);
 
     saveOrder({
       customer_name: name.trim() || user.name || 'Anonimo',

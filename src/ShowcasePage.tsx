@@ -978,7 +978,48 @@ export default function ShowcasePage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
   const [orderCount, setOrderCount] = useState(() => getOrderCount());
-  const [cart, setCart] = useState<CartItem[]>([]);
+
+  // Restore cart from localStorage, reconstructing burger/fry refs from menuData
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem('pb_cart');
+      if (!raw) return [];
+      const saved = JSON.parse(raw) as CartItem[];
+      return saved.map(item => {
+        if (item.type === 'burger') {
+          const burger = BURGERS.find(b => b.name === item.burger.name);
+          return burger ? { ...item, burger } : null;
+        }
+        if (item.type === 'fry') {
+          const fry = FRIES.find(f => f.name === item.fry.name);
+          return fry ? { ...item, fry } : null;
+        }
+        return item;
+      }).filter(Boolean) as CartItem[];
+    } catch { return []; }
+  });
+
+  // Last order for fast reorder — items saved after WhatsApp send
+  const [lastOrder, setLastOrder] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem('pb_last_order');
+      if (!raw) return [];
+      const saved = JSON.parse(raw) as CartItem[];
+      return saved.map(item => {
+        if (item.type === 'burger') {
+          const burger = BURGERS.find(b => b.name === item.burger.name);
+          return burger ? { ...item, burger } : null;
+        }
+        if (item.type === 'fry') {
+          const fry = FRIES.find(f => f.name === item.fry.name);
+          return fry ? { ...item, fry } : null;
+        }
+        return item;
+      }).filter(Boolean) as CartItem[];
+    } catch { return []; }
+  });
+  const [reorderDismissed, setReorderDismissed] = useState(false);
+
   const [configuringBurger, setConfiguringBurger] = useState<{ burger: BurgerDef; size?: import('./menuData').BurgerSize } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
@@ -999,6 +1040,11 @@ export default function ShowcasePage() {
   const [priceOverrides, setPriceOverrides] = useState<PriceOverrides>({});
   const [openingHours, setOpeningHours] = useState<OpeningHours | null>(null);
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
+
+  // Persist cart to localStorage on every change
+  useEffect(() => {
+    try { localStorage.setItem('pb_cart', JSON.stringify(cart)); } catch {}
+  }, [cart]);
 
   useEffect(() => {
     fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? []));
@@ -1674,6 +1720,13 @@ export default function ShowcasePage() {
             items={cart}
             onRemove={removeItem}
             onClose={() => setCartOpen(false)}
+            onOrderSent={(sentItems) => {
+              try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
+              setLastOrder(sentItems);
+              setReorderDismissed(false);
+              setCart([]);
+              localStorage.removeItem('pb_cart');
+            }}
           />
         )}
       </AnimatePresence>
@@ -1706,6 +1759,43 @@ export default function ShowcasePage() {
       {/* Toast notification */}
       <AnimatePresence>
         {toast && <Toast key={toast + Date.now()} message={`${toast} aggiunto`} />}
+      </AnimatePresence>
+
+      {/* Fast reorder bubble */}
+      <AnimatePresence>
+        {lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && pageUser && (
+          <motion.div
+            initial={{ x: '110%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '110%' }}
+            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
+            className="fixed bottom-24 right-4 z-50 max-w-[260px]"
+          >
+            <div className="bg-[#1a0a10] text-white rounded-2xl shadow-2xl px-4 py-3">
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Riordina l'ultima volta</p>
+                <button onClick={() => setReorderDismissed(true)} className="text-white/25 hover:text-white/60 text-lg leading-none -mt-0.5">×</button>
+              </div>
+              <p className="text-[12px] text-white/70 mb-3 leading-snug">
+                {lastOrder.slice(0, 2).map(i =>
+                  i.type === 'burger' ? i.burger.name : i.type === 'fry' ? i.fry.name : i.name
+                ).join(', ')}
+                {lastOrder.length > 2 ? ` +${lastOrder.length - 2}` : ''}
+              </p>
+              <button
+                onClick={() => {
+                  const fresh = lastOrder.map(i => ({ ...i, id: crypto.randomUUID() }));
+                  setCart(fresh);
+                  setReorderDismissed(true);
+                  setCartOpen(true);
+                }}
+                className="w-full py-2 bg-[#CF6990] text-white text-[10px] uppercase tracking-[0.2em] font-semibold rounded-xl hover:bg-[#a8456b] transition-colors"
+              >
+                Aggiungi al carrello
+              </button>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Login required modal */}
