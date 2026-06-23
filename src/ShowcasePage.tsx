@@ -6,6 +6,7 @@ import BurgerConfigurator from './BurgerConfigurator';
 import CartPanel from './CartPanel';
 import { getStoredUser, signOut, type PBUser } from './lib/supabase';
 import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
+import { fetchSetting, type MondaySmashConfig } from './lib/settings';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -985,7 +986,19 @@ export default function ShowcasePage() {
   const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [smashPopup, setSmashPopup] = useState(() => sessionStorage.getItem('pb_smash_seen') !== '1');
+  const [smashPopup, setSmashPopup] = useState(false);
+  const [disabledProducts, setDisabledProducts] = useState<string[]>([]);
+  const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
+
+  useEffect(() => {
+    fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? []));
+    fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
+      if (v) {
+        setSmashConfig(v);
+        if (v.active && sessionStorage.getItem('pb_smash_seen') !== '1') setSmashPopup(true);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 400);
@@ -1095,11 +1108,11 @@ export default function ShowcasePage() {
 
               {/* Burgers */}
               <div className="px-7 py-5 space-y-3">
-                {[
+                {(smashConfig?.burgers ?? [
                   { name: 'Oklahoma', desc: 'Cipolla grigliata, Cheddar, Bacon, Pickles, Salsa public', price: 'da €9' },
                   { name: 'Jalapeño Popper', desc: 'Jalapeño, Cheddar, Insalata, Creamy spicy sauce', price: 'da €9' },
                   { name: 'Cheeseburger', desc: 'Cheddar, Pickles, Ketchup', price: 'da €8' },
-                ].map((b) => (
+                ]).map((b) => (
                   <div key={b.name} className="flex items-center justify-between gap-4 py-2 border-b border-white/6 last:border-0">
                     <div>
                       <p className="text-[14px] font-bold text-white uppercase tracking-wide">{b.name}</p>
@@ -1290,6 +1303,7 @@ export default function ShowcasePage() {
           </Reveal>
 
           {BURGERS.filter((b) => {
+            if (disabledProducts.includes(b.name)) return false;
             if (burgerFilter === 'veggie') return b.tag === 'Veggie';
             if (burgerFilter === 'spicy') return b.spicy;
             if (burgerFilter === 'chicken') return b.tag === 'Chicken' || b.tag === 'Wrap';
@@ -1308,7 +1322,7 @@ export default function ShowcasePage() {
                 <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
               </div>
             </Reveal>
-            {FRIES.map((f, i) => {
+            {FRIES.filter(f => !disabledProducts.includes(f.name)).map((f, i) => {
               const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
               return (
                 <motion.button

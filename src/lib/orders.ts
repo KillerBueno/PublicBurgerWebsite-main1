@@ -45,6 +45,45 @@ export async function saveOrder(order: Omit<Order, 'id' | 'created_at'>) {
   }
 }
 
+export async function updateOrderStatus(adminToken: string, orderId: string, status: string): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${adminToken}`,
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
+}
+
+export function exportOrdersCSV(orders: Order[]) {
+  const fmt = (d: string) => new Date(d).toLocaleString('it-IT');
+  const header = ['Data', 'Cliente', 'Email', 'Tipo', 'Articoli', 'Totale (€)', 'Stato', 'Note'];
+  const rows = orders.map(o => [
+    fmt(o.created_at),
+    o.customer_name,
+    o.user_email ?? '',
+    o.order_type,
+    o.items.map(i => `${i.name}${i.size ? ` (${i.size})` : ''}${i.qty && i.qty > 1 ? ` x${i.qty}` : ''}`).join(' | '),
+    o.total.toFixed(2),
+    (o as Order & { status?: string }).status ?? 'nuovo',
+    o.notes ?? '',
+  ]);
+  const csv = [header, ...rows]
+    .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `ordini-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function fetchOrders(adminToken: string): Promise<Order[]> {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=500`,
