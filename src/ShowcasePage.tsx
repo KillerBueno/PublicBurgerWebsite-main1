@@ -998,33 +998,47 @@ export default function ShowcasePage() {
         * { font-family: 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
         @keyframes shimmer-bronze {
-          0%,100% { filter: drop-shadow(0 0 12px #cd7f32) sepia(0.7) saturate(2.5) hue-rotate(355deg) brightness(1); }
-          50% { filter: drop-shadow(0 0 24px #e8a050) sepia(0.9) saturate(3) hue-rotate(5deg) brightness(1.15); }
+          0%   { filter: sepia(1) hue-rotate(340deg) saturate(3) brightness(0.9) drop-shadow(0 0 10px #cd7f32); }
+          30%  { filter: sepia(1) hue-rotate(340deg) saturate(5) brightness(1.3) drop-shadow(0 0 30px #e8a050) contrast(1.2); }
+          60%  { filter: sepia(1) hue-rotate(345deg) saturate(4) brightness(1.0) drop-shadow(0 0 14px #cd7f32); }
+          80%  { filter: sepia(1) hue-rotate(340deg) saturate(6) brightness(1.5) drop-shadow(0 0 40px #f0b860) contrast(1.3); }
+          100% { filter: sepia(1) hue-rotate(340deg) saturate(3) brightness(0.9) drop-shadow(0 0 10px #cd7f32); }
         }
         @keyframes shimmer-silver {
-          0%,100% { filter: drop-shadow(0 0 12px #b8c4cc) grayscale(0.15) brightness(1.3) contrast(1.05); }
-          50% { filter: drop-shadow(0 0 28px #dde8ee) grayscale(0) brightness(1.6) contrast(1.1); }
+          0%   { filter: grayscale(1) brightness(1.3) contrast(1.1) drop-shadow(0 0 10px #b0bec5); }
+          30%  { filter: grayscale(1) brightness(1.9) contrast(1.3) drop-shadow(0 0 35px #ecf0f1); }
+          60%  { filter: grayscale(1) brightness(1.4) contrast(1.1) drop-shadow(0 0 12px #b0bec5); }
+          80%  { filter: grayscale(1) brightness(2.1) contrast(1.4) drop-shadow(0 0 45px #ffffff); }
+          100% { filter: grayscale(1) brightness(1.3) contrast(1.1) drop-shadow(0 0 10px #b0bec5); }
         }
         @keyframes shimmer-gold {
-          0%,100% { filter: drop-shadow(0 0 14px #ffd700) sepia(0.9) saturate(3.5) hue-rotate(3deg) brightness(1.1); }
-          50% { filter: drop-shadow(0 0 32px #ffe566) sepia(1) saturate(5) hue-rotate(8deg) brightness(1.25); }
+          0%   { filter: sepia(1) hue-rotate(5deg) saturate(5) brightness(1.0) drop-shadow(0 0 12px #ffd700); }
+          25%  { filter: sepia(1) hue-rotate(8deg) saturate(7) brightness(1.5) drop-shadow(0 0 40px #ffe44d) contrast(1.2); }
+          50%  { filter: sepia(1) hue-rotate(5deg) saturate(5) brightness(1.1) drop-shadow(0 0 16px #ffd700); }
+          75%  { filter: sepia(1) hue-rotate(10deg) saturate(8) brightness(1.7) drop-shadow(0 0 55px #fff080) contrast(1.4); }
+          100% { filter: sepia(1) hue-rotate(5deg) saturate(5) brightness(1.0) drop-shadow(0 0 12px #ffd700); }
         }
         @keyframes shimmer-platinum {
-          0%,100% { filter: drop-shadow(0 0 16px #94a3b8) brightness(1.4) saturate(0.4) hue-rotate(200deg); }
-          50% { filter: drop-shadow(0 0 36px #cbd5e1) brightness(1.8) saturate(0.6) hue-rotate(210deg); }
+          0%   { filter: grayscale(0.6) brightness(1.4) hue-rotate(200deg) saturate(1.5) drop-shadow(0 0 12px #94a3b8); }
+          30%  { filter: grayscale(0.3) brightness(2.0) hue-rotate(205deg) saturate(2.5) drop-shadow(0 0 45px #bfdbfe) contrast(1.3); }
+          60%  { filter: grayscale(0.6) brightness(1.5) hue-rotate(198deg) saturate(1.5) drop-shadow(0 0 14px #94a3b8); }
+          80%  { filter: grayscale(0.2) brightness(2.2) hue-rotate(210deg) saturate(3) drop-shadow(0 0 55px #e0f2fe) contrast(1.4); }
+          100% { filter: grayscale(0.6) brightness(1.4) hue-rotate(200deg) saturate(1.5) drop-shadow(0 0 12px #94a3b8); }
         }
         @keyframes shimmer-diamond {
-          0% { filter: drop-shadow(0 0 18px #a5f3fc) brightness(1.3) hue-rotate(180deg) saturate(1.5); }
-          25% { filter: drop-shadow(0 0 24px #f9a8d4) brightness(1.4) hue-rotate(270deg) saturate(2); }
-          50% { filter: drop-shadow(0 0 30px #fde68a) brightness(1.5) hue-rotate(60deg) saturate(2.5); }
-          75% { filter: drop-shadow(0 0 24px #6ee7b7) brightness(1.4) hue-rotate(135deg) saturate(2); }
-          100% { filter: drop-shadow(0 0 18px #a5f3fc) brightness(1.3) hue-rotate(180deg) saturate(1.5); }
+          0%   { filter: brightness(1.4) hue-rotate(0deg)   saturate(3) drop-shadow(0 0 20px #f9a8d4) contrast(1.1); }
+          16%  { filter: brightness(2.0) hue-rotate(60deg)  saturate(5) drop-shadow(0 0 50px #fde68a) contrast(1.4); }
+          33%  { filter: brightness(1.4) hue-rotate(120deg) saturate(3) drop-shadow(0 0 20px #6ee7b7) contrast(1.1); }
+          50%  { filter: brightness(2.2) hue-rotate(180deg) saturate(6) drop-shadow(0 0 60px #a5f3fc) contrast(1.5); }
+          66%  { filter: brightness(1.4) hue-rotate(240deg) saturate(3) drop-shadow(0 0 20px #c4b5fd) contrast(1.1); }
+          83%  { filter: brightness(2.0) hue-rotate(300deg) saturate(5) drop-shadow(0 0 50px #fb7185) contrast(1.4); }
+          100% { filter: brightness(1.4) hue-rotate(360deg) saturate(3) drop-shadow(0 0 20px #f9a8d4) contrast(1.1); }
         }
-        .tier-bronze  { animation: shimmer-bronze  2.5s ease-in-out infinite; }
-        .tier-silver  { animation: shimmer-silver  2.5s ease-in-out infinite; }
-        .tier-gold    { animation: shimmer-gold    2s   ease-in-out infinite; }
-        .tier-platinum{ animation: shimmer-platinum 2s   ease-in-out infinite; }
-        .tier-diamond { animation: shimmer-diamond  3s   linear      infinite; }
+        .tier-bronze   { animation: shimmer-bronze   2s ease-in-out infinite; }
+        .tier-silver   { animation: shimmer-silver   1.8s ease-in-out infinite; }
+        .tier-gold     { animation: shimmer-gold     1.5s ease-in-out infinite; }
+        .tier-platinum { animation: shimmer-platinum 1.6s ease-in-out infinite; }
+        .tier-diamond  { animation: shimmer-diamond  2.5s linear infinite; }
       `}</style>
 
       <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
