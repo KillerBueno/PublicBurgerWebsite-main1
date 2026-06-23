@@ -1177,6 +1177,8 @@ export default function ShowcasePage() {
         {/* ── Fornitori ── */}
         <Reveal>
           <div className="py-10 px-6 flex flex-col items-center gap-5">
+            <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">Materie prime di qualità</p>
+            <p className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug">Scegliamo con cura i nostri fornitori per portarti ingredienti freschi e selezionati, ogni giorno.</p>
             <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">I nostri fornitori</p>
             <div className="flex flex-wrap items-center justify-center gap-10">
               <div className="flex flex-col items-center gap-2">
