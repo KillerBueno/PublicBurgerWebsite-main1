@@ -51,7 +51,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
   return (
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
-      background: '#1a0a10',
+      background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
       overflow: 'hidden',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       transition: 'opacity 0.3s ease',
