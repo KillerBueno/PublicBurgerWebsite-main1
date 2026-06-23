@@ -16,43 +16,66 @@ type OrderType = 'asporto' | 'consegna';
 const WHATSAPP_NUMBER = '393420006928';
 
 function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string): string {
-  const sizeLabel = (s: string | null) =>
-    s ? ({ single: 'Singolo', double: 'Doppio', triple: 'Triplo' } as Record<string, string>)[s] : '';
-
-  const orderLabel = orderType === 'asporto'
-    ? `Asporto${name ? ` — Nome: ${name}` : ''}${time ? ` — Orario richiesto: ${time}` : ''}`
-    : `Consegna a domicilio${time ? ` — Orario richiesto: ${time}` : ''}`;
+  const SIZE: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
 
-  const itemLines = items.map((item, i) => {
-    if (item.type === 'burger') {
-      const size = sizeLabel(item.size);
-      let line = `${i + 1}. ${item.burger.name}${size ? ` (${size})` : ''}`;
-      if (item.combo) line += ` — Combo`;
-      if (item.combo && item.drink) line += ` con ${item.drink}${item.drinkExtra > 0 ? ` (+€${item.drinkExtra})` : ''}`;
-      if (item.removed.length) line += `\n   Senza: ${item.removed.join(', ')}`;
-      if (item.extras.length) line += `\n   Aggiunte: ${item.extras.join(', ')}`;
-      line += `  —  €${item.totalPrice.toFixed(2)}`;
-      return line;
-    } else if (item.type === 'fry') {
-      return `${i + 1}. ${item.fry.name} x${item.qty}  —  €${item.totalPrice.toFixed(2)}`;
-    } else {
-      return `${i + 1}. ${item.name} x${item.qty}  —  €${item.totalPrice.toFixed(2)}`;
-    }
-  });
+  const burgers = items.filter(i => i.type === 'burger');
+  const fries   = items.filter(i => i.type === 'fry');
+  const extras  = items.filter(i => i.type === 'extra');
 
-  return [
-    `Ciao! Vorrei ordinare da Public Burger.`,
-    ``,
-    `*Il mio ordine:*`,
-    itemLines.join('\n'),
-    ``,
-    `*Totale: €${total.toFixed(2)}*`,
-    ``,
-    `*${orderLabel}*`,
-    ``,
-    `Grazie mille!`,
-  ].join('\n');
+  const lines: string[] = [];
+
+  lines.push(`🍔 *ORDINE — PUBLIC BURGER*`);
+  lines.push(`──────────────────`);
+
+  if (burgers.length) {
+    lines.push(`*BURGER*`);
+    for (const item of burgers) {
+      if (item.type !== 'burger') continue;
+      const size = item.size ? ` (${SIZE[item.size] ?? item.size})` : '';
+      lines.push(`  • ${item.burger.name}${size}  →  €${item.totalPrice.toFixed(2)}`);
+      if (item.combo && item.drink)
+        lines.push(`     🥤 Combo: ${item.drink}${item.drinkExtra > 0 ? ` (+€${item.drinkExtra.toFixed(2)})` : ''}`);
+      for (const r of item.removed) lines.push(`     ➖ ${r}`);
+      for (const e of item.extras)  lines.push(`     ➕ ${e}`);
+    }
+  }
+
+  if (fries.length) {
+    if (burgers.length) lines.push(``);
+    lines.push(`*FRIES / ANTIPASTI*`);
+    for (const item of fries) {
+      if (item.type !== 'fry') continue;
+      lines.push(`  • ${item.fry.name} ×${item.qty}  →  €${item.totalPrice.toFixed(2)}`);
+    }
+  }
+
+  if (extras.length) {
+    if (burgers.length || fries.length) lines.push(``);
+    lines.push(`*EXTRA*`);
+    for (const item of extras) {
+      if (item.type !== 'extra') continue;
+      lines.push(`  • ${item.name} ×${item.qty}  →  €${item.totalPrice.toFixed(2)}`);
+    }
+  }
+
+  lines.push(`──────────────────`);
+  lines.push(`*TOTALE: €${total.toFixed(2)}*`);
+  lines.push(``);
+
+  if (orderType === 'asporto') {
+    lines.push(`📦 *Asporto*`);
+    if (name) lines.push(`   Nome: ${name}`);
+    if (time) lines.push(`   Orario richiesto: ${time}`);
+  } else {
+    lines.push(`🛵 *Consegna a domicilio*`);
+    if (time) lines.push(`   Orario richiesto: ${time}`);
+  }
+
+  lines.push(``);
+  lines.push(`Grazie mille! 🙏`);
+
+  return lines.join('\n');
 }
 
 function ItemCard({ item, onRemove }: { item: CartItem; onRemove: () => void }) {
