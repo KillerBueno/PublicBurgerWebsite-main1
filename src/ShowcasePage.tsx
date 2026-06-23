@@ -1241,6 +1241,14 @@ export default function ShowcasePage() {
                 </Reveal>
               );
             })}
+            <Reveal delay={0.4}>
+              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2 mt-8">
+                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Birre</span>
+              </div>
+            </Reveal>
+            <Reveal delay={0.45}>
+              <ExtraRow name="Forst 0,33" price={3.5} onAdd={() => addExtra('Forst 0,33', 'birra', 3.5)} cart={cart} />
+            </Reveal>
           </div>
         </section>
 
