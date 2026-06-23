@@ -1773,10 +1773,10 @@ export default function ShowcasePage() {
           >
             <div className="bg-[#1a0a10] text-white rounded-2xl shadow-2xl px-4 py-3">
               <div className="flex items-start justify-between gap-2 mb-2">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-white/40">Riordina l'ultima volta</p>
-                <button onClick={() => setReorderDismissed(true)} className="text-white/25 hover:text-white/60 text-lg leading-none -mt-0.5">×</button>
+                <p className="text-[13px] font-semibold text-white leading-snug">Cosa hai mangiato l'ultima volta...?</p>
+                <button onClick={() => setReorderDismissed(true)} className="text-white/25 hover:text-white/60 text-lg leading-none -mt-0.5 shrink-0">×</button>
               </div>
-              <p className="text-[12px] text-white/70 mb-3 leading-snug">
+              <p className="text-[11px] text-white/45 mb-3 leading-snug">
                 {lastOrder.slice(0, 2).map(i =>
                   i.type === 'burger' ? i.burger.name : i.type === 'fry' ? i.fry.name : i.name
                 ).join(', ')}
