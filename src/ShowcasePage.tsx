@@ -1110,7 +1110,14 @@ export default function ShowcasePage() {
                 ))}
               </div>
 
-              <div className="pb-8" />
+              <div className="px-7 pb-6">
+                <button
+                  onClick={() => { sessionStorage.setItem('pb_smash_seen', '1'); setSmashPopup(false); }}
+                  className="w-full py-3 rounded-2xl text-[11px] uppercase tracking-[0.25em] font-semibold text-white/40 border border-white/10 hover:border-white/25 hover:text-white/70 transition-all duration-200"
+                >
+                  Chiudi
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
