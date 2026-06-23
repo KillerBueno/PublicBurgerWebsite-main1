@@ -1076,16 +1076,7 @@ export default function ShowcasePage() {
                 ))}
               </div>
 
-              {/* CTA */}
-              <div className="px-7 pb-8 pt-2">
-                <button
-                  onClick={() => { sessionStorage.setItem('pb_smash_seen', '1'); setSmashPopup(false); }}
-                  className="w-full py-4 rounded-2xl font-bold text-[13px] uppercase tracking-widest text-white transition-all duration-300 hover:opacity-90 active:scale-[0.98]"
-                  style={{ background: 'linear-gradient(135deg, #CF6990, #A8456B)' }}
-                >
-                  Vediamo il menu →
-                </button>
-              </div>
+              <div className="pb-8" />
             </motion.div>
           </motion.div>
         )}
