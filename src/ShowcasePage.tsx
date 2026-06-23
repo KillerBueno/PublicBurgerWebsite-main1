@@ -6,7 +6,7 @@ import BurgerConfigurator from './BurgerConfigurator';
 import CartPanel from './CartPanel';
 import { getStoredUser, signOut, type PBUser } from './lib/supabase';
 import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
-import { fetchSetting, type MondaySmashConfig } from './lib/settings';
+import { fetchSetting, isCurrentlyOpen, type MondaySmashConfig, type PriceOverrides, type OpeningHours } from './lib/settings';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -270,10 +270,11 @@ function AllergenTag({ allergens }: { allergens: number[] }) {
 
 // ─── Burger row ───────────────────────────────────────────────────────────────
 
-function BurgerRow({ burger, index, onAdd }: {
+function BurgerRow({ burger, index, onAdd, priceOverrides = {} }: {
   burger: BurgerDef;
   index: number;
   onAdd: (b: BurgerDef, size?: import('./menuData').BurgerSize) => void;
+  priceOverrides?: PriceOverrides;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -313,9 +314,9 @@ function BurgerRow({ burger, index, onAdd }: {
         </div>
         <div className="shrink-0 text-right">
           {burger.prices ? (
-            <span className="text-sm text-[#CF6990] tracking-widest">da {fmt(burger.prices.single)}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest">da {fmt(priceOverrides[burger.name]?.single ?? burger.prices.single)}</span>
           ) : (
-            <span className="text-sm text-[#CF6990] tracking-widest">{fmt(burger.fixedPrice)}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
           )}
         </div>
       </div>
@@ -337,7 +338,7 @@ function BurgerRow({ burger, index, onAdd }: {
               className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
-              <span className="ml-2 text-black/30">{fmt(burger.prices![s])}</span>
+              <span className="ml-2 text-black/30">{fmt(priceOverrides[burger.name]?.[s] ?? burger.prices![s])}</span>
             </button>
           ))}
         </div>
@@ -347,7 +348,7 @@ function BurgerRow({ burger, index, onAdd }: {
           className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
         >
           Singolo
-          <span className="ml-2 text-black/30">{fmt(burger.fixedPrice)}</span>
+          <span className="ml-2 text-black/30">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
         </button>
       )}
     </div>
@@ -989,11 +990,15 @@ export default function ShowcasePage() {
   const [smashPopup, setSmashPopup] = useState(false);
   const [disabledProducts, setDisabledProducts] = useState<string[]>([]);
   const [disabledIngredients, setDisabledIngredients] = useState<string[]>([]);
+  const [priceOverrides, setPriceOverrides] = useState<PriceOverrides>({});
+  const [openingHours, setOpeningHours] = useState<OpeningHours | null>(null);
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
 
   useEffect(() => {
     fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? []));
     fetchSetting<string[]>('disabled_ingredients').then(v => setDisabledIngredients(v ?? []));
+    fetchSetting<PriceOverrides>('price_overrides').then(v => setPriceOverrides(v ?? {}));
+    fetchSetting<OpeningHours>('opening_hours').then(v => setOpeningHours(v));
     fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
       if (v) {
         setSmashConfig(v);
@@ -1076,6 +1081,23 @@ export default function ShowcasePage() {
 
   return (
     <>
+      {/* ── Chiuso Banner ── */}
+      {openingHours && !isCurrentlyOpen(openingHours) && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm">
+          <div className="bg-[#1a0a10] text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-4">
+            <span className="text-2xl shrink-0">🔒</span>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#CF6990]">Siamo chiusi</p>
+              <p className="text-[12px] text-white/60 mt-0.5 leading-tight">
+                {openingHours.manual_close && openingHours.manual_close_message
+                  ? openingHours.manual_close_message
+                  : 'Il locale è attualmente chiuso. Torna presto!'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Smash Monday Popup ── */}
       <AnimatePresence>
         {smashPopup && (
@@ -1311,7 +1333,7 @@ export default function ShowcasePage() {
             if (burgerFilter === 'chicken') return b.tag === 'Chicken' || b.tag === 'Wrap';
             return true;
           }).map((b, i) => (
-            <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} />
+            <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} priceOverrides={priceOverrides} />
           ))}
 
         </section>
@@ -1635,6 +1657,7 @@ export default function ShowcasePage() {
             onConfirm={addBurger}
             onClose={() => setConfiguringBurger(null)}
             disabledIngredients={disabledIngredients}
+            priceOverrides={priceOverrides}
           />
         )}
       </AnimatePresence>

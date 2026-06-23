@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ALL_EXTRAS, DRINKS } from './menuData';
 import type { BurgerDef, BurgerSize } from './menuData';
 import type { CartBurger } from './cartTypes';
+import type { PriceOverrides } from './lib/settings';
 
 interface Props {
   burger: BurgerDef;
@@ -10,6 +11,7 @@ interface Props {
   onConfirm: (item: CartBurger) => void;
   onClose: () => void;
   disabledIngredients?: string[];
+  priceOverrides?: PriceOverrides;
 }
 
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
@@ -40,7 +42,7 @@ function buildSteps(burger: BurgerDef, isCombo: boolean, hasPresize: boolean): S
   return [...s, 'combo', 'remove', 'extras', ...(isCombo ? ['drink' as Step] : [])];
 }
 
-export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [] }: Props) {
+export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [], priceOverrides = {} }: Props) {
   const [size, setSize] = useState<BurgerSize>(preselectedSize ?? 'single');
   const [combo, setCombo] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -63,11 +65,17 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
   function toggleRemove(ing: string) { setRemoved((p) => p.includes(ing) ? p.filter((x) => x !== ing) : [...p, ing]); }
   function toggleExtra(ing: string) { setExtras((p) => p.includes(ing) ? p.filter((x) => x !== ing) : [...p, ing]); }
 
+  function getBasePrice(s: BurgerSize): number {
+    const ov = priceOverrides[burger.name];
+    if (burger.prices) return ov?.[s] ?? burger.prices[s];
+    return ov?.fixed ?? burger.fixedPrice ?? 0;
+  }
+
   function calcPrice() {
-    let base = burger.prices ? burger.prices[size] : (burger.fixedPrice ?? 0);
+    let base = getBasePrice(size);
     if (combo) base += burger.combo;
     if (drink) base += DRINKS.find((d) => d.name === drink)?.extra ?? 0;
-    base += extras.length; // €1 per ogni extra
+    base += extras.length;
     return base;
   }
 
@@ -165,7 +173,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                       <span className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">
                         {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
                       </span>
-                      <span className="text-lg text-black/40 group-hover:text-[#CF6990] transition-colors">€{burger.prices![s]}</span>
+                      <span className="text-lg text-black/40 group-hover:text-[#CF6990] transition-colors">€{getBasePrice(s)}</span>
                     </button>
                   ))}
                 </div>
@@ -298,7 +306,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                         onClick={() => {
                           const selectedDrink = d.name;
                           const drinkExtra = d.extra ?? 0;
-                          let base = burger.prices ? burger.prices[size] : (burger.fixedPrice ?? 0);
+                          let base = getBasePrice(size);
                           base += burger.combo;
                           base += drinkExtra;
                           base += extras.length;

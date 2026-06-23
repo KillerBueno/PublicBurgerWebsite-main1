@@ -11,6 +11,11 @@ export interface OrderItem {
   price: number;
 }
 
+export interface StatusEntry {
+  status: string;
+  at: string;
+}
+
 export interface Order {
   id: string;
   created_at: string;
@@ -21,6 +26,9 @@ export interface Order {
   user_email: string | null;
   user_name: string | null;
   notes: string | null;
+  status?: string;
+  status_history?: StatusEntry[];
+  admin_notes?: string | null;
 }
 
 function headers() {
@@ -32,7 +40,7 @@ function headers() {
   };
 }
 
-export async function saveOrder(order: Omit<Order, 'id' | 'created_at'>) {
+export async function saveOrder(order: Omit<Order, 'id' | 'created_at' | 'status' | 'status_history' | 'admin_notes'>) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/orders`, {
@@ -45,7 +53,13 @@ export async function saveOrder(order: Omit<Order, 'id' | 'created_at'>) {
   }
 }
 
-export async function updateOrderStatus(adminToken: string, orderId: string, status: string): Promise<void> {
+export async function updateOrderStatus(
+  adminToken: string,
+  orderId: string,
+  status: string,
+  currentHistory: StatusEntry[] = [],
+): Promise<void> {
+  const history: StatusEntry[] = [...currentHistory, { status, at: new Date().toISOString() }];
   const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
     method: 'PATCH',
     headers: {
@@ -54,14 +68,32 @@ export async function updateOrderStatus(adminToken: string, orderId: string, sta
       Authorization: `Bearer ${adminToken}`,
       Prefer: 'return=minimal',
     },
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ status, status_history: history }),
   });
   if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
 }
 
+export async function updateOrderNotes(
+  adminToken: string,
+  orderId: string,
+  admin_notes: string,
+): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${adminToken}`,
+      Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ admin_notes }),
+  });
+  if (!res.ok) throw new Error(`Notes update failed: ${res.status}`);
+}
+
 export function exportOrdersCSV(orders: Order[]) {
   const fmt = (d: string) => new Date(d).toLocaleString('it-IT');
-  const header = ['Data', 'Cliente', 'Email', 'Tipo', 'Articoli', 'Totale (€)', 'Stato', 'Note'];
+  const header = ['Data', 'Cliente', 'Email', 'Tipo', 'Articoli', 'Totale (€)', 'Stato', 'Note cliente', 'Note admin'];
   const rows = orders.map(o => [
     fmt(o.created_at),
     o.customer_name,
@@ -69,8 +101,9 @@ export function exportOrdersCSV(orders: Order[]) {
     o.order_type,
     o.items.map(i => `${i.name}${i.size ? ` (${i.size})` : ''}${i.qty && i.qty > 1 ? ` x${i.qty}` : ''}`).join(' | '),
     o.total.toFixed(2),
-    (o as Order & { status?: string }).status ?? 'nuovo',
+    o.status ?? 'nuovo',
     o.notes ?? '',
+    o.admin_notes ?? '',
   ]);
   const csv = [header, ...rows]
     .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))
@@ -99,12 +132,7 @@ export async function deleteOrder(adminToken: string, orderId: string): Promise<
 export async function fetchOrders(adminToken: string): Promise<Order[]> {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=500`,
-    {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${adminToken}`,
-      },
-    }
+    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${adminToken}` } },
   );
   if (!res.ok) throw new Error('Unauthorized');
   return res.json();
