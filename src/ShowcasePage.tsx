@@ -932,6 +932,66 @@ function AnchorNav() {
   );
 }
 
+// ─── Fornitori Section ────────────────────────────────────────────────────────
+
+function FornitoriSection() {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+
+  return (
+    <div ref={ref} className="py-10 px-6 flex flex-col items-center gap-5">
+      <motion.p
+        className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
+        initial={{ opacity: 0, y: 12 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+      >
+        Materie prime di qualità
+      </motion.p>
+      <motion.p
+        className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug"
+        initial={{ opacity: 0, y: 16 }}
+        animate={inView ? { opacity: 1, y: 0 } : {}}
+        transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+      >
+        Scegliamo con cura i nostri fornitori per portarti ingredienti freschi e selezionati, ogni giorno.
+      </motion.p>
+      <motion.p
+        className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.6, delay: 0.2 }}
+      >
+        I nostri fornitori
+      </motion.p>
+      <div className="flex flex-wrap items-center justify-center gap-10">
+        <motion.img
+          src="/logo-non-solo-pane.jpg"
+          alt="Non Solo Pane"
+          className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+          initial={{ opacity: 0, scale: 0.85, y: 10 }}
+          animate={inView ? { opacity: 0.5, scale: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        />
+        <motion.div
+          className="w-px h-10 bg-black/8"
+          initial={{ scaleY: 0 }}
+          animate={inView ? { scaleY: 1 } : {}}
+          transition={{ duration: 0.4, delay: 0.45 }}
+        />
+        <motion.img
+          src="/logo-macelleria.png"
+          alt="Macelleria Franco Capobianco"
+          className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+          initial={{ opacity: 0, scale: 0.85, y: 10 }}
+          animate={inView ? { opacity: 0.5, scale: 1, y: 0 } : {}}
+          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ShowcasePage() {
@@ -1229,30 +1289,7 @@ export default function ShowcasePage() {
         />
 
         {/* ── Fornitori ── */}
-        <Reveal>
-          <div className="py-10 px-6 flex flex-col items-center gap-5">
-            <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">Materie prime di qualità</p>
-            <p className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug">Scegliamo con cura i nostri fornitori per portarti ingredienti freschi e selezionati, ogni giorno.</p>
-            <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">I nostri fornitori</p>
-            <div className="flex flex-wrap items-center justify-center gap-10">
-              <div className="flex flex-col items-center gap-2">
-                <img
-                  src="/logo-non-solo-pane.jpg"
-                  alt="Non Solo Pane"
-                  className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-                />
-              </div>
-              <div className="w-px h-10 bg-black/8" />
-              <div className="flex flex-col items-center gap-2">
-                <img
-                  src="/logo-macelleria.png"
-                  alt="Macelleria Franco Capobianco"
-                  className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-                />
-              </div>
-            </div>
-          </div>
-        </Reveal>
+        <FornitoriSection />
 
         {/* ── Anchor nav ── */}
         <AnchorNav />
