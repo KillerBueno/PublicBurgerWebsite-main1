@@ -1448,7 +1448,7 @@ export default function ShowcasePage() {
             <p className="text-[10px] uppercase tracking-[0.35em] text-black/25 font-semibold mb-6 text-center">Cosa dicono di noi</p>
           </Reveal>
           <Reveal delay={0.05}>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-10">
+            <div className="flex flex-row flex-wrap items-center justify-center gap-5 sm:gap-10">
               {/* Google */}
               <div className="flex items-center gap-3">
                 <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" xmlns="http://www.w3.org/2000/svg">
