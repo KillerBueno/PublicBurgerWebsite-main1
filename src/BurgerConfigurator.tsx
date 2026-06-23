@@ -9,6 +9,7 @@ interface Props {
   preselectedSize?: BurgerSize;
   onConfirm: (item: CartBurger) => void;
   onClose: () => void;
+  disabledIngredients?: string[];
 }
 
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
@@ -39,7 +40,7 @@ function buildSteps(burger: BurgerDef, isCombo: boolean, hasPresize: boolean): S
   return [...s, 'combo', 'remove', 'extras', ...(isCombo ? ['drink' as Step] : [])];
 }
 
-export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose }: Props) {
+export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [] }: Props) {
   const [size, setSize] = useState<BurgerSize>(preselectedSize ?? 'single');
   const [combo, setCombo] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -199,23 +200,28 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                   <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-4">Tocca per rimuovere</p>
                   <div className="space-y-1.5">
                     {burger.ingredients.filter((ing) => !NON_REMOVABLE.includes(ing)).map((ing) => {
+                      const isUnavailable = disabledIngredients.includes(ing);
                       const active = !removed.includes(ing);
                       return (
                         <button
                           key={ing}
-                          onClick={() => toggleRemove(ing)}
+                          onClick={() => !isUnavailable && toggleRemove(ing)}
+                          disabled={isUnavailable}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
-                            active
-                              ? 'border-black/8 bg-white hover:border-black/20'
-                              : 'border-red-100 bg-red-50/50'
+                            isUnavailable
+                              ? 'border-black/5 bg-black/2 opacity-50 cursor-not-allowed'
+                              : active
+                                ? 'border-black/8 bg-white hover:border-black/20'
+                                : 'border-red-100 bg-red-50/50'
                           }`}
                         >
                           <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
-                            active ? 'border-black/20 bg-[#CF6990]' : 'border-red-200 bg-white'
+                            isUnavailable ? 'border-black/15 bg-black/10' : active ? 'border-black/20 bg-[#CF6990]' : 'border-red-200 bg-white'
                           }`} />
-                          <span className={`text-sm transition-all ${active ? 'text-black/70' : 'line-through text-black/25'}`}>
+                          <span className={`text-sm transition-all flex-1 ${isUnavailable ? 'line-through text-black/25' : active ? 'text-black/70' : 'line-through text-black/25'}`}>
                             {ing}
                           </span>
+                          {isUnavailable && <span className="text-[9px] uppercase tracking-wider text-black/25">esaurito</span>}
                         </button>
                       );
                     })}
@@ -234,19 +240,21 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                       <div className="space-y-1.5 mb-4">
                         {burger.ingredients.filter((ing) => !NON_REMOVABLE.includes(ing)).map((ing) => {
                           const active = extras.includes(ing);
+                          const isUnavailable = disabledIngredients.includes(ing);
                           return (
                             <button
                               key={`double-${ing}`}
-                              onClick={() => toggleExtra(ing)}
+                              onClick={() => !isUnavailable && toggleExtra(ing)}
+                              disabled={isUnavailable}
                               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
-                                active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
+                                isUnavailable ? 'border-black/5 opacity-40 cursor-not-allowed' : active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
                               }`}
                             >
                               <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
-                                active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
+                                active && !isUnavailable ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
                               }`} />
-                              <span className={`text-sm flex-1 ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
-                              <span className="text-xs text-black/25">+€1</span>
+                              <span className={`text-sm flex-1 ${active && !isUnavailable ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
+                              {isUnavailable ? <span className="text-[9px] uppercase tracking-wider text-black/25">esaurito</span> : <span className="text-xs text-black/25">+€1</span>}
                             </button>
                           );
                         })}
@@ -257,19 +265,21 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                   <div className="space-y-1.5">
                     {ALL_EXTRAS.filter((e) => !burger.ingredients.includes(e) && !NON_REMOVABLE.includes(e)).map((ing) => {
                       const active = extras.includes(ing);
+                      const isUnavailable = disabledIngredients.includes(ing);
                       return (
                         <button
                           key={ing}
-                          onClick={() => toggleExtra(ing)}
+                          onClick={() => !isUnavailable && toggleExtra(ing)}
+                          disabled={isUnavailable}
                           className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-150 text-left ${
-                            active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
+                            isUnavailable ? 'border-black/5 opacity-40 cursor-not-allowed' : active ? 'border-[#CF6990]/30 bg-[#FBE8EF]/50' : 'border-black/8 bg-white hover:border-black/20'
                           }`}
                         >
                           <span className={`w-3.5 h-3.5 border rounded-full flex-shrink-0 transition-all ${
-                            active ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
+                            active && !isUnavailable ? 'border-[#CF6990] bg-[#CF6990]' : 'border-black/20 bg-white'
                           }`} />
-                          <span className={`text-sm flex-1 ${active ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
-                          <span className="text-xs text-black/25">+€1</span>
+                          <span className={`text-sm flex-1 ${active && !isUnavailable ? 'text-[#1a0a10]' : 'text-black/50'}`}>{ing}</span>
+                          {isUnavailable ? <span className="text-[9px] uppercase tracking-wider text-black/25">esaurito</span> : <span className="text-xs text-black/25">+€1</span>}
                         </button>
                       );
                     })}

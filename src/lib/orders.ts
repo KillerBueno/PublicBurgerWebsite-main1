@@ -84,6 +84,18 @@ export function exportOrdersCSV(orders: Order[]) {
   URL.revokeObjectURL(url);
 }
 
+export async function deleteOrder(adminToken: string, orderId: string): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}`, {
+    method: 'DELETE',
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${adminToken}`,
+      Prefer: 'return=minimal',
+    },
+  });
+  if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+}
+
 export async function fetchOrders(adminToken: string): Promise<Order[]> {
   const res = await fetch(
     `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=500`,

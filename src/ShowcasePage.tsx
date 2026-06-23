@@ -988,10 +988,12 @@ export default function ShowcasePage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [smashPopup, setSmashPopup] = useState(false);
   const [disabledProducts, setDisabledProducts] = useState<string[]>([]);
+  const [disabledIngredients, setDisabledIngredients] = useState<string[]>([]);
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
 
   useEffect(() => {
     fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? []));
+    fetchSetting<string[]>('disabled_ingredients').then(v => setDisabledIngredients(v ?? []));
     fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
       if (v) {
         setSmashConfig(v);
@@ -1632,6 +1634,7 @@ export default function ShowcasePage() {
             preselectedSize={configuringBurger.size}
             onConfirm={addBurger}
             onClose={() => setConfiguringBurger(null)}
+            disabledIngredients={disabledIngredients}
           />
         )}
       </AnimatePresence>

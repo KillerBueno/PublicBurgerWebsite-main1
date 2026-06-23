@@ -1,20 +1,31 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchOrders, updateOrderStatus, exportOrdersCSV, type Order } from './lib/orders';
+import { fetchOrders, updateOrderStatus, deleteOrder, exportOrdersCSV, type Order } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
 import { fetchProfiles, setProfileOverride, effectiveCount, type UserProfile } from './lib/profiles';
 import { getTier, TIERS } from './lib/gamification';
 import { fetchSetting, updateSetting, type MondaySmashConfig } from './lib/settings';
-import { BURGERS, FRIES } from './menuData';
+import { BURGERS, FRIES, ALL_EXTRAS } from './menuData';
 
-const ADMIN_EMAIL = 'prrsmn91@gmail.com';
+const PRIMARY_ADMIN = 'prrsmn91@gmail.com';
 type Tab = 'ordini' | 'statistiche' | 'menu' | 'smash' | 'profili';
 
+const NON_DISABLEABLE = [
+  'Brioche bun', 'Bun classico', 'Piadina',
+  'Hamburger di manzo', 'Hamburger vegetale', 'Spalla di maiale sfilacciata',
+  'Petto di pollo', 'Hamburger di pollo', 'Cotoletta di pollo croccante',
+];
+
+const ALL_INGREDIENTS = Array.from(new Set([
+  ...BURGERS.flatMap(b => b.ingredients),
+  ...ALL_EXTRAS,
+])).filter(i => !NON_DISABLEABLE.includes(i));
+
 const ORDER_STATUSES = [
-  { value: 'nuovo',         label: 'Nuovo',         color: 'bg-blue-50 text-blue-600 border-blue-200' },
-  { value: 'preparazione',  label: 'In preparazione', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { value: 'pronto',        label: 'Pronto',        color: 'bg-green-50 text-green-700 border-green-200' },
-  { value: 'consegnato',    label: 'Consegnato',    color: 'bg-gray-50 text-gray-400 border-gray-200' },
+  { value: 'nuovo',        label: 'Nuovo',           color: 'bg-blue-50 text-blue-600 border-blue-200' },
+  { value: 'preparazione', label: 'In preparazione', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { value: 'pronto',       label: 'Pronto',          color: 'bg-green-50 text-green-700 border-green-200' },
+  { value: 'consegnato',   label: 'Consegnato',      color: 'bg-gray-50 text-gray-400 border-gray-200' },
 ];
 
 function playBeep() {
@@ -74,7 +85,6 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
   const revenueMonth = rev(o => o.created_at.slice(0, 10) >= monthAgo);
   const revenueTotal = rev(() => true);
 
-  // Top products
   const productCount: Record<string, number> = {};
   for (const o of orders) for (const item of o.items) {
     productCount[item.name] = (productCount[item.name] ?? 0) + (item.qty ?? 1);
@@ -82,21 +92,18 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
   const topProducts = Object.entries(productCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
   const maxProd = topProducts[0]?.[1] ?? 1;
 
-  // Peak hours (17-24 focus)
   const hourCount = new Array(24).fill(0);
   for (const o of orders) hourCount[new Date(o.created_at).getHours()]++;
   const peakHours = Array.from({ length: 24 }, (_, h) => ({ h, count: hourCount[h] }))
     .filter(x => x.h >= 17 || x.count > 0);
   const maxHour = Math.max(...hourCount, 1);
 
-  // Order type split
   const typeCount: Record<string, number> = {};
   for (const o of orders) typeCount[o.order_type] = (typeCount[o.order_type] ?? 0) + 1;
   const total = orders.length || 1;
 
   return (
     <div className="p-4 max-w-2xl mx-auto pb-16 space-y-4">
-      {/* Revenue cards */}
       <div className="grid grid-cols-2 gap-3">
         {[
           { label: 'Oggi', value: revenueToday },
@@ -111,7 +118,6 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
         ))}
       </div>
 
-      {/* Type split */}
       <div className="bg-white rounded-2xl border border-black/6 p-4 shadow-sm">
         <p className="text-[10px] uppercase tracking-widest text-black/30 mb-3">Tipo ordine</p>
         <div className="space-y-2">
@@ -127,7 +133,6 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
-      {/* Top products */}
       <div className="bg-white rounded-2xl border border-black/6 p-4 shadow-sm">
         <p className="text-[10px] uppercase tracking-widest text-black/30 mb-3">Prodotti più venduti</p>
         {topProducts.length === 0 && <p className="text-black/25 text-sm">Nessun dato ancora</p>}
@@ -145,16 +150,13 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
-      {/* Peak hours */}
       <div className="bg-white rounded-2xl border border-black/6 p-4 shadow-sm">
         <p className="text-[10px] uppercase tracking-widest text-black/30 mb-4">Orario di punta</p>
         <div className="flex items-end gap-1 h-20">
           {peakHours.map(({ h, count }) => (
             <div key={h} className="flex-1 flex flex-col items-center gap-1">
-              <div
-                className="w-full rounded-t bg-[#CF6990]/70"
-                style={{ height: `${(count / maxHour) * 64}px`, minHeight: count > 0 ? 3 : 0 }}
-              />
+              <div className="w-full rounded-t bg-[#CF6990]/70"
+                style={{ height: `${(count / maxHour) * 64}px`, minHeight: count > 0 ? 3 : 0 }} />
               <span className="text-[8px] text-black/25">{h}</span>
             </div>
           ))}
@@ -166,59 +168,110 @@ function StatisticheTab({ orders }: { orders: Order[] }) {
 
 // ─── Menu Tab ─────────────────────────────────────────────────────────────────
 function MenuTab({ adminToken }: { adminToken: string }) {
-  const [disabled, setDisabled] = useState<string[]>([]);
-  const [saving, setSaving] = useState<string | null>(null);
+  const [disabledProducts, setDisabledProducts] = useState<string[]>([]);
+  const [disabledIngredients, setDisabledIngredients] = useState<string[]>([]);
+  const [savingProd, setSavingProd] = useState<string | null>(null);
+  const [savingIng, setSavingIng] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    fetchSetting<string[]>('disabled_products').then(v => {
-      setDisabled(v ?? []);
+    Promise.all([
+      fetchSetting<string[]>('disabled_products'),
+      fetchSetting<string[]>('disabled_ingredients'),
+    ]).then(([prods, ings]) => {
+      setDisabledProducts(prods ?? []);
+      setDisabledIngredients(ings ?? []);
       setLoaded(true);
     });
   }, []);
 
-  async function toggle(name: string) {
-    const next = disabled.includes(name) ? disabled.filter(x => x !== name) : [...disabled, name];
-    setSaving(name);
+  async function toggleProduct(name: string) {
+    const next = disabledProducts.includes(name)
+      ? disabledProducts.filter(x => x !== name)
+      : [...disabledProducts, name];
+    setSavingProd(name);
     try {
       await updateSetting(adminToken, 'disabled_products', next);
-      setDisabled(next);
+      setDisabledProducts(next);
     } catch { alert('Errore nel salvataggio'); }
-    setSaving(null);
+    setSavingProd(null);
   }
 
-  if (!loaded) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" /></div>;
+  async function toggleIngredient(name: string) {
+    const next = disabledIngredients.includes(name)
+      ? disabledIngredients.filter(x => x !== name)
+      : [...disabledIngredients, name];
+    setSavingIng(name);
+    try {
+      await updateSetting(adminToken, 'disabled_ingredients', next);
+      setDisabledIngredients(next);
+    } catch { alert('Errore nel salvataggio'); }
+    setSavingIng(null);
+  }
 
-  const sections = [
+  if (!loaded) return (
+    <div className="flex justify-center py-16">
+      <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  const productSections = [
     { label: 'Burger', items: BURGERS.map(b => b.name) },
     { label: 'Fries / Appetizer', items: FRIES.map(f => f.name) },
   ];
 
   return (
-    <div className="p-4 max-w-2xl mx-auto pb-16 space-y-4">
+    <div className="p-4 max-w-2xl mx-auto pb-16 space-y-5">
       <div className="bg-[#FBE8EF]/60 rounded-2xl px-4 py-3 text-[11px] text-[#a8456b]">
-        I prodotti disattivati non appaiono nel menu del sito. Le modifiche sono immediate.
+        Prodotti e ingredienti disattivati scompaiono dal menu. Le modifiche sono immediate.
       </div>
-      {sections.map(({ label, items }) => (
+
+      {/* Prodotti */}
+      <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1">Prodotti</p>
+      {productSections.map(({ label, items }) => (
         <div key={label} className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
           <p className="px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-[#CF6990] font-bold border-b border-black/6">{label}</p>
           {items.map(name => {
-            const isDisabled = disabled.includes(name);
+            const isOff = disabledProducts.includes(name);
             return (
               <div key={name} className="flex items-center justify-between px-4 py-3 border-b border-black/4 last:border-0">
-                <span className={`text-sm font-medium ${isDisabled ? 'text-black/30 line-through' : 'text-[#1a0a10]'}`}>{name}</span>
+                <span className={`text-sm font-medium ${isOff ? 'text-black/30 line-through' : 'text-[#1a0a10]'}`}>{name}</span>
                 <button
-                  onClick={() => toggle(name)}
-                  disabled={saving === name}
-                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isDisabled ? 'bg-black/15' : 'bg-[#CF6990]'}`}
+                  onClick={() => toggleProduct(name)}
+                  disabled={savingProd === name}
+                  className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isOff ? 'bg-black/15' : 'bg-[#CF6990]'}`}
                 >
-                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${isDisabled ? 'left-1' : 'left-7'}`} />
+                  <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${isOff ? 'left-1' : 'left-7'}`} />
                 </button>
               </div>
             );
           })}
         </div>
       ))}
+
+      {/* Ingredienti */}
+      <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1 pt-2">Ingredienti / Topping</p>
+      <div className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
+        <p className="px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-[#CF6990] font-bold border-b border-black/6">Disponibilità ingredienti</p>
+        {ALL_INGREDIENTS.map(name => {
+          const isOff = disabledIngredients.includes(name);
+          return (
+            <div key={name} className="flex items-center justify-between px-4 py-3 border-b border-black/4 last:border-0">
+              <div>
+                <span className={`text-sm font-medium ${isOff ? 'text-black/30 line-through' : 'text-[#1a0a10]'}`}>{name}</span>
+                {isOff && <span className="ml-2 text-[10px] text-red-400 uppercase tracking-wider">esaurito</span>}
+              </div>
+              <button
+                onClick={() => toggleIngredient(name)}
+                disabled={savingIng === name}
+                className={`relative w-12 h-6 rounded-full transition-colors duration-200 ${isOff ? 'bg-black/15' : 'bg-[#CF6990]'}`}
+              >
+                <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200 ${isOff ? 'left-1' : 'left-7'}`} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -230,9 +283,7 @@ function SmashTab({ adminToken }: { adminToken: string }) {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
-      if (v) setConfig(v);
-    });
+    fetchSetting<MondaySmashConfig>('monday_smash').then(v => { if (v) setConfig(v); });
   }, []);
 
   async function save() {
@@ -246,11 +297,14 @@ function SmashTab({ adminToken }: { adminToken: string }) {
     setSaving(false);
   }
 
-  if (!config) return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" /></div>;
+  if (!config) return (
+    <div className="flex justify-center py-16">
+      <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="p-4 max-w-2xl mx-auto pb-16 space-y-4">
-      {/* Toggle attivo */}
       <div className="bg-white rounded-2xl border border-black/6 shadow-sm px-4 py-4 flex items-center justify-between">
         <div>
           <p className="font-semibold text-[#1a0a10] text-sm">Popup Monday Smash</p>
@@ -264,25 +318,21 @@ function SmashTab({ adminToken }: { adminToken: string }) {
         </button>
       </div>
 
-      {/* Burger cards */}
       <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1">Burger in lista</p>
       {config.burgers.map((b, i) => (
         <div key={i} className="bg-white rounded-2xl border border-black/6 shadow-sm p-4 space-y-3">
           <p className="text-[10px] uppercase tracking-widest text-[#CF6990] font-bold">Burger {i + 1}</p>
-          <input
-            value={b.name}
+          <input value={b.name}
             onChange={e => setConfig(c => { if (!c) return c; const bs = [...c.burgers]; bs[i] = { ...bs[i], name: e.target.value }; return { ...c, burgers: bs }; })}
             placeholder="Nome"
             className="w-full border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
           />
-          <input
-            value={b.desc}
+          <input value={b.desc}
             onChange={e => setConfig(c => { if (!c) return c; const bs = [...c.burgers]; bs[i] = { ...bs[i], desc: e.target.value }; return { ...c, burgers: bs }; })}
             placeholder="Ingredienti"
             className="w-full border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
           />
-          <input
-            value={b.price}
+          <input value={b.price}
             onChange={e => setConfig(c => { if (!c) return c; const bs = [...c.burgers]; bs[i] = { ...bs[i], price: e.target.value }; return { ...c, burgers: bs }; })}
             placeholder="Prezzo (es. da €9)"
             className="w-full border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
@@ -290,11 +340,8 @@ function SmashTab({ adminToken }: { adminToken: string }) {
         </div>
       ))}
 
-      <button
-        onClick={save}
-        disabled={saving}
-        className="w-full py-4 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.25em] font-semibold rounded-2xl hover:bg-[#CF6990] transition-colors disabled:opacity-50"
-      >
+      <button onClick={save} disabled={saving}
+        className="w-full py-4 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.25em] font-semibold rounded-2xl hover:bg-[#CF6990] transition-colors disabled:opacity-50">
         {saved ? '✓ Salvato' : saving ? 'Salvataggio…' : 'Salva modifiche'}
       </button>
     </div>
@@ -303,6 +350,22 @@ function SmashTab({ adminToken }: { adminToken: string }) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
+  const loggedUser = getStoredUser();
+
+  // Load extra admin emails from public settings (anon-readable)
+  const [adminEmails, setAdminEmails] = useState<string[]>([]);
+  const [adminEmailsLoaded, setAdminEmailsLoaded] = useState(false);
+
+  useEffect(() => {
+    fetchSetting<string[]>('admin_emails').then(v => {
+      setAdminEmails(v ?? []);
+      setAdminEmailsLoaded(true);
+    });
+  }, []);
+
+  const isPrimaryAdmin = loggedUser?.email === PRIMARY_ADMIN;
+  const isAdmin = isPrimaryAdmin || adminEmails.includes(loggedUser?.email ?? '');
+
   const [tab, setTab] = useState<Tab>('ordini');
   const [orders, setOrders] = useState<(Order & { status?: string })[]>([]);
   const [loading, setLoading] = useState(false);
@@ -311,49 +374,24 @@ export default function AdminPage() {
   const [typeFilter, setTypeFilter] = useState('tutti');
   const [dateFilter, setDateFilter] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [editingEmail, setEditingEmail] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [newOrderCount, setNewOrderCount] = useState(0);
   const lastOrderId = useRef<string | null>(null);
+  // Admin email management
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [savingAdmins, setSavingAdmins] = useState(false);
 
-  const loggedUser = getStoredUser();
-  const isAdmin = loggedUser?.email === ADMIN_EMAIL;
-  const isLoggedIn = !!loggedUser;
-
-  if (isLoggedIn && !isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a0a10]">
-        <div className="text-center px-8">
-          <div className="text-6xl mb-6">🚫</div>
-          <h1 className="text-white text-xl font-bold mb-2">Accesso negato</h1>
-          <p className="text-white/40 text-sm mb-8">Non hai i permessi per accedere a quest'area.</p>
-          <a href="/" className="text-[#CF6990] text-[11px] uppercase tracking-[0.25em] hover:text-white transition-colors">← Torna al sito</a>
-        </div>
-      </div>
-    );
-  }
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#1a0a10]">
-        <div className="text-center px-8">
-          <div className="text-6xl mb-6">🔒</div>
-          <h1 className="text-white text-xl font-bold mb-2">Area riservata</h1>
-          <p className="text-white/40 text-sm mb-8">Accedi con l'account admin per continuare.</p>
-          <a href="/login" className="inline-block px-6 py-3 bg-[#CF6990] text-white text-[11px] uppercase tracking-[0.25em] font-semibold rounded-2xl hover:bg-white hover:text-[#1a0a10] transition-colors">Accedi</a>
-        </div>
-      </div>
-    );
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const loadData = async () => {
+    if (!loggedUser) return;
     setLoading(true);
     try {
       const [ordersData, profilesData] = await Promise.all([
-        fetchOrders(loggedUser!.access_token),
-        fetchProfiles(loggedUser!.access_token),
+        fetchOrders(loggedUser.access_token),
+        fetchProfiles(loggedUser.access_token),
       ]);
       setOrders(ordersData);
       if (lastOrderId.current && ordersData[0]?.id !== lastOrderId.current) {
@@ -369,22 +407,80 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
+    if (!isAdmin || !adminEmailsLoaded) return;
     loadData();
-    const interval = setInterval(() => loadData(), 60000);
+    const interval = setInterval(loadData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isAdmin, adminEmailsLoaded]);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const filtered = useMemo(() => orders.filter(o => {
-    const matchSearch = !search || o.customer_name.toLowerCase().includes(search.toLowerCase()) || (o.user_email ?? '').toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search
+      || o.customer_name.toLowerCase().includes(search.toLowerCase())
+      || (o.user_email ?? '').toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === 'tutti' || o.order_type === typeFilter;
     const matchDate = !dateFilter || o.created_at.startsWith(dateFilter);
     return matchSearch && matchType && matchDate;
   }), [orders, search, typeFilter, dateFilter]);
 
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
+
+  async function handleDeleteOrder(orderId: string) {
+    if (!window.confirm('Eliminare questo ordine? L\'azione non è reversibile.')) return;
+    setDeletingId(orderId);
+    try {
+      await deleteOrder(loggedUser!.access_token, orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+      if (expanded === orderId) setExpanded(null);
+    } catch { alert('Errore nell\'eliminazione'); }
+    setDeletingId(null);
+  }
+
+  async function saveAdminEmails(next: string[]) {
+    setSavingAdmins(true);
+    try {
+      await updateSetting(loggedUser!.access_token, 'admin_emails', next);
+      setAdminEmails(next);
+    } catch { alert('Errore nel salvataggio'); }
+    setSavingAdmins(false);
+  }
+
+  // ── Not logged in ──
+  if (!loggedUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a0a10]">
+        <div className="text-center px-8">
+          <div className="text-6xl mb-6">🔒</div>
+          <h1 className="text-white text-xl font-bold mb-2">Area riservata</h1>
+          <p className="text-white/40 text-sm mb-8">Accedi con l'account admin per continuare.</p>
+          <a href="/login" className="inline-block px-6 py-3 bg-[#CF6990] text-white text-[11px] uppercase tracking-[0.25em] font-semibold rounded-2xl hover:bg-white hover:text-[#1a0a10] transition-colors">Accedi</a>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Loading admin check ──
+  if (!adminEmailsLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a0a10]">
+        <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // ── Not admin ──
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#1a0a10]">
+        <div className="text-center px-8">
+          <div className="text-6xl mb-6">🚫</div>
+          <h1 className="text-white text-xl font-bold mb-2">Accesso negato</h1>
+          <p className="text-white/40 text-sm mb-8">L'account <span className="text-white/60">{loggedUser.email}</span> non ha i permessi admin.</p>
+          <a href="/" className="text-[#CF6990] text-[11px] uppercase tracking-[0.25em] hover:text-white transition-colors">← Torna al sito</a>
+        </div>
+      </div>
+    );
+  }
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'ordini',      label: `Ordini${newOrderCount > 0 ? ` 🔴${newOrderCount}` : ` (${filtered.length})`}` },
@@ -428,8 +524,7 @@ export default function AdminPage() {
       {/* Tabs */}
       <div className="flex bg-white border-b border-black/8 overflow-x-auto">
         {tabs.map(t => (
-          <button
-            key={t.key}
+          <button key={t.key}
             onClick={() => { setTab(t.key); if (t.key === 'ordini') setNewOrderCount(0); }}
             className={`flex-1 min-w-fit py-3 px-2 text-[10px] uppercase tracking-[0.2em] font-semibold whitespace-nowrap transition-colors ${
               tab === t.key ? 'text-[#CF6990] border-b-2 border-[#CF6990]' : 'text-black/30 hover:text-black/60'
@@ -440,30 +535,26 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Ordini tab */}
+      {/* ── Ordini ── */}
       {tab === 'ordini' && (
         <>
           <div className="px-4 py-3 bg-white border-b border-black/6 flex flex-wrap gap-2 sticky top-0 z-10 shadow-sm">
-            <input
-              type="text" value={search} placeholder="🔍  Cerca cliente…"
+            <input type="text" value={search} placeholder="🔍  Cerca cliente…"
               onChange={e => setSearch(e.target.value)}
               className="flex-1 min-w-[130px] border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
             />
-            <input
-              type="date" value={dateFilter}
-              onChange={e => setDateFilter(e.target.value)}
+            <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)}
               className="border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
             />
-            <select
-              value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
+            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}
               className="border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
             >
-              {['tutti', 'asporto', 'domicilio', 'tavolo'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+              {['tutti', 'asporto', 'domicilio', 'tavolo'].map(t => (
+                <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+              ))}
             </select>
-            <button
-              onClick={() => exportOrdersCSV(filtered)}
-              className="px-3 py-2 border border-black/12 rounded-xl text-[10px] uppercase tracking-wider text-black/50 hover:border-[#CF6990] hover:text-[#CF6990] transition-colors"
-            >
+            <button onClick={() => exportOrdersCSV(filtered)}
+              className="px-3 py-2 border border-black/12 rounded-xl text-[10px] uppercase tracking-wider text-black/50 hover:border-[#CF6990] hover:text-[#CF6990] transition-colors">
               ↓ CSV
             </button>
             {(search || dateFilter || typeFilter !== 'tutti') && (
@@ -473,15 +564,17 @@ export default function AdminPage() {
           </div>
 
           <div className="p-4 space-y-3 max-w-2xl mx-auto pb-16">
-            {loading && <div className="text-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto mb-3" /></div>}
+            {loading && <div className="text-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto" /></div>}
             {err && <p className="text-center text-red-400 py-12 text-sm">{err}</p>}
-            {!loading && !err && filtered.length === 0 && <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun ordine trovato</p>}
+            {!loading && !err && filtered.length === 0 && (
+              <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun ordine trovato</p>
+            )}
 
             <AnimatePresence>
               {filtered.map((order, idx) => (
-                <motion.div
-                  key={order.id}
+                <motion.div key={order.id}
                   initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ delay: idx * 0.02 }}
                   className="bg-white rounded-2xl border border-black/6 overflow-hidden shadow-sm"
                 >
@@ -502,7 +595,8 @@ export default function AdminPage() {
                       <p className="font-bold text-[#CF6990] text-base">€{order.total.toFixed(2)}</p>
                       <p className="text-[10px] text-black/30">{order.items.length} art.</p>
                     </div>
-                    <motion.span animate={{ rotate: expanded === order.id ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-black/25 text-sm shrink-0">▾</motion.span>
+                    <motion.span animate={{ rotate: expanded === order.id ? 180 : 0 }}
+                      transition={{ duration: 0.2 }} className="text-black/25 text-sm shrink-0">▾</motion.span>
                   </button>
 
                   <AnimatePresence>
@@ -513,22 +607,21 @@ export default function AdminPage() {
                         className="overflow-hidden"
                       >
                         <div className="border-t border-black/6 px-5 py-4 space-y-3 bg-[#fdf5f8]/60">
-                          {/* Status selector */}
+                          {/* Status */}
                           <div>
                             <p className="text-[10px] uppercase tracking-widest text-black/30 mb-2">Stato ordine</p>
                             <div className="flex flex-wrap gap-2">
                               {ORDER_STATUSES.map(s => (
-                                <button
-                                  key={s.value}
+                                <button key={s.value}
                                   onClick={async () => {
                                     try {
-                                      await updateOrderStatus(loggedUser!.access_token, order.id, s.value);
+                                      await updateOrderStatus(loggedUser.access_token, order.id, s.value);
                                       setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: s.value } : o));
                                     } catch { alert('Errore aggiornamento stato'); }
                                   }}
                                   className={`text-[10px] px-3 py-1.5 rounded-full border font-semibold uppercase tracking-wider transition-all ${
                                     (order.status ?? 'nuovo') === s.value
-                                      ? s.color + ' opacity-100'
+                                      ? s.color
                                       : 'border-black/10 text-black/30 hover:border-black/25'
                                   }`}
                                 >
@@ -554,11 +647,22 @@ export default function AdminPage() {
                             ))}
                           </div>
 
-                          {order.notes && <p className="text-[11px] text-black/40 pt-2 border-t border-black/6 italic">⏱ {order.notes}</p>}
-                          <div className="flex justify-between pt-2 border-t border-black/10 font-bold text-sm">
-                            <span className="text-black/60">Totale</span>
-                            <span className="text-[#CF6990]">€{order.total.toFixed(2)}</span>
+                          {order.notes && (
+                            <p className="text-[11px] text-black/40 pt-2 border-t border-black/6 italic">⏱ {order.notes}</p>
+                          )}
+                          <div className="flex items-center justify-between pt-2 border-t border-black/10">
+                            <span className="text-sm font-bold text-black/60">Totale</span>
+                            <span className="text-sm font-bold text-[#CF6990]">€{order.total.toFixed(2)}</span>
                           </div>
+
+                          {/* Delete */}
+                          <button
+                            onClick={() => handleDeleteOrder(order.id)}
+                            disabled={deletingId === order.id}
+                            className="w-full mt-1 py-2.5 rounded-xl border border-red-200 text-red-400 text-[10px] uppercase tracking-[0.2em] font-semibold hover:bg-red-50 hover:border-red-300 transition-colors disabled:opacity-40"
+                          >
+                            {deletingId === order.id ? 'Eliminazione…' : '🗑 Elimina ordine'}
+                          </button>
                         </div>
                       </motion.div>
                     )}
@@ -571,45 +675,129 @@ export default function AdminPage() {
       )}
 
       {tab === 'statistiche' && <StatisticheTab orders={orders} />}
-      {tab === 'menu' && <MenuTab adminToken={loggedUser!.access_token} />}
-      {tab === 'smash' && <SmashTab adminToken={loggedUser!.access_token} />}
+      {tab === 'menu' && <MenuTab adminToken={loggedUser.access_token} />}
+      {tab === 'smash' && <SmashTab adminToken={loggedUser.access_token} />}
 
-      {/* Profili tab */}
+      {/* ── Profili ── */}
       {tab === 'profili' && (
-        <div className="p-4 space-y-3 max-w-2xl mx-auto pb-16">
-          {profilesLoading && <div className="text-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto mb-3" /></div>}
-          {!profilesLoading && profiles.length === 0 && <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun profilo ancora</p>}
+        <div className="p-4 space-y-4 max-w-2xl mx-auto pb-16">
+
+          {/* Admin management — solo primary admin */}
+          {isPrimaryAdmin && (
+            <div className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
+              <p className="px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-[#CF6990] font-bold border-b border-black/6">
+                Amministratori
+              </p>
+
+              {/* Primary admin */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-black/4">
+                <div>
+                  <p className="text-sm font-semibold text-[#1a0a10]">{PRIMARY_ADMIN}</p>
+                  <p className="text-[10px] text-black/30 mt-0.5">Admin principale</p>
+                </div>
+                <span className="text-[10px] uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#FBE8EF] text-[#CF6990] border border-[#CF6990]/20 font-semibold">
+                  Owner
+                </span>
+              </div>
+
+              {/* Extra admins */}
+              {adminEmails.map(email => (
+                <div key={email} className="flex items-center justify-between px-4 py-3 border-b border-black/4 last:border-0">
+                  <p className="text-sm text-[#1a0a10]">{email}</p>
+                  <button
+                    onClick={async () => {
+                      const next = adminEmails.filter(e => e !== email);
+                      await saveAdminEmails(next);
+                    }}
+                    className="text-[10px] text-red-400 hover:text-red-600 uppercase tracking-wider transition-colors"
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              ))}
+
+              {/* Add new admin */}
+              <div className="px-4 py-3 flex gap-2">
+                <input
+                  type="email"
+                  value={newAdminEmail}
+                  onChange={e => setNewAdminEmail(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && newAdminEmail.includes('@')) {
+                      const next = [...new Set([...adminEmails, newAdminEmail.toLowerCase().trim()])];
+                      saveAdminEmails(next).then(() => setNewAdminEmail(''));
+                    }
+                  }}
+                  placeholder="Aggiungi email admin…"
+                  className="flex-1 border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
+                />
+                <button
+                  onClick={async () => {
+                    if (!newAdminEmail.includes('@')) return;
+                    const next = [...new Set([...adminEmails, newAdminEmail.toLowerCase().trim()])];
+                    await saveAdminEmails(next);
+                    setNewAdminEmail('');
+                  }}
+                  disabled={savingAdmins || !newAdminEmail.includes('@')}
+                  className="px-4 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* User profiles */}
+          {profilesLoading && (
+            <div className="text-center py-16">
+              <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto" />
+            </div>
+          )}
+          {!profilesLoading && profiles.length === 0 && (
+            <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun profilo ancora</p>
+          )}
+
           {profiles.map(p => {
             const count = effectiveCount(p);
             const tier = getTier(count);
             const nextTier = tier ? TIERS.find(t => t.min === tier.nextMin) ?? null : TIERS[0];
             const isEditing = editingEmail === p.email;
+            const isExtraAdmin = adminEmails.includes(p.email);
+
             return (
-              <motion.div key={p.email} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl border border-black/6 px-5 py-4 shadow-sm">
+              <motion.div key={p.email} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl border border-black/6 px-5 py-4 shadow-sm">
                 <div className="flex items-center gap-3">
                   {p.avatar_url
                     ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border border-black/8 shrink-0" />
                     : <span className="w-10 h-10 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center shrink-0">{p.name?.[0]?.toUpperCase()}</span>
                   }
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-sm text-[#1a0a10] truncate">{p.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-sm text-[#1a0a10] truncate">{p.name}</p>
+                      {isExtraAdmin && (
+                        <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FBE8EF] text-[#CF6990] border border-[#CF6990]/20 font-semibold shrink-0">Admin</span>
+                      )}
+                    </div>
                     <p className="text-[11px] text-black/35 truncate">{p.email}</p>
                     <p className="text-[10px] text-black/25 mt-0.5">Prima visita: {new Date(p.first_seen).toLocaleDateString('it-IT')}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    {tier ? <p className="text-[11px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
+                    {tier
+                      ? <p className="text-[11px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
                       : nextTier ? <p className="text-[10px] text-black/25">→ {nextTier.name}</p> : null}
                     <p className="text-xl font-bold text-[#1a0a10]">{count}</p>
                     <p className="text-[9px] text-black/25 uppercase tracking-wide">ordini</p>
                     {p.order_count_override !== null && <p className="text-[9px] text-[#CF6990]">override</p>}
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-black/6">
+
+                <div className="mt-3 pt-3 border-t border-black/6 flex items-center justify-between gap-3">
                   {isEditing ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number" min="0" value={editValue} onChange={e => setEditValue(e.target.value)}
-                        placeholder="Override…"
+                    <div className="flex items-center gap-2 flex-1">
+                      <input type="number" min="0" value={editValue}
+                        onChange={e => setEditValue(e.target.value)}
+                        placeholder="Override contatore…"
                         className="flex-1 border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
                         autoFocus
                       />
@@ -618,16 +806,18 @@ export default function AdminPage() {
                         const val = raw === '' ? null : parseInt(raw, 10);
                         if (raw !== '' && isNaN(val!)) return;
                         try {
-                          await setProfileOverride(loggedUser!.access_token, p.email, val);
+                          await setProfileOverride(loggedUser.access_token, p.email, val);
                           setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: val } : x));
                           setEditingEmail(null);
                         } catch { alert('Errore nel salvataggio.'); }
-                      }} className="px-3 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors">Salva</button>
+                      }} className="px-3 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors">
+                        Salva
+                      </button>
                       <button onClick={async () => {
                         setEditingEmail(null);
                         if (p.order_count_override !== null) {
                           try {
-                            await setProfileOverride(loggedUser!.access_token, p.email, null);
+                            await setProfileOverride(loggedUser.access_token, p.email, null);
                             setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: null } : x));
                           } catch { alert('Errore nel reset.'); }
                         }
@@ -639,6 +829,26 @@ export default function AdminPage() {
                     <button onClick={() => { setEditingEmail(p.email); setEditValue(p.order_count_override?.toString() ?? ''); }}
                       className="text-[10px] uppercase tracking-[0.2em] text-black/30 hover:text-[#CF6990] transition-colors">
                       ✏ Modifica punteggio
+                    </button>
+                  )}
+
+                  {/* Admin toggle — solo primary admin, non su se stesso */}
+                  {isPrimaryAdmin && p.email !== PRIMARY_ADMIN && (
+                    <button
+                      onClick={async () => {
+                        const next = isExtraAdmin
+                          ? adminEmails.filter(e => e !== p.email)
+                          : [...adminEmails, p.email];
+                        await saveAdminEmails(next);
+                      }}
+                      disabled={savingAdmins}
+                      className={`text-[10px] uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border font-semibold transition-colors shrink-0 ${
+                        isExtraAdmin
+                          ? 'border-[#CF6990]/30 text-[#CF6990] hover:bg-red-50 hover:border-red-300 hover:text-red-400'
+                          : 'border-black/12 text-black/30 hover:border-[#CF6990] hover:text-[#CF6990]'
+                      }`}
+                    >
+                      {isExtraAdmin ? '− Admin' : '+ Admin'}
                     </button>
                   )}
                 </div>
