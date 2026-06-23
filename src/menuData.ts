@@ -9,6 +9,7 @@ export interface BurgerDef {
   fixedPrice?: number;
   combo: number;
   allergens: number[];
+  popular?: boolean;
 }
 
 export interface FryDef {
@@ -28,6 +29,7 @@ export const BURGERS: BurgerDef[] = [
     fixedPrice: 11,
     combo: 3,
     allergens: [1, 3, 7, 10, 12],
+    popular: true,
   },
   {
     name: 'Oklahoma',
@@ -37,6 +39,7 @@ export const BURGERS: BurgerDef[] = [
     prices: { single: 9, double: 13, triple: 16.5 },
     combo: 3,
     allergens: [1, 3, 7, 10, 12],
+    popular: true,
   },
   {
     name: 'Jalapeño Popper',

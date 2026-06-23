@@ -293,6 +293,11 @@ function BurgerRow({ burger, index, onAdd }: {
           {burger.spicy && <span className="text-sm leading-none">🌶️</span>}
           {(burger.tag === 'Chicken' || burger.tag === 'Wrap') && <span className="text-sm leading-none">🍗</span>}
           {burger.tag === 'Veggie' && <span className="text-sm leading-none">🌿</span>}
+          {burger.popular && (
+            <span className="text-[9px] font-bold text-white bg-[#CF6990] rounded px-2 py-0.5 tracking-widest uppercase leading-none">
+              🔥 Il più ordinato
+            </span>
+          )}
         </div>
         <div className="shrink-0 text-right">
           {burger.prices ? (

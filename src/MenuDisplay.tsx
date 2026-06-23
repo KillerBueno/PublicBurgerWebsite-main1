@@ -66,9 +66,9 @@ function BurgerItem({ burger, last }: { burger: typeof BURGERS[0]; last?: boolea
           <span style={{ fontSize: 34, fontWeight: 700, color: PINK, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>
             {burger.name}
           </span>
-          {burger.name === 'Oklahoma' && (
+          {burger.popular && (
             <span style={{ fontSize: 10, fontWeight: 700, color: '#fff', background: PINK, borderRadius: 4, padding: '3px 8px', letterSpacing: '0.12em', textTransform: 'uppercase', lineHeight: 1 }}>
-              Il più ordinato
+              🔥 Il più ordinato
             </span>
           )}
           {burger.spicy && <span style={{ fontSize: 20, lineHeight: 1 }}>🌶️</span>}
