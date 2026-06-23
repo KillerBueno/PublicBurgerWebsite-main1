@@ -1244,6 +1244,14 @@ export default function ShowcasePage() {
                   className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
                 />
               </div>
+              <div className="w-px h-10 bg-black/8" />
+              <div className="flex flex-col items-center gap-2">
+                <img
+                  src="/logo-macelleria.png"
+                  alt="Macelleria Franco Capobianco"
+                  className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                />
+              </div>
             </div>
           </div>
         </Reveal>
