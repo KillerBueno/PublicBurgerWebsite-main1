@@ -1006,6 +1006,24 @@ export default function ShowcasePage() {
     setCart((prev) => prev.filter((i) => i.id !== id));
   }
 
+  function removeExtra(name: string, price: number) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra | undefined;
+      if (!existing) return prev;
+      if (existing.qty <= 1) return prev.filter((i) => i.id !== existing.id);
+      return prev.map((i) => i.id === existing.id ? { ...existing, qty: existing.qty - 1, totalPrice: existing.totalPrice - price } : i);
+    });
+  }
+
+  function removeFry(fry: typeof FRIES[0]) {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.type === 'fry' && (i as CartFry).fry.name === fry.name) as CartFry | undefined;
+      if (!existing) return prev;
+      if (existing.qty <= 1) return prev.filter((i) => i.id !== existing.id);
+      return prev.map((i) => i.id === existing.id ? { ...existing, qty: existing.qty - 1, totalPrice: (existing.qty - 1) * fry.price } : i);
+    });
+  }
+
   return (
     <>
       <style>{`
@@ -1188,24 +1206,45 @@ export default function ShowcasePage() {
                 <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
               </div>
             </Reveal>
-            {FRIES.map((f, i) => (
-              <Reveal key={f.name} delay={i * 0.07}>
-                <div className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-5 mb-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-xl md:text-2xl tracking-tight text-[#1a0a10] uppercase font-semibold leading-none mb-1">{f.name}</div>
-                    <div className="text-xs text-black/35">{f.desc}</div>
-                    <AllergenTag allergens={f.allergens} />
-                  </div>
-                  <div className="flex items-center gap-4 shrink-0">
-                    <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
-                    <button onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
-                      className="w-8 h-8 rounded-full border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none">
-                      +
-                    </button>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
+            {FRIES.map((f, i) => {
+              const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
+              return (
+                <Reveal key={f.name} delay={i * 0.07}>
+                  <motion.button
+                    onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full text-left rounded-2xl border transition-all duration-200 mb-3 px-5 py-5 flex items-center justify-between ${
+                      fryQty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/5 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="text-xl md:text-2xl tracking-tight text-[#1a0a10] uppercase font-semibold leading-none">{f.name}</div>
+                        {fryQty > 0 && (
+                          <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{fryQty}</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-black/35">{f.desc}</div>
+                      <AllergenTag allergens={f.allergens} />
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
+                      {fryQty > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeFry(f); }}
+                          className="w-8 h-8 rounded-full border border-[#CF6990]/30 text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none hover:bg-[#CF6990] hover:text-white"
+                        >
+                          −
+                        </button>
+                      )}
+                      <div className="w-8 h-8 rounded-full border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-all duration-200 leading-none">
+                        +
+                      </div>
+                    </div>
+                  </motion.button>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
 
@@ -1217,11 +1256,41 @@ export default function ShowcasePage() {
                 <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Salse</span>
               </div>
             </Reveal>
-            {SALSE_LIST.map((s, i) => (
-              <Reveal key={s} delay={i * 0.05}>
-                <ExtraRow name={s} price={0.5} onAdd={() => addExtra(s, 'salsa', 0.5)} cart={cart} allergens={SALSE_ALLERGENS[s] ?? []} />
-              </Reveal>
-            ))}
+            {SALSE_LIST.map((s, i) => {
+              const qty = (cart.filter((ci) => ci.type === 'extra' && (ci as CartExtra).name === s) as CartExtra[]).reduce((acc, ci) => acc + ci.qty, 0);
+              return (
+                <Reveal key={s} delay={i * 0.05}>
+                  <motion.button
+                    onClick={() => addExtra(s, 'salsa', 0.5)}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
+                      qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{s}</span>
+                      {qty > 0 && (
+                        <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
+                      )}
+                      {SALSE_ALLERGENS[s] && SALSE_ALLERGENS[s].length > 0 && (
+                        <span className="text-[9px] text-black/25 tracking-wider">All: {SALSE_ALLERGENS[s].join(', ')}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm text-[#CF6990] tracking-widest">€0,50</span>
+                      {qty > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeExtra(s, 0.5); }}
+                          className="w-7 h-7 rounded-full border border-[#CF6990]/30 text-[#CF6990] text-sm flex items-center justify-center transition-all duration-200 leading-none hover:bg-[#CF6990] hover:text-white"
+                        >
+                          −
+                        </button>
+                      )}
+                    </div>
+                  </motion.button>
+                </Reveal>
+              );
+            })}
           </div>
         </section>
 
@@ -1260,7 +1329,17 @@ export default function ShowcasePage() {
                         <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
                       )}
                     </div>
-                    <span className="text-sm text-[#CF6990] tracking-widest shrink-0">€{drinkPrice % 1 === 0 ? drinkPrice : drinkPrice.toFixed(1)}</span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-sm text-[#CF6990] tracking-widest">€{drinkPrice % 1 === 0 ? drinkPrice : drinkPrice.toFixed(1)}</span>
+                      {qty > 0 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeExtra(b, drinkPrice); }}
+                          className="w-7 h-7 rounded-full border border-[#CF6990]/30 text-[#CF6990] text-sm flex items-center justify-center transition-all duration-200 leading-none hover:bg-[#CF6990] hover:text-white"
+                        >
+                          −
+                        </button>
+                      )}
+                    </div>
                   </motion.button>
                 </Reveal>
               );
