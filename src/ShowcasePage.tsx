@@ -1233,22 +1233,38 @@ export default function ShowcasePage() {
                 <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Bibite</span>
               </div>
             </Reveal>
-            {['Coca-Cola', 'Coca-Cola Zero', 'Fanta', 'Sprite', 'Fuze Tea Limone', 'Fuze Tea Pesca', 'Acqua Liscia', 'Acqua Frizzante'].map((b, i) => {
-              const drinkPrice = (b === 'Acqua Liscia' || b === 'Acqua Frizzante') ? 1 : 2.5;
+            {[
+              { name: 'Coca-Cola', price: 2.5 },
+              { name: 'Coca-Cola Zero', price: 2.5 },
+              { name: 'Fanta', price: 2.5 },
+              { name: 'Sprite', price: 2.5 },
+              { name: 'Fuze Tea Limone', price: 2.5 },
+              { name: 'Fuze Tea Pesca', price: 2.5 },
+              { name: 'Acqua Liscia', price: 1 },
+              { name: 'Acqua Frizzante', price: 1 },
+              { name: 'Forst 0,33', price: 3.5 },
+            ].map(({ name: b, price: drinkPrice }, i) => {
+              const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === b) as CartExtra[]).reduce((s, i) => s + i.qty, 0);
               return (
-                <Reveal key={b} delay={i * 0.05}>
-                  <ExtraRow name={b} price={drinkPrice} onAdd={() => addExtra(b, 'bibita', drinkPrice)} cart={cart} />
+                <Reveal key={b} delay={i * 0.04}>
+                  <motion.button
+                    onClick={() => addExtra(b, 'bibita', drinkPrice)}
+                    whileTap={{ scale: 0.98 }}
+                    className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
+                      qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{b}</span>
+                      {qty > 0 && (
+                        <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
+                      )}
+                    </div>
+                    <span className="text-sm text-[#CF6990] tracking-widest shrink-0">€{drinkPrice % 1 === 0 ? drinkPrice : drinkPrice.toFixed(1)}</span>
+                  </motion.button>
                 </Reveal>
               );
             })}
-            <Reveal delay={0.4}>
-              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2 mt-8">
-                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Birre</span>
-              </div>
-            </Reveal>
-            <Reveal delay={0.45}>
-              <ExtraRow name="Forst 0,33" price={3.5} onAdd={() => addExtra('Forst 0,33', 'birra', 3.5)} cart={cart} />
-            </Reveal>
           </div>
         </section>
 
