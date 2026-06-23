@@ -278,7 +278,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
         {/* Footer */}
         <div className="px-7 py-4 border-t border-black/6 shrink-0 flex items-center justify-between">
           {stepIndex > 0 ? (
-            <button onClick={goBack} className="w-9 h-9 flex items-center justify-center text-black/25 hover:text-black/60 transition-colors text-lg">
+            <button onClick={goBack} className="w-9 h-9 flex items-center justify-center bg-black/8 hover:bg-[#CF6990] text-black/50 hover:text-white transition-all duration-200 rounded-full text-lg font-bold">
               ←
             </button>
           ) : <div className="w-9" />}
@@ -296,7 +296,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
               Aggiungi
             </button>
           ) : isMultiSelect ? (
-            <button onClick={goNext} className="w-9 h-9 flex items-center justify-center text-black/25 hover:text-black/60 transition-colors text-lg">
+            <button onClick={goNext} className="w-9 h-9 flex items-center justify-center bg-black/8 hover:bg-[#CF6990] text-black/50 hover:text-white transition-all duration-200 rounded-full text-lg font-bold">
               →
             </button>
           ) : <div className="w-9" />}
