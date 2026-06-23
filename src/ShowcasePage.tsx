@@ -1174,6 +1174,22 @@ export default function ShowcasePage() {
           items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30']}
         />
 
+        {/* ── Fornitori ── */}
+        <Reveal>
+          <div className="py-10 px-6 flex flex-col items-center gap-5">
+            <p className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold">I nostri fornitori</p>
+            <div className="flex flex-wrap items-center justify-center gap-10">
+              <div className="flex flex-col items-center gap-2">
+                <img
+                  src="/logo-non-solo-pane.jpg"
+                  alt="Non Solo Pane"
+                  className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
+                />
+                <span className="text-[9px] tracking-[0.25em] uppercase text-black/25 font-medium">Fornitore bun</span>
+              </div>
+            </div>
+          </div>
+        </Reveal>
 
         {/* ── Anchor nav ── */}
         <AnchorNav />
