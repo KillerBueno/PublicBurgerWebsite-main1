@@ -24,8 +24,13 @@ export default function App() {
 
   useEffect(() => {
     if (window.location.hash.includes('access_token') || sessionStorage.getItem('pb_oauth_hash')) {
-      handleAuthCallback().then(() => {
-        window.dispatchEvent(new Event('pb-user-changed'));
+      handleAuthCallback().then(user => {
+        if (user) {
+          // Reload cleanly to avoid blank screen after OAuth redirect
+          window.location.replace('/');
+        } else {
+          window.dispatchEvent(new Event('pb-user-changed'));
+        }
       });
     }
   }, []);
