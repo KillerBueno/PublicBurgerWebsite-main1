@@ -176,27 +176,6 @@ export default function App() {
     );
   }
 
-  const loggedUser = getStoredUser();
-  if (!loggedUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center"
-        style={{ background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)' }}>
-        <div className="bg-white w-full max-w-xs mx-4 p-8 shadow-2xl rounded-3xl text-center">
-          <img src="/logo-public-burger.png" alt="Public Burger" className="h-12 mx-auto mb-6" />
-          <h2 className="text-lg font-bold text-[#1a0a10] mb-1">Accedi per continuare</h2>
-          <p className="text-[11px] text-black/40 mb-6 leading-relaxed">
-            Crea un account gratuito per vedere il menu, personalizzare i tuoi burger e tenere traccia dei tuoi ordini.
-          </p>
-          <a href="/login"
-            className="block w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.25em] font-semibold hover:bg-[#CF6990] transition-colors duration-300 rounded-2xl mb-3">
-            Accedi / Registrati
-          </a>
-          <p className="text-[10px] text-black/25">È gratuito e veloce con Google</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       {splash && <SplashScreen onDone={handleSplashDone} />}
