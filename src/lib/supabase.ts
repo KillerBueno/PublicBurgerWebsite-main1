@@ -67,6 +67,7 @@ export function getStoredUser(): PBUser | null {
 
 export function signOut() {
   sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('pb_order_count');
   window.location.href = '/';
 }
 

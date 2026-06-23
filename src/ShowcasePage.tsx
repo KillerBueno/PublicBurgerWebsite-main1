@@ -99,7 +99,16 @@ function WordReveal({ text, className = '' }: { text: string; className?: string
 // ─── Order Counter (top-left iOS pill) ───────────────────────────────────────
 
 function OrderCounter({ hidden }: { hidden: boolean }) {
+  const [user, setUser] = useState<PBUser | null>(() => getStoredUser());
   const [count, setCount] = useState(() => getOrderCount());
+
+  useEffect(() => {
+    const refresh = () => setUser(getStoredUser());
+    window.addEventListener('pb-user-changed', refresh);
+    return () => window.removeEventListener('pb-user-changed', refresh);
+  }, []);
+
+  if (!user) return null;
   const [prevTier, setPrevTier] = useState<Tier | null>(() => getTier(getOrderCount()));
   const [unlocked, setUnlocked] = useState(false);
 
@@ -1033,6 +1042,10 @@ export default function ShowcasePage() {
           66%  { filter: brightness(1.4) hue-rotate(240deg) saturate(3) drop-shadow(0 0 20px #c4b5fd) contrast(1.1); }
           83%  { filter: brightness(2.0) hue-rotate(300deg) saturate(5) drop-shadow(0 0 50px #fb7185) contrast(1.4); }
           100% { filter: brightness(1.4) hue-rotate(360deg) saturate(3) drop-shadow(0 0 20px #f9a8d4) contrast(1.1); }
+        }
+        .tier-bronze,.tier-silver,.tier-gold,.tier-platinum,.tier-diamond {
+          will-change: filter;
+          transform: translateZ(0);
         }
         .tier-bronze   { animation: shimmer-bronze   2s ease-in-out infinite; }
         .tier-silver   { animation: shimmer-silver   1.8s ease-in-out infinite; }
