@@ -533,10 +533,10 @@ function NuggetsModal({ onConfirm, onClose }: { onConfirm: (label: string, price
 // ─── Sub nav ─────────────────────────────────────────────────────────────────
 
 const SUB_ITEMS = [
-  { id: 'panini', label: 'Panini' },
+  { id: 'panini', label: 'Burger' },
   { id: 'fries', label: 'Fries' },
   { id: 'salse', label: 'Salse' },
-  { id: 'bibite', label: 'Bibite' },
+  { id: 'bibite', label: 'Drinks' },
 ] as const;
 
 function SubNav() {
@@ -874,7 +874,7 @@ const SECTIONS = [
   { id: 'panini', label: 'Burger' },
   { id: 'fries', label: 'Patatine' },
   { id: 'salse', label: 'Salse' },
-  { id: 'bibite', label: 'Bibite' },
+  { id: 'bibite', label: 'Drinks' },
 ] as const;
 
 function AnchorNav() {
@@ -1230,7 +1230,7 @@ export default function ShowcasePage() {
           <div className="max-w-4xl mx-auto">
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Bibite</span>
+                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Drinks</span>
               </div>
             </Reveal>
             {[
