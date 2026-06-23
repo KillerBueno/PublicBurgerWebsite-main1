@@ -1361,6 +1361,27 @@ export default function ShowcasePage() {
           </Reveal>
         </section>
 
+        {/* ── Lavora con noi ── */}
+        <section className="px-6 md:px-16 py-10 max-w-4xl mx-auto w-full">
+          <Reveal>
+            <a
+              href="mailto:public.isoladelliri@gmail.com?subject=Candidatura%20spontanea%20%E2%80%94%20Public%20Burger"
+              className="group flex items-center justify-between w-full border border-black/8 rounded-2xl px-6 py-5 hover:border-[#CF6990] hover:bg-[#FBE8EF]/30 transition-all duration-300"
+            >
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-black/30 mb-1 font-semibold">Entra nel team</p>
+                <p className="text-lg font-semibold text-[#1a0a10] tracking-tight group-hover:text-[#CF6990] transition-colors">Lavora con noi →</p>
+              </div>
+              <div className="w-10 h-10 rounded-full border border-black/10 group-hover:border-[#CF6990] group-hover:bg-[#CF6990] flex items-center justify-center transition-all duration-300">
+                <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-black/30 group-hover:stroke-white transition-colors" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </div>
+            </a>
+          </Reveal>
+        </section>
+
         {/* ── Footer ── */}
         <footer className="bg-[#120608] border-t border-white/5 px-6 md:px-16 py-10 md:py-14">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
