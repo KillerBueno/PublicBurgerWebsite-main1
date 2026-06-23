@@ -25,8 +25,8 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
 
   const lines: string[] = [];
 
-  lines.push(`🍔 *ORDINE — PUBLIC BURGER*`);
-  lines.push(`──────────────────`);
+  lines.push(`*ORDINE - PUBLIC BURGER*`);
+  lines.push(`--------------------`);
 
   if (burgers.length) {
     lines.push(`*BURGER*`);
@@ -34,11 +34,11 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
       if (item.type !== 'burger') continue;
       const size = item.size ? ` (${SIZE[item.size] ?? item.size})` : '';
       const comboTag = item.combo ? ` [COMBO]` : '';
-      lines.push(`  • ${item.burger.name}${size}${comboTag}  →  €${item.totalPrice.toFixed(2)}`);
+      lines.push(`1x ${item.burger.name}${size}${comboTag}  -  EUR ${item.totalPrice.toFixed(2)}`);
       if (item.combo && item.drink)
-        lines.push(`     🥤 Bibita: ${item.drink}${item.drinkExtra > 0 ? ` (+€${item.drinkExtra.toFixed(2)})` : ''}`);
-      for (const r of item.removed) lines.push(`     ➖ ${r}`);
-      for (const e of item.extras)  lines.push(`     ➕ ${e}`);
+        lines.push(`   Bibita: ${item.drink}${item.drinkExtra > 0 ? ` (+EUR ${item.drinkExtra.toFixed(2)})` : ''}`);
+      for (const r of item.removed) lines.push(`   - ${r}`);
+      for (const e of item.extras)  lines.push(`   + ${e}`);
     }
   }
 
@@ -47,7 +47,7 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
     lines.push(`*FRIES / ANTIPASTI*`);
     for (const item of fries) {
       if (item.type !== 'fry') continue;
-      lines.push(`  • ${item.fry.name} ×${item.qty}  →  €${item.totalPrice.toFixed(2)}`);
+      lines.push(`${item.qty}x ${item.fry.name}  -  EUR ${item.totalPrice.toFixed(2)}`);
     }
   }
 
@@ -56,25 +56,25 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
     lines.push(`*EXTRA*`);
     for (const item of extras) {
       if (item.type !== 'extra') continue;
-      lines.push(`  • ${item.name} ×${item.qty}  →  €${item.totalPrice.toFixed(2)}`);
+      lines.push(`${item.qty}x ${item.name}  -  EUR ${item.totalPrice.toFixed(2)}`);
     }
   }
 
-  lines.push(`──────────────────`);
-  lines.push(`*TOTALE: €${total.toFixed(2)}*`);
+  lines.push(`--------------------`);
+  lines.push(`*TOTALE: EUR ${total.toFixed(2)}*`);
   lines.push(``);
 
   if (orderType === 'asporto') {
-    lines.push(`📦 *Asporto*`);
-    if (name) lines.push(`   Nome: ${name}`);
-    if (time) lines.push(`   Orario richiesto: ${time}`);
+    lines.push(`*Asporto*`);
+    if (name) lines.push(`Nome: ${name}`);
+    if (time) lines.push(`Orario: ${time}`);
   } else {
-    lines.push(`🛵 *Consegna a domicilio*`);
-    if (time) lines.push(`   Orario richiesto: ${time}`);
+    lines.push(`*Consegna a domicilio*`);
+    if (time) lines.push(`Orario: ${time}`);
   }
 
   lines.push(``);
-  lines.push(`Grazie mille! 🙏`);
+  lines.push(`Grazie mille!`);
 
   return lines.join('\n');
 }
