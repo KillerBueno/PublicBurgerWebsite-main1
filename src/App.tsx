@@ -16,7 +16,7 @@ const LOADING_MESSAGES = [
   'FRIGGENDO\nLE PATATINE',
 ];
 
-const STEP_DURATION = 700; // ms per messaggio
+const STEP_DURATION = 1100; // ms per messaggio
 
 function SplashScreen({ onDone }: { onDone: () => void }) {
   const [msgIndex, setMsgIndex] = useState(0);
