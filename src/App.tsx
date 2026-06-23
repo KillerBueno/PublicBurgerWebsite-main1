@@ -30,8 +30,8 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
         if (i >= LOADING_MESSAGES.length - 1) {
           clearInterval(intervalRef.current!);
           setTimeout(() => {
-            setVisible(false);
-            setTimeout(onDone, 400);
+            onDone();           // avvia subito il logoTransition overlay
+            setVisible(false);  // poi svanisce lo splash
           }, 600);
           return i;
         }
