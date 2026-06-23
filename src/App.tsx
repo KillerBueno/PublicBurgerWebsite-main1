@@ -166,14 +166,14 @@ export default function App() {
             }}
             initial={{ opacity: 1 }}
             animate={{ opacity: 0 }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: 0.3, delay: 0.7, ease: 'easeIn' }}
           >
             <motion.img
               src="/logo-public-burger.png"
               alt=""
-              initial={{ scale: 1, x: 0, y: 0 }}
-              animate={{ scale: 0.12, x: '-42vw', y: '-44vh' }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 18, opacity: 0 }}
+              transition={{ duration: 0.8, ease: [0.4, 0, 0.6, 1] }}
               style={{ width: 280 }}
             />
           </motion.div>
