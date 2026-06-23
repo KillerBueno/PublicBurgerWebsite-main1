@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import ShowcasePage from './ShowcasePage';
 import { handleAuthCallback } from './lib/supabase';
 
@@ -9,6 +9,69 @@ const AdminPage   = lazy(() => import('./AdminPage'));
 
 const AUTH_KEY = 'pb_auth';
 
+const LOADING_MESSAGES = [
+  '🔥 Accendendo la griglia...',
+  '🍔 Formando i burger...',
+  '🧅 Friggendo gli onion rings...',
+  '🍟 Friggendo le patatine...',
+  '🥓 Croccantizzando il bacon...',
+  '🧀 Sciogliendo il cheddar...',
+];
+
+function SplashScreen({ onDone }: { onDone: () => void }) {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setMsgIndex((i) => {
+        if (i >= LOADING_MESSAGES.length - 1) {
+          clearInterval(intervalRef.current!);
+          setTimeout(() => {
+            setVisible(false);
+            setTimeout(onDone, 400);
+          }, 600);
+          return i;
+        }
+        return i + 1;
+      });
+    }, 520);
+    return () => clearInterval(intervalRef.current!);
+  }, []);
+
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        transition: 'opacity 0.4s ease',
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'all' : 'none',
+      }}
+    >
+      <img src="/logo-public-burger.png" alt="Public Burger" style={{ height: 80, marginBottom: 40 }} />
+      <div style={{
+        fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.9)',
+        letterSpacing: '0.05em', textAlign: 'center',
+        minHeight: 24, transition: 'opacity 0.2s',
+      }}>
+        {LOADING_MESSAGES[msgIndex]}
+      </div>
+      <div style={{ marginTop: 28, display: 'flex', gap: 6 }}>
+        {LOADING_MESSAGES.map((_, i) => (
+          <div key={i} style={{
+            width: 5, height: 5, borderRadius: '50%',
+            background: i <= msgIndex ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
+            transition: 'background 0.3s',
+          }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const path = window.location.pathname;
 
@@ -18,9 +81,15 @@ export default function App() {
   if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
   if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
 
+  const [splash, setSplash] = useState(() => sessionStorage.getItem('pb_splash_done') !== '1');
   const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(false);
+
+  function handleSplashDone() {
+    sessionStorage.setItem('pb_splash_done', '1');
+    setSplash(false);
+  }
 
   useEffect(() => {
     if (window.location.hash.includes('access_token') || sessionStorage.getItem('pb_oauth_hash')) {
@@ -77,5 +146,10 @@ export default function App() {
     );
   }
 
-  return <ShowcasePage />;
+  return (
+    <>
+      {splash && <SplashScreen onDone={handleSplashDone} />}
+      <ShowcasePage />
+    </>
+  );
 }
