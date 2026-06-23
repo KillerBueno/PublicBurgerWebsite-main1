@@ -951,6 +951,7 @@ export default function ShowcasePage() {
   const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [smashPopup, setSmashPopup] = useState(() => sessionStorage.getItem('pb_smash_seen') !== '1');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 400);
@@ -1026,6 +1027,70 @@ export default function ShowcasePage() {
 
   return (
     <>
+      {/* ── Smash Monday Popup ── */}
+      <AnimatePresence>
+        {smashPopup && (
+          <motion.div
+            className="fixed inset-0 z-[100] flex items-end md:items-center justify-center"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            {/* Overlay */}
+            <motion.div
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => { sessionStorage.setItem('pb_smash_seen', '1'); setSmashPopup(false); }}
+            />
+            {/* Card */}
+            <motion.div
+              className="relative w-full md:max-w-md mx-4 md:mx-auto overflow-hidden rounded-t-3xl md:rounded-3xl shadow-2xl"
+              initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              style={{ background: '#1a0a10' }}
+            >
+              {/* Header band */}
+              <div className="px-7 pt-8 pb-6 text-center" style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)' }}>
+                <p className="text-[10px] tracking-[0.4em] uppercase text-[#CF6990] font-bold mb-2">Ogni lunedì</p>
+                <h2 className="text-[42px] font-black uppercase leading-none tracking-tight text-white">SMASH</h2>
+                <h2 className="text-[42px] font-black uppercase leading-none tracking-tight" style={{ color: '#CF6990' }}>MONDAY</h2>
+                <p className="text-[12px] text-white/40 mt-3 font-medium leading-relaxed">
+                  Il lunedì il menu cambia tutto.<br />Solo carne smashata, solo questi tre.
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/8 mx-7" />
+
+              {/* Burgers */}
+              <div className="px-7 py-5 space-y-3">
+                {[
+                  { name: 'Oklahoma', desc: 'Cipolla grigliata, Cheddar, Bacon, Pickles, Salsa public', price: 'da €9' },
+                  { name: 'Jalapeño Popper', desc: 'Jalapeño, Cheddar, Insalata, Creamy spicy sauce', price: 'da €9' },
+                  { name: 'Cheeseburger', desc: 'Cheddar, Pickles, Ketchup', price: 'da €8' },
+                ].map((b) => (
+                  <div key={b.name} className="flex items-center justify-between gap-4 py-2 border-b border-white/6 last:border-0">
+                    <div>
+                      <p className="text-[14px] font-bold text-white uppercase tracking-wide">{b.name}</p>
+                      <p className="text-[11px] text-white/35 mt-0.5">{b.desc}</p>
+                    </div>
+                    <span className="text-[14px] font-bold shrink-0" style={{ color: '#CF6990' }}>{b.price}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <div className="px-7 pb-8 pt-2">
+                <button
+                  onClick={() => { sessionStorage.setItem('pb_smash_seen', '1'); setSmashPopup(false); }}
+                  className="w-full py-4 rounded-2xl font-bold text-[13px] uppercase tracking-widest text-white transition-all duration-300 hover:opacity-90 active:scale-[0.98]"
+                  style={{ background: 'linear-gradient(135deg, #CF6990, #A8456B)' }}
+                >
+                  Vediamo il menu →
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
