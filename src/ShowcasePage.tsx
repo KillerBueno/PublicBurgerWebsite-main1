@@ -9,15 +9,15 @@ import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function Reveal({ children, delay = 0, className = '', y = 14 }: { children: React.ReactNode; delay?: number; className?: string; y?: number }) {
+function Reveal({ children, delay = 0, className = '' }: { children: React.ReactNode; delay?: number; className?: string }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '0px' });
   return (
     <motion.div
       ref={ref}
-      initial={{ opacity: 0, y }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.55, delay, ease: [0.25, 0.46, 0.45, 0.94] }}
+      initial={{ opacity: 0 }}
+      animate={inView ? { opacity: 1 } : {}}
+      transition={{ duration: 0.4, delay, ease: 'easeOut' }}
       className={className}
     >
       {children}
@@ -270,15 +270,9 @@ function BurgerRow({ burger, index, onAdd }: {
   index: number;
   onAdd: (b: BurgerDef, size?: import('./menuData').BurgerSize) => void;
 }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '0px' });
-
   return (
     <motion.div
-      ref={ref}
-      initial={{ opacity: 0 }}
-      animate={inView ? { opacity: 1 } : {}}
-      transition={{ duration: 0.4, delay: Math.min(index * 0.03, 0.15), ease: 'easeOut' }}
+      initial={false}
       className="bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-all duration-300"
       onClick={() => onAdd(burger)}
     >
@@ -942,17 +936,17 @@ function FornitoriSection() {
     <div ref={ref} className="py-10 px-6 flex flex-col items-center gap-5">
       <motion.p
         className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
-        initial={{ opacity: 0, y: 12 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
       >
         Materie prime di qualità
       </motion.p>
       <motion.p
         className="text-[13px] font-semibold text-black/50 text-center max-w-xs leading-snug"
-        initial={{ opacity: 0, y: 16 }}
-        animate={inView ? { opacity: 1, y: 0 } : {}}
-        transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0 }}
+        animate={inView ? { opacity: 1 } : {}}
+        transition={{ duration: 0.4, delay: 0.08, ease: 'easeOut' }}
       >
         Scegliamo con cura i nostri fornitori per portarti ingredienti freschi e selezionati, ogni giorno.
       </motion.p>
@@ -960,7 +954,7 @@ function FornitoriSection() {
         className="text-[9px] tracking-[0.35em] uppercase text-black/20 font-semibold"
         initial={{ opacity: 0 }}
         animate={inView ? { opacity: 1 } : {}}
-        transition={{ duration: 0.6, delay: 0.2 }}
+        transition={{ duration: 0.4, delay: 0.14, ease: 'easeOut' }}
       >
         I nostri fornitori
       </motion.p>
@@ -969,23 +963,18 @@ function FornitoriSection() {
           src="/logo-non-solo-pane.jpg"
           alt="Non Solo Pane"
           className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-          initial={{ opacity: 0, scale: 0.85, y: 10 }}
-          animate={inView ? { opacity: 0.5, scale: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 0.5 } : {}}
+          transition={{ duration: 0.4, delay: 0.2, ease: 'easeOut' }}
         />
-        <motion.div
-          className="w-px h-10 bg-black/8"
-          initial={{ scaleY: 0 }}
-          animate={inView ? { scaleY: 1 } : {}}
-          transition={{ duration: 0.4, delay: 0.45 }}
-        />
+        <div className="w-px h-10 bg-black/8" />
         <motion.img
           src="/logo-macelleria.png"
           alt="Macelleria Franco Capobianco"
           className="h-14 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-          initial={{ opacity: 0, scale: 0.85, y: 10 }}
-          animate={inView ? { opacity: 0.5, scale: 1, y: 0 } : {}}
-          transition={{ duration: 0.7, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0 }}
+          animate={inView ? { opacity: 0.5 } : {}}
+          transition={{ duration: 0.4, delay: 0.26, ease: 'easeOut' }}
         />
       </div>
     </div>
