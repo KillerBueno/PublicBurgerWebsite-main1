@@ -1270,9 +1270,6 @@ export default function ShowcasePage() {
           items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30']}
         />
 
-        {/* ── Fornitori ── */}
-        <FornitoriSection />
-
         {/* ── Anchor nav ── */}
         <AnchorNav />
 
@@ -1579,6 +1576,9 @@ export default function ShowcasePage() {
             </a>
           </Reveal>
         </section>
+
+        {/* ── Fornitori ── */}
+        <FornitoriSection />
 
         {/* ── Footer ── */}
         <footer className="bg-[#120608] border-t border-white/5 px-6 md:px-16 py-10 md:py-14">
