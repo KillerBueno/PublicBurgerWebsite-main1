@@ -18,6 +18,42 @@
 
   <link rel="manifest" href="/manifest.json" />
   <title>Public Burger</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Restaurant",
+    "name": "Public Burger",
+    "image": "https://publicburger.it/logo-public-512.png",
+    "url": "https://publicburger.it",
+    "telephone": "+393420006928",
+    "servesCuisine": "Hamburger",
+    "priceRange": "€€",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Piazza de Boncompagni 18",
+      "addressLocality": "Isola del Liri",
+      "postalCode": "03036",
+      "addressRegion": "FR",
+      "addressCountry": "IT"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Sunday"],
+        "opens": "18:30",
+        "closes": "00:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Friday","Saturday"],
+        "opens": "18:30",
+        "closes": "02:00"
+      }
+    ],
+    "menu": "https://publicburger.it",
+    "hasMap": "https://maps.google.com/?q=Piazza+de+Boncompagni+18+Isola+del+Liri"
+  }
+  </script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script>
     // Save OAuth token to sessionStorage then clean URL before React renders
