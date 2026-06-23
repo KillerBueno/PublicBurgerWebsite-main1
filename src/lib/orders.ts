@@ -8,6 +8,8 @@ export interface OrderItem {
   size?: string;
   removed?: string[];
   extras?: string[];
+  combo?: boolean;
+  drink?: string;
   price: number;
 }
 

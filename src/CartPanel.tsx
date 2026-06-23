@@ -33,9 +33,10 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
     for (const item of burgers) {
       if (item.type !== 'burger') continue;
       const size = item.size ? ` (${SIZE[item.size] ?? item.size})` : '';
-      lines.push(`  • ${item.burger.name}${size}  →  €${item.totalPrice.toFixed(2)}`);
+      const comboTag = item.combo ? ` [COMBO]` : '';
+      lines.push(`  • ${item.burger.name}${size}${comboTag}  →  €${item.totalPrice.toFixed(2)}`);
       if (item.combo && item.drink)
-        lines.push(`     🥤 Combo: ${item.drink}${item.drinkExtra > 0 ? ` (+€${item.drinkExtra.toFixed(2)})` : ''}`);
+        lines.push(`     🥤 Bibita: ${item.drink}${item.drinkExtra > 0 ? ` (+€${item.drinkExtra.toFixed(2)})` : ''}`);
       for (const r of item.removed) lines.push(`     ➖ ${r}`);
       for (const e of item.extras)  lines.push(`     ➕ ${e}`);
     }
@@ -179,6 +180,7 @@ export default function CartPanel({ items, onRemove, onClose }: Props) {
         if (item.type === 'burger') return {
           type: 'burger', name: item.burger.name,
           size: item.size ?? undefined, removed: item.removed, extras: item.extras,
+          combo: item.combo || undefined, drink: item.drink || undefined,
           price: item.totalPrice,
         };
         if (item.type === 'fry') return { type: 'fry', name: item.fry.name, qty: item.qty, price: item.totalPrice };

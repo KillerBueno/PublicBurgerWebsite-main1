@@ -903,6 +903,13 @@ export default function AdminPage() {
                                                   </span>
                                                 )}
                                               </div>
+                                              {item.combo && (
+                                                <div className="flex items-center gap-1 mt-1">
+                                                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-500 border border-blue-200 font-semibold">
+                                                    Combo{item.drink ? `: ${item.drink}` : ''}
+                                                  </span>
+                                                </div>
+                                              )}
                                               {item.removed?.map((r, ri) => (
                                                 <div key={ri} className="flex items-center gap-1 mt-1">
                                                   <span className="text-[11px] font-bold text-black/30">−</span>
