@@ -41,15 +41,14 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
     };
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
     // Upsert profile + sync override from Supabase if admin set one
-    import('./profiles').then(async ({ upsertProfile, fetchProfileByEmail }) => {
+    try {
+      const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
       await upsertProfile({ email: user.email, name: user.name, avatar_url: user.avatar_url });
       const profile = await fetchProfileByEmail(accessToken, user.email);
       if (profile && profile.order_count_override !== null) {
-        const count = profile.order_count_override;
-        localStorage.setItem('pb_order_count', String(count));
-        window.dispatchEvent(new CustomEvent('pb-orders-changed', { detail: { count } }));
+        localStorage.setItem('pb_order_count', String(profile.order_count_override));
       }
-    }).catch(() => {});
+    } catch {}
     return user;
   } catch {
     return null;
