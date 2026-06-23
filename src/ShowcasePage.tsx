@@ -27,6 +27,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   return <div ref={ref} className={`pb-reveal ${className}`}>{children}</div>;
 }
 
+const fmt = (price: number) => price % 1 === 0 ? `€${price}` : `€${price.toFixed(2).replace('.', ',')}`;
+
 function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
   const halfRef = useRef<HTMLDivElement>(null);
   const x = useMotionValue(0);
@@ -310,9 +312,9 @@ function BurgerRow({ burger, index, onAdd }: {
         </div>
         <div className="shrink-0 text-right">
           {burger.prices ? (
-            <span className="text-sm text-[#CF6990] tracking-widest">da €{burger.prices.single}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest">da {fmt(burger.prices.single)}</span>
           ) : (
-            <span className="text-sm text-[#CF6990] tracking-widest">€{burger.fixedPrice}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest">{fmt(burger.fixedPrice)}</span>
           )}
         </div>
       </div>
@@ -334,7 +336,7 @@ function BurgerRow({ burger, index, onAdd }: {
               className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
-              <span className="ml-2 text-black/30">€{burger.prices![s]}</span>
+              <span className="ml-2 text-black/30">{fmt(burger.prices![s])}</span>
             </button>
           ))}
         </div>
@@ -344,7 +346,7 @@ function BurgerRow({ burger, index, onAdd }: {
           className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
         >
           Singolo
-          <span className="ml-2 text-black/30">€{burger.fixedPrice}</span>
+          <span className="ml-2 text-black/30">{fmt(burger.fixedPrice)}</span>
         </button>
       )}
     </div>
@@ -379,7 +381,7 @@ function ExtraRow({ name, price, onAdd, cart, allergens }: { name: string; price
         )}
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        <span className="text-sm text-[#CF6990] tracking-widest">€{price % 1 === 0 ? price : price.toFixed(1)}</span>
+        <span className="text-sm text-[#CF6990] tracking-widest">{fmt(price)}</span>
         <motion.button
           onClick={handleAdd}
           animate={flash ? { scale: [1, 1.3, 1] } : {}}
@@ -441,7 +443,7 @@ function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm
         <div className="px-6 py-4 border-t border-black/8 shrink-0 flex items-center justify-between gap-3">
           <div>
             <div className="text-[9px] tracking-[0.3em] uppercase text-black/25 mb-0.5">Totale</div>
-            <div className="text-lg font-semibold text-[#CF6990]">€{fry.price.toFixed(1)}</div>
+            <div className="text-lg font-semibold text-[#CF6990]">{fmt(fry.price)}</div>
           </div>
           <button onClick={() => { onConfirm(selected); onClose(); }}
             className="text-[10px] tracking-[0.2em] uppercase font-bold bg-[#1a0a10] text-white px-6 py-3 hover:bg-[#CF6990] transition-colors duration-300">
@@ -1324,7 +1326,7 @@ export default function ShowcasePage() {
                       <AllergenTag allergens={f.allergens} />
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm text-[#CF6990] tracking-widest">€{f.price % 1 === 0 ? f.price : f.price.toFixed(1)}</span>
+                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(f.price)}</span>
                       {fryQty > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeFry(f); }}
@@ -1372,7 +1374,7 @@ export default function ShowcasePage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm text-[#CF6990] tracking-widest">€0,50</span>
+                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(0.5)}</span>
                       {qty > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeExtra(s, 0.5); }}
@@ -1424,7 +1426,7 @@ export default function ShowcasePage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-sm text-[#CF6990] tracking-widest">€{drinkPrice % 1 === 0 ? drinkPrice : drinkPrice.toFixed(1)}</span>
+                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(drinkPrice)}</span>
                       {qty > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeExtra(b, drinkPrice); }}
