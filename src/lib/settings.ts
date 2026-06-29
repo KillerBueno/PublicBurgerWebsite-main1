@@ -62,11 +62,33 @@ export function isCurrentlyOpen(config: OpeningHours): boolean {
   if (!config.enabled) return true;
   if (config.manual_close) return false;
   const now = new Date();
-  const dayKey = DAY_MAP[now.getDay()];
-  const day = config.hours[dayKey];
-  if (!day || day.closed) return false;
-  const [oh, om] = day.open.split(':').map(Number);
-  const [ch, cm] = day.close.split(':').map(Number);
   const mins = now.getHours() * 60 + now.getMinutes();
-  return mins >= oh * 60 + om && mins < ch * 60 + cm;
+
+  // Check current day; if past midnight also check previous day for sessions that cross midnight
+  const daysToCheck = [now.getDay()];
+  if (now.getHours() < 6) daysToCheck.push((now.getDay() + 6) % 7); // also check yesterday
+
+  for (const jsDay of daysToCheck) {
+    const dayKey = DAY_MAP[jsDay];
+    const day = config.hours[dayKey];
+    if (!day || day.closed) continue;
+    const [oh, om] = day.open.split(':').map(Number);
+    const [ch, cm] = day.close.split(':').map(Number);
+    const openMins = oh * 60 + om;
+    const closeMins = ch * 60 + cm;
+
+    if (jsDay === now.getDay()) {
+      // Same day: handle close-after-midnight (closeMins < openMins means crosses midnight)
+      if (closeMins <= openMins) {
+        // Crosses midnight (e.g. 18:30–02:00 or 18:30–00:00)
+        if (mins >= openMins) return true;
+      } else {
+        if (mins >= openMins && mins < closeMins) return true;
+      }
+    } else {
+      // Yesterday's session that extends into today (past midnight)
+      if (closeMins <= openMins && mins < closeMins) return true;
+    }
+  }
+  return false;
 }

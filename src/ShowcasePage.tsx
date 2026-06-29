@@ -771,18 +771,16 @@ function SubNav() {
 
 function isOpen(): boolean {
   const now = new Date();
-  const day = now.getDay(); // 0=dom, 1=lun, ..., 6=sab
-  const h = now.getHours();
-  const m = now.getMinutes();
-  const mins = h * 60 + m;
+  const day = now.getDay();
+  const mins = now.getHours() * 60 + now.getMinutes();
   const open = 18 * 60 + 30; // 18:30
 
-  // ven(5) e sab(6): chiude alle 02:00 del giorno dopo → chiude a 26*60
-  if (day === 5 || day === 6) {
-    return mins >= open || mins < 2 * 60;
-  }
-  // lun-gio(1-4) e dom(0): chiude a mezzanotte → 24*60 (mins non arriva mai a 24*60, usiamo 0-59 del mattino)
-  return mins >= open || mins < 60; // aperto fino alle 00:59
+  // ven(5) e sab(6): chiude alle 02:00 del giorno dopo
+  if (day === 5 || day === 6) return mins >= open || mins < 2 * 60;
+  // sab/dom dopo mezzanotte: può ancora essere nella sessione ven/sab
+  if (day === 0 && mins < 2 * 60) return true; // dom 00:00–01:59 = ancora sab sera
+  // lun-gio e dom: chiude esattamente a mezzanotte (00:00), nessun extra
+  return mins >= open;
 }
 
 function OpeningHours() {
@@ -1127,6 +1125,7 @@ export default function ShowcasePage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [smashPopup, setSmashPopup] = useState(false);
   const [loginModal, setLoginModal] = useState(false);
+  const [closedBannerDismissed, setClosedBannerDismissed] = useState(false);
   const [pageUser, setPageUser] = useState(() => getStoredUser());
   useEffect(() => {
     const refresh = () => setPageUser(getStoredUser());
@@ -1255,21 +1254,36 @@ export default function ShowcasePage() {
     <>
       <AdminReminder />
       {/* ── Chiuso Banner ── */}
-      {openingHours && !isCurrentlyOpen(openingHours) && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm">
-          <div className="bg-[#1a0a10] text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-4">
-            <span className="text-2xl shrink-0">🔒</span>
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#CF6990]">Siamo chiusi</p>
-              <p className="text-[12px] text-white/60 mt-0.5 leading-tight">
-                {openingHours.manual_close && openingHours.manual_close_message
-                  ? openingHours.manual_close_message
-                  : 'Il locale è attualmente chiuso. Torna presto!'}
-              </p>
+      <AnimatePresence>
+        {openingHours && !isCurrentlyOpen(openingHours) && !closedBannerDismissed && (
+          <motion.div
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm"
+            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="bg-[#1a0a10] text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-4">
+              <span className="text-2xl shrink-0">🔒</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#CF6990]">Siamo chiusi</p>
+                <p className="text-[12px] text-white/60 mt-0.5 leading-tight">
+                  {openingHours.manual_close && openingHours.manual_close_message
+                    ? openingHours.manual_close_message
+                    : 'Il locale è attualmente chiuso. Torna presto!'}
+                </p>
+              </div>
+              <button
+                onClick={() => setClosedBannerDismissed(true)}
+                className="shrink-0 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/50 hover:text-white transition-colors text-lg leading-none"
+                aria-label="Chiudi"
+              >
+                ×
+              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── Smash Monday Popup ── */}
       <AnimatePresence>
