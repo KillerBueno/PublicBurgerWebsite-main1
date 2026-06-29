@@ -16,13 +16,17 @@ export function effectiveCount(p: UserProfile): number {
   return p.order_count_override ?? (p.real_order_count ?? 0);
 }
 
-export async function upsertProfile(profile: { email: string; name: string; avatar_url: string }): Promise<void> {
+export async function upsertProfile(
+  userToken: string,
+  profile: { email: string; name: string; avatar_url: string },
+): Promise<void> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   await fetch(`${SUPABASE_URL}/rest/v1/user_profiles`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${userToken}`,
       Prefer: 'resolution=merge-duplicates',
     },
     body: JSON.stringify({
@@ -36,12 +40,9 @@ export async function upsertProfile(profile: { email: string; name: string; avat
 
 export async function fetchProfiles(adminToken: string): Promise<UserProfile[]> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const tryFetch = (token: string) =>
-    fetch(`${SUPABASE_URL}/rest/v1/user_profiles?order=last_seen.desc`, {
-      headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${token}` },
-    });
-  let res = await tryFetch(adminToken);
-  if (!res.ok) res = await tryFetch(SUPABASE_KEY);
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?order=last_seen.desc`, {
+    headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${adminToken}` },
+  });
   if (!res.ok) return [];
   return res.json();
 }

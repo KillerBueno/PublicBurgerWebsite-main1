@@ -43,7 +43,7 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
     // Upsert profile + sync override from Supabase if admin set one
     try {
       const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
-      await upsertProfile({ email: user.email, name: user.name, avatar_url: user.avatar_url });
+      await upsertProfile(accessToken, { email: user.email, name: user.name, avatar_url: user.avatar_url });
       const profile = await fetchProfileByEmail(accessToken, user.email);
       if (profile && profile.order_count_override !== null) {
         localStorage.setItem('pb_order_count', String(profile.order_count_override));

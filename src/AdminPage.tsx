@@ -68,23 +68,27 @@ function fmtTime(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
 }
 
+function esc(s: string) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function printOrder(order: Order) {
   const items = order.items.map(i =>
-    `<tr><td>${i.name}${i.size ? ` (${i.size})` : ''}${i.qty && i.qty > 1 ? ` ×${i.qty}` : ''}</td><td style="text-align:right">€${i.price.toFixed(2)}</td></tr>`
-    + (i.removed?.length ? `<tr><td colspan="2" style="font-size:11px;color:#666">Senza: ${i.removed.join(', ')}</td></tr>` : '')
-    + (i.extras?.length ? `<tr><td colspan="2" style="font-size:11px;color:#CF6990">+ ${i.extras.join(', ')}</td></tr>` : '')
+    `<tr><td>${esc(i.name)}${i.size ? ` (${esc(i.size)})` : ''}${i.qty && i.qty > 1 ? ` ×${i.qty}` : ''}</td><td style="text-align:right">€${i.price.toFixed(2)}</td></tr>`
+    + (i.removed?.length ? `<tr><td colspan="2" style="font-size:11px;color:#666">Senza: ${i.removed.map(esc).join(', ')}</td></tr>` : '')
+    + (i.extras?.length ? `<tr><td colspan="2" style="font-size:11px;color:#CF6990">+ ${i.extras.map(esc).join(', ')}</td></tr>` : '')
   ).join('');
   const w = window.open('', '_blank', 'width=400,height=600');
   if (!w) return;
-  w.document.write(`<html><head><title>Ordine ${order.customer_name}</title>
+  w.document.write(`<html><head><title>Ordine ${esc(order.customer_name)}</title>
     <style>body{font-family:monospace;padding:20px;font-size:13px}h2{margin:0 0 4px}table{width:100%;border-collapse:collapse}td{padding:4px 0}hr{border:none;border-top:1px dashed #ccc;margin:10px 0}.total{font-weight:bold;font-size:15px}</style>
     </head><body>
-    <h2>${order.customer_name}</h2>
-    <p style="margin:0;color:#666;font-size:11px">${fmtDate(order.created_at)} · ${order.order_type.toUpperCase()}</p>
+    <h2>${esc(order.customer_name)}</h2>
+    <p style="margin:0;color:#666;font-size:11px">${esc(fmtDate(order.created_at))} · ${esc(order.order_type.toUpperCase())}</p>
     <hr/><table>${items}</table><hr/>
     <table><tr class="total"><td>TOTALE</td><td style="text-align:right">€${order.total.toFixed(2)}</td></tr></table>
-    ${order.notes ? `<p style="font-size:11px;color:#666;margin-top:8px">Note: ${order.notes}</p>` : ''}
-    ${order.admin_notes ? `<p style="font-size:11px;color:#CF6990;margin-top:4px">Admin: ${order.admin_notes}</p>` : ''}
+    ${order.notes ? `<p style="font-size:11px;color:#666;margin-top:8px">Note: ${esc(order.notes)}</p>` : ''}
+    ${order.admin_notes ? `<p style="font-size:11px;color:#CF6990;margin-top:4px">Admin: ${esc(order.admin_notes)}</p>` : ''}
     <script>window.onload=()=>{window.print();window.close()}</script></body></html>`);
   w.document.close();
 }
