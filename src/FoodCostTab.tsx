@@ -1,6 +1,152 @@
 import { useState, useEffect, useMemo } from 'react';
 import { fetchSetting, updateSetting } from './lib/settings';
 
+// ─── Seed Data (dal menu Public Burger) ───────────────────────────────────────
+
+const I = {
+  BUN_CLASSICO:     'fc-i-001',
+  BRIOCHE:          'fc-i-002',
+  PIADINA:          'fc-i-003',
+  MANZO:            'fc-i-004',
+  CHICKEN:          'fc-i-005',
+  VEGETALE:         'fc-i-006',
+  CHEDDAR:          'fc-i-007',
+  BACON:            'fc-i-008',
+  SCAMORZA:         'fc-i-009',
+  INSALATA:         'fc-i-010',
+  POMODORO:         'fc-i-011',
+  CIPOLLA_CARAM:    'fc-i-012',
+  CROCCHETTE:       'fc-i-013',
+  PICKLES:          'fc-i-014',
+  CIPOLLA_GRIG:     'fc-i-015',
+  UOVO:             'fc-i-016',
+  MAIONESE:         'fc-i-017',
+  KETCHUP:          'fc-i-018',
+  BBQ:              'fc-i-019',
+  PULLED:           'fc-i-020',
+  COLESLAW:         'fc-i-021',
+  SALSA_PUBLIC:     'fc-i-022',
+  ANELLI_PANINO:    'fc-i-023',
+};
+
+const SEED_INGREDIENTS: FCIngredient[] = [
+  { id: I.BUN_CLASSICO,  name: 'Bun classico',        unit: 'pz', cost_per_unit: 0.50, category: 'pane' },
+  { id: I.BRIOCHE,       name: 'Brioche Bun',          unit: 'pz', cost_per_unit: 1.50, category: 'pane' },
+  { id: I.PIADINA,       name: 'Piadina',              unit: 'pz', cost_per_unit: 0.29, category: 'pane' },
+  { id: I.MANZO,         name: 'Hamburger di manzo',   unit: 'pz', cost_per_unit: 1.12, category: 'carne' },
+  { id: I.CHICKEN,       name: 'Cotoletta di pollo',   unit: 'pz', cost_per_unit: 1.70, category: 'carne' },
+  { id: I.PULLED,        name: 'Pulled pork',          unit: 'pz', cost_per_unit: 1.50, category: 'carne' },
+  { id: I.VEGETALE,      name: 'Hamburger vegetale',   unit: 'pz', cost_per_unit: 2.65, category: 'carne' },
+  { id: I.CHEDDAR,       name: 'Cheddar',              unit: 'pz', cost_per_unit: 0.22, category: 'formaggio' },
+  { id: I.SCAMORZA,      name: 'Scamorza',             unit: 'pz', cost_per_unit: 0.24, category: 'formaggio' },
+  { id: I.UOVO,          name: 'Uovo fritto',          unit: 'pz', cost_per_unit: 0.27, category: 'altro' },
+  { id: I.BACON,         name: 'Bacon croccante',      unit: 'pz', cost_per_unit: 0.13, category: 'carne' },
+  { id: I.COLESLAW,      name: 'Coleslaw',             unit: 'pz', cost_per_unit: 0.50, category: 'verdura' },
+  { id: I.INSALATA,      name: 'Insalata iceberg',     unit: 'pz', cost_per_unit: 0.04, category: 'verdura' },
+  { id: I.POMODORO,      name: 'Pomodoro',             unit: 'pz', cost_per_unit: 0.07, category: 'verdura' },
+  { id: I.CIPOLLA_CARAM, name: 'Cipolla caramellata',  unit: 'pz', cost_per_unit: 0.63, category: 'verdura' },
+  { id: I.CIPOLLA_GRIG,  name: 'Cipolla grigliata',   unit: 'pz', cost_per_unit: 0.00, category: 'verdura' },
+  { id: I.CROCCHETTE,    name: 'Crocchette di patate', unit: 'pz', cost_per_unit: 0.09, category: 'altro' },
+  { id: I.PICKLES,       name: 'Pickles',              unit: 'pz', cost_per_unit: 0.03, category: 'verdura' },
+  { id: I.ANELLI_PANINO, name: 'Anelli di cipolla (panino)', unit: 'pz', cost_per_unit: 0.00, category: 'verdura' },
+  { id: I.MAIONESE,      name: 'Maionese',             unit: 'pz', cost_per_unit: 0.11, category: 'salsa' },
+  { id: I.KETCHUP,       name: 'Ketchup',              unit: 'pz', cost_per_unit: 0.10, category: 'salsa' },
+  { id: I.BBQ,           name: 'Salsa BBQ',            unit: 'pz', cost_per_unit: 0.12, category: 'salsa' },
+  { id: I.SALSA_PUBLIC,  name: 'Salsa Public',         unit: 'pz', cost_per_unit: 0.11, category: 'salsa' },
+];
+
+const SEED_RECIPES: FCRecipe[] = [
+  {
+    id: 'fc-r-001', name: 'Crocche (S)', selling_price: 8.50,
+    ingredients: [
+      { ingredient_id: I.BUN_CLASSICO, quantity: 1 },
+      { ingredient_id: I.MANZO,        quantity: 1 },
+      { ingredient_id: I.BACON,        quantity: 1 },
+      { ingredient_id: I.SCAMORZA,     quantity: 1 },
+      { ingredient_id: I.CROCCHETTE,   quantity: 1 },
+      { ingredient_id: I.MAIONESE,     quantity: 1 },
+      { ingredient_id: I.KETCHUP,      quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-002', name: 'Ingordo (S)', selling_price: 9.50,
+    ingredients: [
+      { ingredient_id: I.BUN_CLASSICO,  quantity: 1 },
+      { ingredient_id: I.MANZO,         quantity: 1 },
+      { ingredient_id: I.SCAMORZA,      quantity: 1 },
+      { ingredient_id: I.CIPOLLA_CARAM, quantity: 1 },
+      { ingredient_id: I.ANELLI_PANINO, quantity: 1 },
+      { ingredient_id: I.MAIONESE,      quantity: 1 },
+      { ingredient_id: I.BBQ,           quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-003', name: 'Pulled Pork (S)', selling_price: 11.50,
+    ingredients: [
+      { ingredient_id: I.BRIOCHE,  quantity: 1 },
+      { ingredient_id: I.PULLED,   quantity: 1 },
+      { ingredient_id: I.COLESLAW, quantity: 1 },
+      { ingredient_id: I.BBQ,      quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-004', name: 'American Burger (S)', selling_price: 9.50,
+    ingredients: [
+      { ingredient_id: I.BUN_CLASSICO, quantity: 1 },
+      { ingredient_id: I.MANZO,        quantity: 1 },
+      { ingredient_id: I.CHEDDAR,      quantity: 1 },
+      { ingredient_id: I.BACON,        quantity: 1 },
+      { ingredient_id: I.UOVO,         quantity: 1 },
+      { ingredient_id: I.BBQ,          quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-005', name: 'Oklahoma (S)', selling_price: 10.50,
+    ingredients: [
+      { ingredient_id: I.BRIOCHE,      quantity: 1 },
+      { ingredient_id: I.MANZO,        quantity: 1 },
+      { ingredient_id: I.CIPOLLA_GRIG, quantity: 1 },
+      { ingredient_id: I.CHEDDAR,      quantity: 1 },
+      { ingredient_id: I.BACON,        quantity: 1 },
+      { ingredient_id: I.PICKLES,      quantity: 1 },
+      { ingredient_id: I.SALSA_PUBLIC, quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-006', name: 'Original (S)', selling_price: 10.50,
+    ingredients: [
+      { ingredient_id: I.BRIOCHE,   quantity: 1 },
+      { ingredient_id: I.MANZO,     quantity: 1 },
+      { ingredient_id: I.CHEDDAR,   quantity: 1 },
+      { ingredient_id: I.INSALATA,  quantity: 1 },
+      { ingredient_id: I.POMODORO,  quantity: 1 },
+      { ingredient_id: I.KETCHUP,   quantity: 1 },
+      { ingredient_id: I.MAIONESE,  quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-007', name: '1991 Chicken (S)', selling_price: 8.50,
+    ingredients: [
+      { ingredient_id: I.BUN_CLASSICO, quantity: 1 },
+      { ingredient_id: I.CHICKEN,      quantity: 1 },
+      { ingredient_id: I.INSALATA,     quantity: 1 },
+      { ingredient_id: I.POMODORO,     quantity: 1 },
+      { ingredient_id: I.MAIONESE,     quantity: 1 },
+    ],
+  },
+  {
+    id: 'fc-r-008', name: 'Fake Burger (S)', selling_price: 14.00,
+    ingredients: [
+      { ingredient_id: I.BRIOCHE,  quantity: 1 },
+      { ingredient_id: I.VEGETALE, quantity: 1 },
+      { ingredient_id: I.CHEDDAR,  quantity: 1 },
+      { ingredient_id: I.INSALATA, quantity: 1 },
+      { ingredient_id: I.KETCHUP,  quantity: 1 },
+      { ingredient_id: I.MAIONESE, quantity: 1 },
+    ],
+  },
+];
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface FCIngredient {
@@ -627,6 +773,7 @@ export default function FoodCostTab({ adminToken }: { adminToken: string }) {
   const [ingredients, setIngredients] = useState<FCIngredient[]>([]);
   const [recipes, setRecipes] = useState<FCRecipe[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -638,6 +785,19 @@ export default function FoodCostTab({ adminToken }: { adminToken: string }) {
       setLoaded(true);
     });
   }, []);
+
+  async function loadSeedData() {
+    setSeeding(true);
+    try {
+      await Promise.all([
+        updateSetting(adminToken, 'food_cost_ingredients', SEED_INGREDIENTS),
+        updateSetting(adminToken, 'food_cost_recipes', SEED_RECIPES),
+      ]);
+      setIngredients(SEED_INGREDIENTS);
+      setRecipes(SEED_RECIPES);
+    } catch { alert('Errore durante il caricamento dei dati.'); }
+    setSeeding(false);
+  }
 
   if (!loaded) {
     return <div className="flex justify-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" /></div>;
@@ -662,6 +822,23 @@ export default function FoodCostTab({ adminToken }: { adminToken: string }) {
           </button>
         ))}
       </div>
+
+      {/* Seed banner — solo se DB vuoto */}
+      {ingredients.length === 0 && (
+        <div className="mx-4 mb-4 bg-[#1a0a10] rounded-2xl p-5 text-center">
+          <p className="text-2xl mb-2">🍔</p>
+          <p className="text-white font-bold text-sm mb-1">Nessun dato ancora</p>
+          <p className="text-white/40 text-[11px] mb-4 leading-relaxed">
+            Carica automaticamente gli ingredienti e le ricette del menu Public Burger<br/>
+            (prezzi dal file Excel, solo panini attivi)
+          </p>
+          <button onClick={loadSeedData} disabled={seeding}
+            className="w-full py-3 bg-[#CF6990] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#A8456B] transition-colors disabled:opacity-40">
+            {seeding ? 'Caricamento…' : '⬇ Carica dati Public Burger'}
+          </button>
+          <p className="text-white/20 text-[9px] mt-3">Cipolla grigliata e anelli in panino: costo €0 (aggiorna tu dopo)</p>
+        </div>
+      )}
 
       <div className="px-4">
         {subTab === 'ingredienti' && (
