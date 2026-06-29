@@ -18,7 +18,7 @@ type Step = 'cart' | 'checkout';
 
 const WHATSAPP_NUMBER = '393420006928';
 
-function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string): string {
+function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string, locationLink?: string | null, manualAddress?: string): string {
   const SIZE: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
 
@@ -51,6 +51,8 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
     if (name) lines.push(`Nome: ${name}`);
   } else {
     lines.push('Consegna a domicilio');
+    if (locationLink) lines.push(`Posizione: ${locationLink}`);
+    else if (manualAddress) lines.push(`Indirizzo: ${manualAddress}`);
   }
   if (time) lines.push(`Orario: ${time}`);
   lines.push('');
@@ -211,6 +213,9 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   const [orderType, setOrderType] = useState<OrderType>('asporto');
   const [name, setName] = useState('');
   const [time, setTime] = useState('');
+  const [locationLink, setLocationLink] = useState<string | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ok' | 'denied'>('idle');
+  const [manualAddress, setManualAddress] = useState('');
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
   const user = getStoredUser();
@@ -228,9 +233,22 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     }
   }, []);
 
+  function requestLocation() {
+    setLocationStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const link = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        setLocationLink(link);
+        setLocationStatus('ok');
+      },
+      () => setLocationStatus('denied'),
+      { timeout: 10000 },
+    );
+  }
+
   function handleWhatsApp() {
     if (!user) return;
-    const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim());
+    const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim());
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, '_blank');
     incrementOrderCount();
@@ -419,6 +437,54 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                     ))}
                   </div>
                 </div>
+
+                {/* Posizione (solo consegna) */}
+                <AnimatePresence>
+                  {orderType === 'consegna' && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">La tua posizione</p>
+                      {locationStatus === 'ok' ? (
+                        <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                          <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                          <span className="text-[12px] font-semibold text-green-700">Posizione acquisita — verrà inviata su WhatsApp</span>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={requestLocation}
+                            disabled={locationStatus === 'loading'}
+                            className="w-full py-3 rounded-xl border-2 border-dashed border-[#CF6990]/40 bg-[#FBE8EF]/40 text-[#A8456B] text-[12px] font-bold uppercase tracking-wide flex items-center justify-center gap-2 hover:bg-[#FBE8EF] transition-colors disabled:opacity-50"
+                          >
+                            {locationStatus === 'loading' ? (
+                              <span className="w-4 h-4 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                            )}
+                            {locationStatus === 'loading' ? 'Rilevamento…' : 'Condividi posizione GPS'}
+                          </button>
+                          {locationStatus === 'denied' && (
+                            <div className="mt-2">
+                              <p className="text-[10px] text-black/35 mb-1.5">GPS non disponibile — inserisci l'indirizzo:</p>
+                              <input
+                                type="text"
+                                value={manualAddress}
+                                onChange={(e) => setManualAddress(e.target.value)}
+                                placeholder="Via, numero civico, città…"
+                                className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
+                              />
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* Nome (solo asporto) */}
                 <AnimatePresence>
