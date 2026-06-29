@@ -693,9 +693,9 @@ function SubNav() {
               <button onClick={e => { e.stopPropagation(); setUserMenuOpen(o => !o); }} className="flex flex-col items-center gap-0.5">
                 {user.avatar_url
                   ? <img src={user.avatar_url} className="w-9 h-9 rounded-full object-cover border-2 border-[#CF6990]/30" />
-                  : <span className="w-9 h-9 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{user.name?.[0]?.toUpperCase()}</span>
+                  : <span className="w-9 h-9 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center">{(user.name || user.email)?.[0]?.toUpperCase()}</span>
                 }
-                <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {user.name?.split(' ')[0]}</span>
+                {(user.name || user.email) && <span className="text-[9px] text-black/40 tracking-wide leading-none">Ciao {(user.name || user.email.split('@')[0]).split(' ')[0]}</span>}
               </button>
               <AnimatePresence>
                 {userMenuOpen && (
@@ -708,7 +708,7 @@ function SubNav() {
                     onClick={e => e.stopPropagation()}
                   >
                     <div className="px-4 py-3 border-b border-black/6">
-                      <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
+                      <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name || user.email}</p>
                       <p className="text-[10px] text-black/35 truncate">{user.email}</p>
                     </div>
                     {user && adminEmails.includes(user.email) && (
@@ -759,9 +759,9 @@ function SubNav() {
             >
               {user.avatar_url
                 ? <img src={user.avatar_url} className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-lg" />
-                : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{user.name?.[0]?.toUpperCase()}</span>
+                : <span className="w-12 h-12 rounded-full bg-[#CF6990] text-white text-base font-bold flex items-center justify-center shadow-lg">{(user.name || user.email)?.[0]?.toUpperCase()}</span>
               }
-              <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {user.name?.split(' ')[0]}</span>
+              {(user.name || user.email) && <span className="text-[10px] text-white/80 tracking-wide font-medium drop-shadow">Ciao {(user.name || user.email.split('@')[0]).split(' ')[0]}</span>}
             </button>
             <AnimatePresence>
               {userMenuOpen && (
@@ -774,7 +774,7 @@ function SubNav() {
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="px-4 py-3 border-b border-black/6">
-                    <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
+                    <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name || user.email}</p>
                     <p className="text-[10px] text-black/35 truncate">{user.email}</p>
                   </div>
                   {user && adminEmails.includes(user.email) && (
@@ -1108,7 +1108,12 @@ export default function ShowcasePage() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [smashPopup, setSmashPopup] = useState(false);
   const [loginModal, setLoginModal] = useState(false);
-  const pageUser = getStoredUser();
+  const [pageUser, setPageUser] = useState(() => getStoredUser());
+  useEffect(() => {
+    const refresh = () => setPageUser(getStoredUser());
+    window.addEventListener('pb-user-changed', refresh);
+    return () => window.removeEventListener('pb-user-changed', refresh);
+  }, []);
   function requireLogin(action: () => void) {
     if (!pageUser) { setLoginModal(true); return; }
     action();
@@ -1495,7 +1500,7 @@ export default function ShowcasePage() {
             <motion.img
               src="/logo-public-burger.png"
               alt="Public Burger"
-              className={`w-52 md:w-72 pointer-events-none select-none${getTier(orderCount) ? ' ' + getTier(orderCount)!.shimmerClass : ' drop-shadow-2xl'}`}
+              className={`w-52 md:w-72 pointer-events-none select-none${pageUser && getTier(orderCount) ? ' ' + getTier(orderCount)!.shimmerClass : ' drop-shadow-2xl'}`}
               style={{ scale: heroLogoScale }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
