@@ -324,28 +324,30 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col min-h-0"
             >
+              {/* Swipe hint — sopra la lista */}
+              <AnimatePresence>
+                {showSwipeHint && items.length > 0 && (
+                  <motion.div
+                    key="swipe-hint"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center justify-center gap-1.5 px-4 pb-1 overflow-hidden shrink-0"
+                  >
+                    <motion.span
+                      animate={{ x: [-6, 0, -6] }}
+                      transition={{ duration: 0.7, repeat: 3, ease: 'easeInOut' }}
+                      className="text-[11px] text-black/30"
+                    >
+                      ←
+                    </motion.span>
+                    <span className="text-[10px] text-black/30 font-medium uppercase tracking-widest">scorri per eliminare</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Items list */}
               <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 min-h-0">
-                <AnimatePresence>
-                  {showSwipeHint && items.length > 0 && (
-                    <motion.div
-                      key="swipe-hint"
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="flex items-center justify-center gap-1.5 py-1.5 overflow-hidden"
-                    >
-                      <motion.span
-                        animate={{ x: [-6, 0, -6] }}
-                        transition={{ duration: 0.7, repeat: 3, ease: 'easeInOut' }}
-                        className="text-[11px] text-black/30"
-                      >
-                        ←
-                      </motion.span>
-                      <span className="text-[10px] text-black/30 font-medium uppercase tracking-widest">scorri per eliminare</span>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
                 <AnimatePresence>
                   {items.length === 0 ? (
                     <motion.div
