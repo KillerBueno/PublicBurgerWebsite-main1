@@ -1813,9 +1813,9 @@ export default function ShowcasePage() {
 
         {/* ── Footer ── */}
         <footer className="bg-[#120608] border-t border-white/5 px-6 md:px-16 py-10 md:py-14">
-          <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-4xl mx-auto flex flex-col items-center gap-6 text-center">
             <img src="/logo-public-burger.png" alt="Public" className="h-8 opacity-70" />
-            <div className="text-white/20 text-xs leading-relaxed text-left md:text-right">
+            <div className="text-white/20 text-xs leading-relaxed">
               <p className="text-white/40 font-medium mb-1">Public Burger — Isola del Liri (FR)</p>
               <p className="text-white/30 mb-1">+39 342 000 6928</p>
               © {new Date().getFullYear()} — I prezzi potrebbero subire variazioni.
