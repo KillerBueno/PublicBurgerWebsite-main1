@@ -605,19 +605,39 @@ function SubNav() {
   }, [userMenuOpen]);
 
   useEffect(() => {
-    function onScroll() {
+    let rafId: number | null = null;
+    // Cache section offsets (recomputed on resize)
+    let sectionOffsets: { id: string; top: number }[] = [];
+    function cacheSections() {
+      sectionOffsets = ['bibite', 'salse', 'fries', 'panini'].map(id => ({
+        id,
+        top: document.getElementById(id)?.offsetTop ?? 0,
+      }));
+    }
+    cacheSections();
+    const onResize = () => cacheSections();
+    window.addEventListener('resize', onResize, { passive: true });
+
+    function tick() {
+      rafId = null;
       const v = window.scrollY;
       setVisible(v > window.innerHeight * 0.65);
       const mid = v + window.innerHeight * 0.4;
-      const sections = ['bibite', 'salse', 'fries', 'panini'];
-      for (const id of sections) {
-        const el = document.getElementById(id);
-        if (el && mid >= el.offsetTop) { setActive(id); break; }
+      for (const { id, top } of sectionOffsets) {
+        if (mid >= top) { setActive(id); break; }
       }
     }
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(tick);
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
-    onScroll();
-    return () => window.removeEventListener('scroll', onScroll);
+    tick();
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   function handleClick(id: string) {
@@ -928,25 +948,43 @@ function AnchorNav() {
   const [active, setActive] = useState<string>('panini');
 
   useEffect(() => {
-    const onScroll = () => {
-      const panini = document.getElementById('panini');
-      const footer = document.querySelector('footer');
-      if (!panini) return;
-      const top = panini.getBoundingClientRect().top;
-      const footerTop = footer ? footer.getBoundingClientRect().top : Infinity;
-      setVisible(top <= 64 && footerTop > 100);
+    let rafId: number | null = null;
+    let sectionTops: { id: string; top: number }[] = [];
+    let paniniTop = 0;
+    let footerOffsetTop = 0;
 
-      // highlight active section
-      for (const s of [...SECTIONS].reverse()) {
-        const el = document.getElementById(s.id);
-        if (el && el.getBoundingClientRect().top <= 80) {
-          setActive(s.id);
-          break;
-        }
+    function cacheTops() {
+      paniniTop = document.getElementById('panini')?.offsetTop ?? 0;
+      const footer = document.querySelector('footer');
+      footerOffsetTop = footer ? (footer as HTMLElement).offsetTop : Infinity;
+      sectionTops = [...SECTIONS].reverse().map(s => ({
+        id: s.id,
+        top: document.getElementById(s.id)?.offsetTop ?? 0,
+      }));
+    }
+    cacheTops();
+    const onResize = () => cacheTops();
+    window.addEventListener('resize', onResize, { passive: true });
+
+    function tick() {
+      rafId = null;
+      const scrollY = window.scrollY;
+      const windowH = window.innerHeight;
+      setVisible(scrollY + 64 >= paniniTop && scrollY + windowH < footerOffsetTop + 100);
+      for (const { id, top } of sectionTops) {
+        if (scrollY + 80 >= top) { setActive(id); break; }
       }
-    };
+    }
+    function onScroll() {
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(tick);
+    }
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onResize);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   return (
@@ -1009,6 +1047,8 @@ export default function ShowcasePage() {
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+  const heroLogoOpacity = useTransform(scrollYProgress, [0, 0.45], [1, 0]);
+  const heroLogoScale = useTransform(scrollYProgress, [0, 0.45], [1, 0.55]);
 
   const [orderCount, setOrderCount] = useState(() => getOrderCount());
 
@@ -1063,7 +1103,6 @@ export default function ShowcasePage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
   const [nuggetsModal, setNuggetsModal] = useState(false);
-  const [, setScrolled] = useState(false);
   const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1102,12 +1141,6 @@ export default function ShowcasePage() {
         }
       }),
     ]).finally(() => setMenuReady(true));
-  }, []);
-
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 400);
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
   useEffect(() => {
@@ -1431,11 +1464,11 @@ export default function ShowcasePage() {
           {/* Animated blobs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             <div className="pb-blob1 absolute top-[-15%] left-[-10%] w-[60vw] h-[60vw] rounded-full opacity-30"
-              style={{ background: 'radial-gradient(circle, #CF6990 0%, transparent 70%)', filter: 'blur(60px)' }} />
+              style={{ background: 'radial-gradient(circle, #CF6990 0%, transparent 70%)', filter: 'blur(60px)', willChange: 'transform' }} />
             <div className="pb-blob2 absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] rounded-full opacity-25"
-              style={{ background: 'radial-gradient(circle, #8B2D51 0%, transparent 70%)', filter: 'blur(70px)' }} />
+              style={{ background: 'radial-gradient(circle, #8B2D51 0%, transparent 70%)', filter: 'blur(70px)', willChange: 'transform' }} />
             <div className="pb-blob3 absolute top-[40%] right-[20%] w-[30vw] h-[30vw] rounded-full opacity-20"
-              style={{ background: 'radial-gradient(circle, #E8A0B8 0%, transparent 70%)', filter: 'blur(50px)' }} />
+              style={{ background: 'radial-gradient(circle, #E8A0B8 0%, transparent 70%)', filter: 'blur(50px)', willChange: 'transform' }} />
           </div>
 
           {/* Subtle grid overlay */}
@@ -1457,13 +1490,13 @@ export default function ShowcasePage() {
           {/* Logo — occupa lo spazio centrale, rimpicciolisce scrollando */}
           <motion.div
             className="flex-1 flex items-center justify-center min-h-0"
-            style={{ opacity: useTransform(scrollYProgress, [0, 0.45], [1, 0]) }}
+            style={{ opacity: heroLogoOpacity }}
           >
             <motion.img
               src="/logo-public-burger.png"
               alt="Public Burger"
               className={`w-52 md:w-72 pointer-events-none select-none${getTier(orderCount) ? ' ' + getTier(orderCount)!.shimmerClass : ' drop-shadow-2xl'}`}
-              style={{ scale: useTransform(scrollYProgress, [0, 0.45], [1, 0.55]) }}
+              style={{ scale: heroLogoScale }}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
