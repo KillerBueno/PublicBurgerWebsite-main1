@@ -137,13 +137,7 @@ export async function fetchOrders(adminToken: string): Promise<Order[]> {
       headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
     });
   let res = await tryFetch(adminToken);
-  console.log('[fetchOrders] user token status:', res.status);
-  if (!res.ok) {
-    res = await tryFetch(SUPABASE_KEY);
-    console.log('[fetchOrders] anon key status:', res.status);
-  }
+  if (!res.ok) res = await tryFetch(SUPABASE_KEY);
   if (!res.ok) throw new Error('Unauthorized');
-  const data = await res.json();
-  console.log('[fetchOrders] rows returned:', data.length);
-  return data;
+  return res.json();
 }
