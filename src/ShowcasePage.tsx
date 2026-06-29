@@ -729,7 +729,7 @@ function SubNav() {
                     <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
                     <p className="text-[10px] text-black/35 truncate">{user.email}</p>
                   </div>
-                  {!!user && (
+                  {user && adminEmails.includes(user.email) && (
                     <a href="/admin" className="flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-[#CF6990] hover:bg-[#fdf5f8] transition-colors border-b border-black/6">
                       <span>⚙️</span> Dashboard Admin
                     </a>
