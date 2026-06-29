@@ -40,8 +40,14 @@ export async function upsertProfile(
 
 export async function fetchProfiles(adminToken: string): Promise<UserProfile[]> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?order=last_seen.desc`, {
-    headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${adminToken}` },
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_get_profiles`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY!,
+      Authorization: `Bearer ${adminToken}`,
+    },
+    body: '{}',
   });
   if (!res.ok) return [];
   return res.json();
