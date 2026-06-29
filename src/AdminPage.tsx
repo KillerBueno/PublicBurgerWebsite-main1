@@ -116,7 +116,20 @@ function Spinner() {
 }
 
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
+interface DailyStat { giorno: string; totale_ordini: number; fatturato: number }
+
 function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: string }) {
+  const [dailyStats, setDailyStats] = useState<DailyStat[]>([]);
+
+  useEffect(() => {
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+    const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_stats_daily`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${adminToken}` },
+      body: '{}',
+    }).then(r => r.ok ? r.json() : []).then(setDailyStats).catch(() => {});
+  }, [adminToken]);
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const weekAgo  = new Date(now.getTime() -  7 * 86400000).toISOString().slice(0, 10);
@@ -233,6 +246,35 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
           ))}
         </div>
       </div>
+
+      {/* Fatturato giornaliero (ultimi 30 giorni) */}
+      {dailyStats.length > 0 && (() => {
+        const maxFat = Math.max(...dailyStats.map(d => Number(d.fatturato)), 1);
+        const shown = [...dailyStats].reverse().slice(-14);
+        return (
+          <div className="bg-white rounded-2xl border border-black/6 p-4 shadow-sm">
+            <p className="text-[10px] uppercase tracking-widest text-black/30 mb-4">Fatturato giornaliero — ultimi 14 giorni</p>
+            <div className="flex items-end gap-1 h-24">
+              {shown.map((d) => {
+                const label = new Date(d.giorno).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+                return (
+                  <div key={d.giorno} className="flex-1 flex flex-col items-center gap-1 group relative">
+                    <div
+                      className="w-full rounded-t bg-[#A8456B]/70 group-hover:bg-[#CF6990] transition-colors cursor-default"
+                      style={{ height: `${(Number(d.fatturato) / maxFat) * 80}px`, minHeight: 3 }}
+                    />
+                    <span className="text-[7px] text-black/25 rotate-0">{label}</span>
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#1a0a10] text-white text-[9px] px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                      €{Number(d.fatturato).toFixed(0)} · {d.totale_ordini} ordini
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -652,8 +694,51 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isAdmin || !adminEmailsLoaded) return;
     loadData();
-    const interval = setInterval(loadData, 60000);
-    return () => clearInterval(interval);
+
+    // Realtime WebSocket — notifica immediata su nuovi ordini
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+    const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    const host = SUPABASE_URL.replace('https://', '');
+    let ws: WebSocket | null = null;
+    let heartbeat: ReturnType<typeof setInterval>;
+
+    try {
+      ws = new WebSocket(`wss://${host}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`);
+      ws.onopen = () => {
+        ws!.send(JSON.stringify({
+          topic: 'realtime:public:orders',
+          event: 'phx_join',
+          payload: {
+            config: {
+              broadcast: { self: false },
+              presence: { key: '' },
+              postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'orders' }],
+            },
+          },
+          ref: '1',
+        }));
+        heartbeat = setInterval(() => {
+          if (ws?.readyState === WebSocket.OPEN)
+            ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
+        }, 30000);
+      };
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.event === 'postgres_changes' && msg.payload?.data?.type === 'INSERT') {
+            loadData();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    // Fallback polling ogni 2 minuti
+    const interval = setInterval(loadData, 120000);
+    return () => {
+      clearInterval(heartbeat);
+      clearInterval(interval);
+      ws?.close();
+    };
   }, [isAdmin, adminEmailsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const filtered = useMemo(() => orders.filter(o => {
@@ -944,7 +1029,11 @@ export default function AdminPage() {
                             );
                           })()}
 
-                          {order.notes && <p className="text-[11px] text-black/40 pt-2 border-t border-black/6 italic">⏱ {order.notes}</p>}
+                          {(order.pickup_time || order.notes) && (
+                            <p className="text-[11px] text-black/40 pt-2 border-t border-black/6 italic">
+                              ⏱ {order.pickup_time || order.notes}
+                            </p>
+                          )}
                           <div className="flex items-center justify-between pt-2 border-t border-black/10">
                             <span className="text-sm font-bold text-black/60">Totale</span>
                             <span className="text-sm font-bold text-[#CF6990]">€{order.total.toFixed(2)}</span>

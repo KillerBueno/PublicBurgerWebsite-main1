@@ -28,6 +28,7 @@ export interface Order {
   user_email: string | null;
   user_name: string | null;
   notes: string | null;
+  pickup_time?: string | null;
   status?: string;
   status_history?: StatusEntry[];
   admin_notes?: string | null;
