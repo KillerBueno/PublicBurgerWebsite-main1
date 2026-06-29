@@ -120,10 +120,10 @@ export const BURGERS: BurgerDef[] = [
 
 export const FRIES: FryDef[] = [
   { name: 'Patatine', desc: 'Classiche fritte croccanti', price: 3.5, allergens: [] },
-  { name: 'Onion Rings', desc: 'Anelli di cipolla in pastella', price: 4.0, allergens: [1, 2, 4, 6, 7, 10, 14] },
-  { name: 'Cheese Bacon', desc: 'Patatine con cheddar e bacon croccante', price: 4.5, allergens: [7] },
+  { name: 'Onion Rings', desc: 'Anelli di cipolla in pastella', price: 4.0, allergens: [1] },
+  { name: 'Cheese Bacon Fries', desc: 'Patatine con cheddar e bacon croccante', price: 4.5, allergens: [7] },
   { name: 'Sweet Potatoes', desc: 'Patatine di patata dolce', price: 4.0, allergens: [] },
-  { name: 'Nuggets', desc: 'Croccanti e dorati', price: 6, allergens: [1, 3, 6, 10] },
+  { name: 'Nuggets', desc: 'Croccanti e dorati', price: 6, allergens: [1, 3, 6, 7, 9, 10, 11] },
 ];
 
 // All unique toppings/sauces that can be added as extras
