@@ -43,11 +43,16 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
     // Upsert profile + sync override from Supabase if admin set one
     try {
       const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
+      const { fetchUserOrderCount } = await import('./orders');
       await upsertProfile(accessToken, { email: user.email, name: user.name, avatar_url: user.avatar_url });
-      const profile = await fetchProfileByEmail(accessToken, user.email);
-      if (profile && profile.order_count_override !== null) {
-        localStorage.setItem('pb_order_count', String(profile.order_count_override));
-      }
+      const [profile, realCount] = await Promise.all([
+        fetchProfileByEmail(accessToken, user.email),
+        fetchUserOrderCount(accessToken, user.email),
+      ]);
+      const count = (profile?.order_count_override !== null && profile?.order_count_override !== undefined)
+        ? profile.order_count_override
+        : realCount;
+      localStorage.setItem('pb_order_count', String(count));
     } catch {}
     return user;
   } catch {
@@ -66,7 +71,6 @@ export function getStoredUser(): PBUser | null {
 
 export function signOut() {
   sessionStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem('pb_order_count');
   window.location.href = '/';
 }
 
