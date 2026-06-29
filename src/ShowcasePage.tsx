@@ -221,7 +221,7 @@ function CartFAB({ count, total, onClick }: { count: number; total: number; onCl
       whileTap={{ scale: 0.93 }}
       whileHover={{ scale: 1.05 }}
       layout
-      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white h-14 rounded-full flex items-center justify-center shadow-2xl"
+      className="pb-fab-glow fixed bottom-20 right-6 z-40 text-white h-14 rounded-full flex items-center justify-center shadow-2xl"
       style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)', minWidth: '56px' }}
       transition={{ layout: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } }}
     >
