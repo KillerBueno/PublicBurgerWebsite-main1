@@ -219,7 +219,9 @@ function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
     <motion.button
       onClick={onClick}
       whileTap={{ scale: 0.93 }}
-      className="fixed bottom-6 right-6 z-40 bg-[#1a0a10] text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:bg-[#CF6990] transition-colors duration-300"
+      whileHover={{ scale: 1.05 }}
+      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300"
+      style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)' }}
     >
       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -294,38 +296,43 @@ function BurgerRow({ burger, index, onAdd, priceOverrides = {} }: {
   return (
     <div
       ref={ref}
-      className="pb-reveal bg-white rounded-2xl shadow-sm border border-black/5 px-5 py-6 mb-3 cursor-pointer hover:border-[#CF6990]/50 hover:bg-[#FBE8EF]/25 hover:shadow-[0_4px_24px_rgba(207,105,144,0.12)] transition-colors duration-300"
+      className="pb-reveal pb-burger-card bg-white rounded-2xl border border-black/8 px-5 py-6 mb-3 cursor-pointer"
+      style={{ boxShadow: '0 2px 12px rgba(26,10,16,0.06)' }}
       onClick={() => onAdd(burger)}
     >
       {/* Name row */}
-      <div className="flex items-baseline justify-between gap-4 mb-2">
-        <div className="flex items-center gap-3">
-          <h3 className="text-2xl md:text-3xl tracking-tight text-[#1a0a10] uppercase leading-none">
-            {burger.name}
-          </h3>
-          {burger.spicy && <span className="text-sm leading-none">🌶️</span>}
-          {(burger.tag === 'Chicken' || burger.tag === 'Wrap') && <span className="text-sm leading-none">🍗</span>}
-          {burger.tag === 'Veggie' && <span className="text-sm leading-none">🌿</span>}
+      <div className="flex items-start justify-between gap-4 mb-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h3 className="pb-card-name pb-display text-[1.7rem] md:text-[2.1rem] tracking-wide text-[#1a0a10] uppercase leading-none transition-colors duration-300">
+              {burger.name}
+            </h3>
+            {burger.spicy && <span className="text-sm leading-none">🌶️</span>}
+            {(burger.tag === 'Chicken' || burger.tag === 'Wrap') && <span className="text-sm leading-none">🍗</span>}
+            {burger.tag === 'Veggie' && <span className="text-sm leading-none">🌿</span>}
+          </div>
           {burger.popular && (
-            <span className="text-[9px] font-bold text-white bg-[#CF6990] rounded px-2 py-0.5 tracking-widest uppercase leading-none">
+            <span className="inline-block mt-1.5 text-[9px] font-bold text-white bg-[#CF6990] rounded px-2 py-0.5 tracking-widest uppercase leading-none whitespace-nowrap">
               🔥 Il più ordinato
             </span>
           )}
         </div>
-        <div className="shrink-0 text-right">
+        <div className="shrink-0 text-right pt-1">
           {burger.prices ? (
-            <span className="text-sm text-[#CF6990] tracking-widest">da {fmt(priceOverrides[burger.name]?.single ?? burger.prices.single)}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest font-semibold">da {fmt(priceOverrides[burger.name]?.single ?? burger.prices.single)}</span>
           ) : (
-            <span className="text-sm text-[#CF6990] tracking-widest">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
+            <span className="text-sm text-[#CF6990] tracking-widest font-semibold">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
           )}
         </div>
       </div>
 
       {/* Ingredients */}
-      <p className="text-sm text-black/40 leading-relaxed max-w-lg">
+      <p className="pb-card-desc text-sm text-black/40 leading-relaxed max-w-lg transition-colors duration-300">
         {burger.ingredients.join(', ')}
       </p>
-      <AllergenTag allergens={burger.allergens} />
+      <p className="pb-card-allergen text-[9px] text-black/20 tracking-wider mt-1 transition-colors duration-300">
+        {burger.allergens.length ? `Allergeni: ${burger.allergens.join(', ')}` : ''}
+      </p>
       <div className="mb-5" />
 
       {/* Size buttons or add button */}
@@ -335,20 +342,20 @@ function BurgerRow({ burger, index, onAdd, priceOverrides = {} }: {
             <button
               key={s}
               onClick={(e) => { e.stopPropagation(); onAdd(burger, s); }}
-              className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+              className="pb-card-btn text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/55 px-4 py-2 transition-all duration-200"
             >
               {s === 'single' ? 'Singolo' : s === 'double' ? 'Doppio' : 'Triplo'}
-              <span className="ml-2 text-black/30">{fmt(priceOverrides[burger.name]?.[s] ?? burger.prices![s])}</span>
+              <span className="ml-2 opacity-50">{fmt(priceOverrides[burger.name]?.[s] ?? burger.prices![s])}</span>
             </button>
           ))}
         </div>
       ) : (
         <button
           onClick={(e) => { e.stopPropagation(); onAdd(burger); }}
-          className="text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/60 px-4 py-2 hover:border-[#CF6990] hover:text-[#CF6990] hover:bg-[#FBE8EF]/50 transition-all duration-200"
+          className="pb-card-btn text-[10px] tracking-[0.2em] uppercase font-semibold rounded-full border border-black/15 text-black/55 px-4 py-2 transition-all duration-200"
         >
           Singolo
-          <span className="ml-2 text-black/30">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
+          <span className="ml-2 opacity-50">{fmt(priceOverrides[burger.name]?.fixed ?? burger.fixedPrice!)}</span>
         </button>
       )}
     </div>
@@ -1221,15 +1228,97 @@ export default function ShowcasePage() {
       </AnimatePresence>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
         * { font-family: 'Inter', system-ui, sans-serif; }
+        .pb-display { font-family: 'Bebas Neue', 'Inter', system-ui, sans-serif; }
         html { scroll-behavior: smooth; }
         @keyframes pbFadeUp {
-          from { opacity: 0; transform: translateY(14px); }
+          from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
         }
         .pb-reveal { opacity: 0; }
-        .pb-visible { animation: pbFadeUp 0.45s ease-out forwards; }
+        .pb-visible { animation: pbFadeUp 0.55s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+        /* Animated hero blobs */
+        @keyframes blob1 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%      { transform: translate(40px,-30px) scale(1.08); }
+          66%      { transform: translate(-25px,20px) scale(0.93); }
+        }
+        @keyframes blob2 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          33%      { transform: translate(-35px,25px) scale(1.1); }
+          66%      { transform: translate(20px,-20px) scale(0.9); }
+        }
+        @keyframes blob3 {
+          0%,100% { transform: translate(0,0) scale(1); }
+          50%      { transform: translate(25px,-35px) scale(1.12); }
+        }
+        .pb-blob1 { animation: blob1 10s ease-in-out infinite; }
+        .pb-blob2 { animation: blob2 13s ease-in-out infinite; }
+        .pb-blob3 { animation: blob3 16s ease-in-out infinite; }
+
+        /* Burger card dark hover */
+        .pb-burger-card {
+          transition: transform 0.3s cubic-bezier(0.16,1,0.3,1),
+                      box-shadow 0.3s cubic-bezier(0.16,1,0.3,1),
+                      border-color 0.3s ease,
+                      background 0.35s ease;
+        }
+        .pb-burger-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 12px 48px rgba(207,105,144,0.22), 0 2px 8px rgba(207,105,144,0.1);
+          border-color: rgba(207,105,144,0.5) !important;
+          background: #1a0a10 !important;
+        }
+        .pb-burger-card:hover .pb-card-name { color: #ffffff !important; }
+        .pb-burger-card:hover .pb-card-desc { color: rgba(255,255,255,0.45) !important; }
+        .pb-burger-card:hover .pb-card-allergen { color: rgba(255,255,255,0.25) !important; }
+        .pb-burger-card:hover .pb-card-btn {
+          border-color: rgba(207,105,144,0.4) !important;
+          color: #CF6990 !important;
+        }
+        .pb-burger-card:hover .pb-card-btn:hover {
+          background: #CF6990 !important;
+          color: white !important;
+          border-color: #CF6990 !important;
+        }
+
+        /* Glow pulse for CartFAB */
+        @keyframes fabGlow {
+          0%,100% { box-shadow: 0 0 0 0 rgba(207,105,144,0); }
+          50%      { box-shadow: 0 0 0 8px rgba(207,105,144,0.15); }
+        }
+        .pb-fab-glow { animation: fabGlow 2.5s ease-in-out infinite; }
+
+        /* Section label underline */
+        .pb-section-label::after {
+          content: '';
+          display: block;
+          height: 2px;
+          width: 28px;
+          background: #CF6990;
+          margin-top: 6px;
+        }
+
+        /* Noise overlay */
+        .pb-noise {
+          position: relative;
+        }
+        .pb-noise::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity: 0.035;
+          pointer-events: none;
+          mix-blend-mode: overlay;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .pb-blob1,.pb-blob2,.pb-blob3 { animation: none; }
+          .pb-fab-glow { animation: none; }
+        }
         @keyframes shimmer-bronze {
           0%   { filter: sepia(1) hue-rotate(340deg) saturate(3) brightness(0.9) drop-shadow(0 0 10px #cd7f32); }
           30%  { filter: sepia(1) hue-rotate(340deg) saturate(5) brightness(1.3) drop-shadow(0 0 30px #e8a050) contrast(1.2); }
@@ -1278,23 +1367,33 @@ export default function ShowcasePage() {
         .tier-diamond  { animation: shimmer-diamond  2.5s linear infinite; }
       `}</style>
 
-      <div className="bg-white text-[#1a0a10] antialiased overflow-x-hidden">
+      <div className="bg-[#F9F5F1] text-[#1a0a10] antialiased overflow-x-hidden">
 
         {/* ── Nav ── (empty, logo handled by AnimatedLogo) */}
 
         {/* ── Hero ── */}
         <section
           ref={heroRef}
-          className="relative flex flex-col overflow-hidden"
+          className="relative flex flex-col overflow-hidden pb-noise"
           style={{
             height: '100svh',
-            background: 'linear-gradient(150deg, #8B2D51 0%, #CF6990 50%, #E8A0B8 100%)',
+            background: 'linear-gradient(155deg, #1a0a10 0%, #5C1A34 35%, #A8456B 65%, #CF6990 100%)',
           }}
         >
+          {/* Animated blobs */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="pb-blob1 absolute top-[-15%] left-[-10%] w-[60vw] h-[60vw] rounded-full opacity-30"
+              style={{ background: 'radial-gradient(circle, #CF6990 0%, transparent 70%)', filter: 'blur(60px)' }} />
+            <div className="pb-blob2 absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] rounded-full opacity-25"
+              style={{ background: 'radial-gradient(circle, #8B2D51 0%, transparent 70%)', filter: 'blur(70px)' }} />
+            <div className="pb-blob3 absolute top-[40%] right-[20%] w-[30vw] h-[30vw] rounded-full opacity-20"
+              style={{ background: 'radial-gradient(circle, #E8A0B8 0%, transparent 70%)', filter: 'blur(50px)' }} />
+          </div>
+
           {/* Subtle grid overlay */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{
-            backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
-            backgroundSize: '60px 60px'
+          <div className="absolute inset-0 opacity-[0.04]" style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)',
+            backgroundSize: '80px 80px'
           }} />
 
           {/* Large background text */}
@@ -1302,7 +1401,7 @@ export default function ShowcasePage() {
             style={{ opacity: heroOpacity }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
           >
-            <span className="text-[35vw] font-semibold text-white/5 leading-none tracking-tighter uppercase whitespace-nowrap">
+            <span className="pb-display text-[38vw] text-white/[0.04] leading-none tracking-tighter uppercase whitespace-nowrap">
               PUBLIC
             </span>
           </motion.div>
@@ -1327,7 +1426,7 @@ export default function ShowcasePage() {
           <div className="shrink-0 px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
             <div>
               <OpeningHours />
-              <h1 className="text-[11vw] md:text-[7vw] text-white leading-[0.88] tracking-tight uppercase font-light overflow-hidden mt-3">
+              <h1 className="pb-display text-[13vw] md:text-[8.5vw] text-white leading-[0.85] tracking-wide uppercase overflow-hidden mt-2">
                 {'Burger\nLovers'.split('\n').map((line, li) => (
                   <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
                     {line.split('').map((ch, ci) => (
@@ -1337,7 +1436,7 @@ export default function ShowcasePage() {
                         style={{ whiteSpace: ch === ' ' ? 'pre' : undefined }}
                         initial={{ y: '110%', opacity: 0 }}
                         animate={{ y: '0%', opacity: 1 }}
-                        transition={{ duration: 0.8, delay: 0.6 + li * 0.15 + ci * 0.035, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.75, delay: 0.5 + li * 0.1 + ci * 0.03, ease: [0.16, 1, 0.3, 1] }}
                       >
                         {ch}
                       </motion.span>
@@ -1347,7 +1446,7 @@ export default function ShowcasePage() {
                         className="inline-block ml-3"
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.6, delay: 1.4, ease: [0.16, 1, 0.3, 1] }}
+                        transition={{ duration: 0.6, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
                       >
                         🧡🍔
                       </motion.span>
@@ -1370,8 +1469,8 @@ export default function ShowcasePage() {
         {/* ── Ticker ── */}
         <Ticker
           bg="bg-[#1a0a10]"
-          text="text-white/50"
-          items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30']}
+          text="text-white/65"
+          items={['Ordina ora', 'Asporto e consegna', 'Isola del Liri', '+39 342 000 6928', 'Ogni sera dalle 18:30', 'Solo ingredienti freschi', 'Carne 100% Italiana']}
         />
 
         {/* ── Anchor nav ── */}
@@ -1380,8 +1479,11 @@ export default function ShowcasePage() {
         {/* ── Panini ── */}
         <section id="panini" className="px-6 md:px-16 pb-20 md:pb-28 max-w-4xl mx-auto scroll-mt-16">
           <Reveal>
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/8 pb-5">
-              <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Burgers</span>
+            <div className="flex flex-wrap items-end justify-between gap-3 border-b border-black/10 pb-5 mb-6">
+              <div>
+                <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Menu</p>
+                <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Burgers</h2>
+              </div>
               <BurgerFilters active={burgerFilter} onChange={setBurgerFilter} />
             </div>
           </Reveal>
@@ -1402,8 +1504,11 @@ export default function ShowcasePage() {
         <section id="fries" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
-              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Fries / Appetizer</span>
+              <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
+                <div>
+                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Lati</p>
+                  <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Fries</h2>
+                </div>
               </div>
             </Reveal>
             {FRIES.filter(f => !disabledProducts.includes(f.name)).map((f, i) => {
@@ -1451,8 +1556,11 @@ export default function ShowcasePage() {
         <section id="salse" className="px-6 md:px-16 pb-16 md:pb-20 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
-              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Salse</span>
+              <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
+                <div>
+                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Condimenti</p>
+                  <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Salse</h2>
+                </div>
               </div>
             </Reveal>
             {SALSE_LIST.map((s, i) => {
@@ -1496,8 +1604,11 @@ export default function ShowcasePage() {
         <section id="bibite" className="px-6 md:px-16 pb-20 md:pb-28 scroll-mt-16">
           <div className="max-w-4xl mx-auto">
             <Reveal>
-              <div className="flex items-end justify-between border-b border-black/8 pb-5 mb-2">
-                <span className="text-base tracking-[0.2em] uppercase text-[#CF6990] font-bold">Drinks</span>
+              <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
+                <div>
+                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Bevande</p>
+                  <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Drinks</h2>
+                </div>
               </div>
             </Reveal>
             {[
