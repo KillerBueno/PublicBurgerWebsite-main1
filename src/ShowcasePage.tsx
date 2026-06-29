@@ -566,7 +566,10 @@ function SubNav() {
   }, []);
 
   useEffect(() => {
-    fetchSetting<string[]>('admin_emails').then(v => { if (v?.length) setAdminEmails(v); });
+    fetchSetting<string[]>('admin_emails').then(v => {
+      const list = Array.isArray(v) ? v : [];
+      setAdminEmails(['prrsmn91@gmail.com', ...list]);
+    });
   }, []);
 
   useEffect(() => {
