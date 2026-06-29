@@ -1,6 +1,13 @@
 @import "tailwindcss";
 
-html, body, #root {
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: clip;
+  width: 100%;
+}
+
+body, #root {
   overflow-x: clip;
   max-width: 100%;
   width: 100%;
