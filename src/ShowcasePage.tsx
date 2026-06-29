@@ -1506,7 +1506,6 @@ export default function ShowcasePage() {
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
                 <div>
-                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Lati</p>
                   <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Fries</h2>
                 </div>
               </div>
@@ -1558,7 +1557,6 @@ export default function ShowcasePage() {
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
                 <div>
-                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Condimenti</p>
                   <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Salse</h2>
                 </div>
               </div>
@@ -1606,7 +1604,6 @@ export default function ShowcasePage() {
             <Reveal>
               <div className="flex items-end justify-between border-b border-black/10 pb-5 mb-6">
                 <div>
-                  <p className="pb-section-label text-[11px] tracking-[0.35em] uppercase text-[#CF6990] font-semibold mb-1">— Bevande</p>
                   <h2 className="pb-display text-5xl md:text-7xl leading-none text-[#1a0a10]">Drinks</h2>
                 </div>
               </div>
