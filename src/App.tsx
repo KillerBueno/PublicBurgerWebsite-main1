@@ -75,7 +75,7 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
             <div key={i} style={{
               fontSize: 'clamp(2rem, 9vw, 7rem)',
               fontWeight: 800,
-              color: i === 0 ? '#CF6990' : 'white',
+              color: i === 0 ? '#1a0a10' : 'white',
               textTransform: 'uppercase',
               letterSpacing: '-0.02em',
               lineHeight: 0.95,
