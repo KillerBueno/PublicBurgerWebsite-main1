@@ -1424,7 +1424,7 @@ export default function ShowcasePage() {
           ref={heroRef}
           className="relative flex flex-col overflow-hidden pb-noise"
           style={{
-            height: '100svh',
+            height: '100dvh',
             background: 'linear-gradient(155deg, #1a0a10 0%, #5C1A34 35%, #A8456B 65%, #CF6990 100%)',
           }}
         >
