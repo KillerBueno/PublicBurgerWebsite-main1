@@ -63,9 +63,9 @@ function Ticker({ bg, text, items }: { bg: string; text: string; items: string[]
   ));
 
   return (
-    <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`}>
+    <div className={`overflow-hidden py-3.5 rounded-2xl mx-4 my-2 ${bg}`} style={{ contain: 'layout' }}>
       <motion.div
-        className="flex whitespace-nowrap will-change-transform"
+        className="flex whitespace-nowrap"
         style={{ x }}
       >
         <div ref={halfRef} className="flex shrink-0">{row}</div>
