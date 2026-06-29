@@ -39,20 +39,27 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
       avatar_url: data.user_metadata?.avatar_url || '',
       access_token: accessToken,
     };
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
-    // Upsert profile + sync override from Supabase if admin set one
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    // Upsert profile + sync count from Supabase
     try {
-      const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
-      const { fetchUserOrderCount } = await import('./orders');
+      const { upsertProfile } = await import('./profiles');
       await upsertProfile(accessToken, { email: user.email, name: user.name, avatar_url: user.avatar_url });
-      const [profile, realCount] = await Promise.all([
-        fetchProfileByEmail(accessToken, user.email),
-        fetchUserOrderCount(accessToken, user.email),
-      ]);
-      const count = (profile?.order_count_override !== null && profile?.order_count_override !== undefined)
-        ? profile.order_count_override
-        : realCount;
-      localStorage.setItem('pb_order_count', String(count));
+      // Fetch real order count via SECURITY DEFINER RPC (bypasses RLS)
+      const countRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_my_order_count`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_KEY!,
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: '{}',
+      });
+      if (countRes.ok) {
+        const serverCount = await countRes.json() as number;
+        const localCount = parseInt(localStorage.getItem('pb_order_count') || '0', 10);
+        // Take the higher value between local and server to avoid going backwards
+        localStorage.setItem('pb_order_count', String(Math.max(serverCount, localCount)));
+      }
     } catch {}
     return user;
   } catch {
@@ -62,7 +69,7 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
 
 export function getStoredUser(): PBUser | null {
   try {
-    const raw = sessionStorage.getItem(SESSION_KEY);
+    const raw = localStorage.getItem(SESSION_KEY) || sessionStorage.getItem(SESSION_KEY);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -70,6 +77,7 @@ export function getStoredUser(): PBUser | null {
 }
 
 export function signOut() {
+  localStorage.removeItem(SESSION_KEY);
   sessionStorage.removeItem(SESSION_KEY);
   window.location.href = '/';
 }

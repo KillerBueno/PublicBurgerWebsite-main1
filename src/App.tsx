@@ -108,7 +108,7 @@ export default function App() {
   if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
 
   const [splash, setSplash] = useState(() => sessionStorage.getItem('pb_splash_done') !== '1');
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
+  const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === '1' || sessionStorage.getItem(AUTH_KEY) === '1');
   const [pass, setPass] = useState('');
   const [error, setError] = useState(false);
 
@@ -138,7 +138,7 @@ export default function App() {
     function handleLogin(e: React.FormEvent) {
       e.preventDefault();
       if (pass === 'Public1010') {
-        sessionStorage.setItem(AUTH_KEY, '1');
+        localStorage.setItem(AUTH_KEY, '1');
         setAuthed(true);
       } else {
         setError(true);
