@@ -220,32 +220,12 @@ function CartFAB({ count, total, onClick }: { count: number; total: number; onCl
       onClick={onClick}
       whileTap={{ scale: 0.93 }}
       whileHover={{ scale: 1.05 }}
-      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white shadow-2xl transition-all duration-300 flex items-center gap-2"
-      style={{
-        background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)',
-        borderRadius: count > 0 ? '9999px' : '9999px',
-        padding: count > 0 ? '0 18px 0 14px' : '0',
-        height: '56px',
-        minWidth: '56px',
-      }}
+      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300"
+      style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)' }}
     >
-      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
       </svg>
-      <AnimatePresence>
-        {count > 0 && (
-          <motion.span
-            key="total"
-            initial={{ opacity: 0, width: 0 }}
-            animate={{ opacity: 1, width: 'auto' }}
-            exit={{ opacity: 0, width: 0 }}
-            transition={{ duration: 0.2 }}
-            className="text-[13px] font-bold tabular-nums overflow-hidden whitespace-nowrap"
-          >
-            {fmt(total)}
-          </motion.span>
-        )}
-      </AnimatePresence>
       <AnimatePresence>
         {count > 0 && (
           <motion.span
@@ -254,12 +234,22 @@ function CartFAB({ count, total, onClick }: { count: number; total: number; onCl
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-            className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full"
+            className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1"
           >
             {count}
           </motion.span>
         )}
       </AnimatePresence>
+      {count > 0 && (
+        <motion.span
+          key={total}
+          initial={{ opacity: 0, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#1a0a10] bg-white rounded-full px-2 py-0.5 shadow-md whitespace-nowrap"
+        >
+          {fmt(total)}
+        </motion.span>
+      )}
     </motion.button>
   );
 }
