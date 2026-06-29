@@ -651,7 +651,7 @@ function SubNav() {
               <button
                 key={id}
                 onClick={() => handleClick(id)}
-                className={`relative px-5 md:px-8 py-4 text-xs md:text-sm tracking-[0.15em] uppercase font-bold transition-colors duration-200 ${
+                className={`relative px-2 sm:px-4 md:px-8 py-4 text-[10px] sm:text-xs md:text-sm tracking-[0.1em] sm:tracking-[0.15em] uppercase font-bold transition-colors duration-200 ${
                   isActive ? 'text-[#CF6990]' : 'text-black/40 hover:text-black/70'
                 }`}
               >
@@ -1449,7 +1449,7 @@ export default function ShowcasePage() {
             style={{ opacity: heroOpacity }}
             className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden"
           >
-            <span className="pb-display text-[38vw] text-white/[0.04] leading-none tracking-tighter uppercase whitespace-nowrap">
+            <span className="pb-display text-[38vw] text-white/[0.04] leading-none tracking-tighter uppercase text-center" style={{ maxWidth: '100%', overflowWrap: 'break-word' }}>
               PUBLIC
             </span>
           </motion.div>
