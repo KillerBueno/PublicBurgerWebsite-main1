@@ -214,18 +214,38 @@ function OrderCounter({ hidden }: { hidden: boolean }) {
 
 // ─── Cart FAB ─────────────────────────────────────────────────────────────────
 
-function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
+function CartFAB({ count, total, onClick }: { count: number; total: number; onClick: () => void }) {
   return (
     <motion.button
       onClick={onClick}
       whileTap={{ scale: 0.93 }}
       whileHover={{ scale: 1.05 }}
-      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-300"
-      style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)' }}
+      className="pb-fab-glow fixed bottom-6 right-6 z-40 text-white shadow-2xl transition-all duration-300 flex items-center gap-2"
+      style={{
+        background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)',
+        borderRadius: count > 0 ? '9999px' : '9999px',
+        padding: count > 0 ? '0 18px 0 14px' : '0',
+        height: '56px',
+        minWidth: '56px',
+      }}
     >
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
+      <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
       </svg>
+      <AnimatePresence>
+        {count > 0 && (
+          <motion.span
+            key="total"
+            initial={{ opacity: 0, width: 0 }}
+            animate={{ opacity: 1, width: 'auto' }}
+            exit={{ opacity: 0, width: 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-[13px] font-bold tabular-nums overflow-hidden whitespace-nowrap"
+          >
+            {fmt(total)}
+          </motion.span>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {count > 0 && (
           <motion.span
@@ -234,7 +254,7 @@ function CartFAB({ count, onClick }: { count: number; onClick: () => void }) {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             transition={{ type: 'spring', stiffness: 500, damping: 20 }}
-            className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center"
+            className="absolute -top-1.5 -right-1.5 bg-[#CF6990] text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full"
           >
             {count}
           </motion.span>
@@ -999,6 +1019,12 @@ export default function ShowcasePage() {
     try {
       const raw = localStorage.getItem('pb_cart');
       if (!raw) return [];
+      const savedAt = localStorage.getItem('pb_cart_at');
+      if (savedAt && Date.now() - Number(savedAt) > 86400000) {
+        localStorage.removeItem('pb_cart');
+        localStorage.removeItem('pb_cart_at');
+        return [];
+      }
       const saved = JSON.parse(raw) as CartItem[];
       return saved.map(item => {
         if (item.type === 'burger') {
@@ -1055,23 +1081,29 @@ export default function ShowcasePage() {
   const [priceOverrides, setPriceOverrides] = useState<PriceOverrides>({});
   const [openingHours, setOpeningHours] = useState<OpeningHours | null>(null);
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
+  const [menuReady, setMenuReady] = useState(false);
 
-  // Persist cart to localStorage on every change
+  // Persist cart to localStorage on every change (with timestamp for 24h expiry)
   useEffect(() => {
-    try { localStorage.setItem('pb_cart', JSON.stringify(cart)); } catch {}
+    try {
+      localStorage.setItem('pb_cart', JSON.stringify(cart));
+      localStorage.setItem('pb_cart_at', String(Date.now()));
+    } catch {}
   }, [cart]);
 
   useEffect(() => {
-    fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? []));
-    fetchSetting<string[]>('disabled_ingredients').then(v => setDisabledIngredients(v ?? []));
-    fetchSetting<PriceOverrides>('price_overrides').then(v => setPriceOverrides(v ?? {}));
-    fetchSetting<OpeningHours>('opening_hours').then(v => setOpeningHours(v));
-    fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
-      if (v) {
-        setSmashConfig(v);
-        if (v.active && sessionStorage.getItem('pb_smash_seen') !== '1') setSmashPopup(true);
-      }
-    });
+    Promise.all([
+      fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? [])),
+      fetchSetting<string[]>('disabled_ingredients').then(v => setDisabledIngredients(v ?? [])),
+      fetchSetting<PriceOverrides>('price_overrides').then(v => setPriceOverrides(v ?? {})),
+      fetchSetting<OpeningHours>('opening_hours').then(v => setOpeningHours(v)),
+      fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
+        if (v) {
+          setSmashConfig(v);
+          if (v.active && sessionStorage.getItem('pb_smash_seen') !== '1') setSmashPopup(true);
+        }
+      }),
+    ]).finally(() => setMenuReady(true));
   }, []);
 
   useEffect(() => {
@@ -1506,7 +1538,13 @@ export default function ShowcasePage() {
             </div>
           </Reveal>
 
-          {BURGERS.filter((b) => {
+          {!menuReady ? (
+            <div className="space-y-3 max-w-4xl mx-auto">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-20 rounded-2xl bg-black/5 animate-pulse" style={{ animationDelay: `${i * 0.08}s` }} />
+              ))}
+            </div>
+          ) : BURGERS.filter((b) => {
             if (disabledProducts.includes(b.name)) return false;
             if (burgerFilter === 'veggie') return b.tag === 'Veggie';
             if (burgerFilter === 'spicy') return b.spicy;
@@ -1817,7 +1855,7 @@ export default function ShowcasePage() {
             <img src="/logo-public-burger.png" alt="Public" className="h-8 opacity-70" />
             <div className="text-white/20 text-xs leading-relaxed">
               <p className="text-white/40 font-medium mb-1">Public Burger — Isola del Liri (FR)</p>
-              <p className="text-white/30 mb-1">+39 342 000 6928</p>
+              <a href="tel:+393420006928" className="text-white/30 hover:text-white/60 transition-colors mb-1 block">+39 342 000 6928</a>
               © {new Date().getFullYear()} — I prezzi potrebbero subire variazioni.
             </div>
           </div>
@@ -1833,7 +1871,7 @@ export default function ShowcasePage() {
 
 
       {/* ── Cart FAB ── */}
-      <CartFAB count={cart.length} onClick={() => requireLogin(() => setCartOpen(true))} />
+      <CartFAB count={cart.length} total={cart.reduce((s, i) => s + i.totalPrice, 0)} onClick={() => requireLogin(() => setCartOpen(true))} />
 
       <AnimatePresence>
         {configuringBurger && (
@@ -1861,6 +1899,9 @@ export default function ShowcasePage() {
               setReorderDismissed(false);
               setCart([]);
               localStorage.removeItem('pb_cart');
+              localStorage.removeItem('pb_cart_at');
+              setCartOpen(false);
+              showToast('Ordine inviato su WhatsApp!');
             }}
           />
         )}

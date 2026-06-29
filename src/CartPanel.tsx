@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
@@ -97,7 +97,6 @@ function ItemCard({
 
   const x = useMotionValue(0);
   const deleteOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
-  const dragRef = useRef(false);
 
   function handleDragEnd() {
     if (x.get() < SWIPE_THRESHOLD) {
@@ -132,7 +131,6 @@ function ItemCard({
         dragConstraints={{ left: SWIPE_THRESHOLD * 1.4, right: 0 }}
         dragElastic={{ left: 0.1, right: 0 }}
         style={{ x }}
-        onDragStart={() => { dragRef.current = true; }}
         onDragEnd={handleDragEnd}
         className="relative bg-white rounded-2xl border border-black/6 px-4 py-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing select-none"
       >
@@ -213,8 +211,22 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   const [orderType, setOrderType] = useState<OrderType>('asporto');
   const [name, setName] = useState('');
   const [time, setTime] = useState('');
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
   const user = getStoredUser();
+
+  useEffect(() => {
+    if (items.length > 0 && !localStorage.getItem('pb_swipe_hint_seen')) {
+      const t = setTimeout(() => {
+        setShowSwipeHint(true);
+        setTimeout(() => {
+          setShowSwipeHint(false);
+          localStorage.setItem('pb_swipe_hint_seen', '1');
+        }, 2000);
+      }, 600);
+      return () => clearTimeout(t);
+    }
+  }, []);
 
   function handleWhatsApp() {
     if (!user) return;
@@ -290,9 +302,30 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
               ×
             </button>
           </div>
-          <p className="text-[12px] font-semibold text-black/30 uppercase tracking-widest">
-            {step === 'cart' ? 'Rivedi e modifica' : 'Modalità e dettagli'}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] font-semibold text-black/30 uppercase tracking-widest">
+              {step === 'cart' ? 'Rivedi e modifica' : 'Modalità e dettagli'}
+            </p>
+            <AnimatePresence>
+              {showSwipeHint && step === 'cart' && (
+                <motion.div
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="flex items-center gap-1 text-[10px] text-black/30 font-medium"
+                >
+                  <motion.span
+                    animate={{ x: [-4, 0, -4] }}
+                    transition={{ duration: 0.8, repeat: 2, ease: 'easeInOut' }}
+                  >
+                    ←
+                  </motion.span>
+                  scorri per eliminare
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* Step indicator */}

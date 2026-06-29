@@ -35,10 +35,6 @@ const PROVIDERS: { id: Provider; label: string; icon: React.ReactNode; bg: strin
   },
 ];
 
-async function signInWith(provider: Provider) {
-  await signInWithProvider(provider);
-}
-
 export default function LoginPage() {
   const [loading, setLoading] = useState<Provider | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +47,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(provider);
     try {
-      await signInWith(provider);
+      await signInWithProvider(provider);
     } catch {
       setError('Errore durante l\'accesso. Riprova.');
       setLoading(null);
