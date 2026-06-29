@@ -1128,6 +1128,24 @@ export default function ShowcasePage() {
     setCart((prev) => prev.filter((i) => i.id !== id));
   }
 
+  function updateQty(id: string, delta: number) {
+    setCart((prev) => prev.flatMap((item) => {
+      if (item.id !== id) return [item];
+      if (item.type === 'fry') {
+        const newQty = item.qty + delta;
+        if (newQty <= 0) return [];
+        return [{ ...item, qty: newQty, totalPrice: newQty * item.fry.price }];
+      }
+      if (item.type === 'extra') {
+        const unitPrice = item.qty > 0 ? item.totalPrice / item.qty : 0.5;
+        const newQty = item.qty + delta;
+        if (newQty <= 0) return [];
+        return [{ ...item, qty: newQty, totalPrice: newQty * unitPrice }];
+      }
+      return [item];
+    }));
+  }
+
   function removeExtra(name: string, price: number) {
     setCart((prev) => {
       const existing = prev.find((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra | undefined;
@@ -1835,6 +1853,7 @@ export default function ShowcasePage() {
           <CartPanel
             items={cart}
             onRemove={removeItem}
+            onUpdateQty={updateQty}
             onClose={() => setCartOpen(false)}
             onOrderSent={(sentItems) => {
               try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
