@@ -123,8 +123,15 @@ function Spinner() {
 // ─── Stats Tab ────────────────────────────────────────────────────────────────
 interface DailyStat { giorno: string; totale_ordini: number; fatturato: number }
 
+type StatPreset = 'oggi' | '7g' | '30g' | 'custom';
+
 function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: string }) {
   const [dailyStats, setDailyStats] = useState<DailyStat[]>([]);
+  const [preset, setPreset] = useState<StatPreset>('30g');
+  const [filterFrom, setFilterFrom] = useState('');
+  const [filterTo, setFilterTo]   = useState('');
+  const [hourFrom, setHourFrom]   = useState('');
+  const [hourTo,   setHourTo]     = useState('');
 
   useEffect(() => {
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
@@ -135,22 +142,46 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
       body: '{}',
     }).then(r => r.ok ? r.json() : []).then(setDailyStats).catch(() => {});
   }, [adminToken]);
+
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
+
+  useEffect(() => {
+    if (preset === 'oggi') {
+      setFilterFrom(today); setFilterTo(today);
+    } else if (preset === '7g') {
+      setFilterFrom(new Date(now.getTime() - 6 * 86400000).toISOString().slice(0, 10)); setFilterTo(today);
+    } else if (preset === '30g') {
+      setFilterFrom(new Date(now.getTime() - 29 * 86400000).toISOString().slice(0, 10)); setFilterTo(today);
+    }
+  }, [preset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const filteredOrders = useMemo(() => orders.filter(o => {
+    const date = o.created_at.slice(0, 10);
+    if (filterFrom && date < filterFrom) return false;
+    if (filterTo   && date > filterTo)   return false;
+    if (hourFrom || hourTo) {
+      const h = new Date(o.created_at).getHours();
+      if (hourFrom && h < parseInt(hourFrom)) return false;
+      if (hourTo   && h > parseInt(hourTo))   return false;
+    }
+    return true;
+  }), [orders, filterFrom, filterTo, hourFrom, hourTo]);
+
   const weekAgo  = new Date(now.getTime() -  7 * 86400000).toISOString().slice(0, 10);
   const twoWeeks = new Date(now.getTime() - 14 * 86400000).toISOString().slice(0, 10);
-  const monthAgo = new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10);
 
-  const rev = (from: string, to?: string) => orders
+  const rev = (from: string, to?: string) => filteredOrders
     .filter(o => o.created_at.slice(0, 10) >= from && (!to || o.created_at.slice(0, 10) < to))
     .reduce((s, o) => s + o.total, 0);
-  const cnt = (from: string, to?: string) => orders
+  const cnt = (from: string, to?: string) => filteredOrders
     .filter(o => o.created_at.slice(0, 10) >= from && (!to || o.created_at.slice(0, 10) < to)).length;
 
   const thisWeekRev  = rev(weekAgo);
   const prevWeekRev  = rev(twoWeeks, weekAgo);
   const thisWeekCnt  = cnt(weekAgo);
   const prevWeekCnt  = cnt(twoWeeks, weekAgo);
+  const totalRev     = filteredOrders.reduce((s, o) => s + o.total, 0);
 
   const pct = (curr: number, prev: number) => {
     if (prev === 0) return null;
@@ -161,38 +192,110 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
   const weekCntPct = pct(thisWeekCnt, prevWeekCnt);
 
   const productCount: Record<string, number> = {};
-  for (const o of orders) for (const item of o.items)
+  for (const o of filteredOrders) for (const item of o.items)
     productCount[item.name] = (productCount[item.name] ?? 0) + (item.qty ?? 1);
   const topProducts = Object.entries(productCount).sort((a, b) => b[1] - a[1]).slice(0, 7);
   const maxProd = topProducts[0]?.[1] ?? 1;
 
   const hourCount = new Array(24).fill(0);
-  for (const o of orders) hourCount[new Date(o.created_at).getHours()]++;
+  for (const o of filteredOrders) hourCount[new Date(o.created_at).getHours()]++;
   const peakHours = Array.from({ length: 24 }, (_, h) => ({ h, count: hourCount[h] })).filter(x => x.h >= 17 || x.count > 0);
   const maxHour = Math.max(...hourCount, 1);
 
   const typeCount: Record<string, number> = {};
-  for (const o of orders) typeCount[o.order_type] = (typeCount[o.order_type] ?? 0) + 1;
-  const total = orders.length || 1;
+  for (const o of filteredOrders) typeCount[o.order_type] = (typeCount[o.order_type] ?? 0) + 1;
+  const total = filteredOrders.length || 1;
 
-  function printReport() {
-    window.print();
-  }
+  const PRESETS: { key: StatPreset; label: string }[] = [
+    { key: 'oggi', label: 'Oggi' },
+    { key: '7g',   label: '7 giorni' },
+    { key: '30g',  label: '30 giorni' },
+    { key: 'custom', label: 'Personalizzato' },
+  ];
+
+  const hasHourFilter = hourFrom !== '' || hourTo !== '';
 
   return (
     <div className="p-4 max-w-2xl mx-auto pb-16 space-y-4 print:p-0">
+
+      {/* Filtri */}
+      <div className="bg-white rounded-2xl border border-black/6 shadow-sm p-4 space-y-3 print:hidden">
+        <p className="text-[10px] uppercase tracking-[0.25em] text-black/30">Filtri</p>
+
+        {/* Preset pills */}
+        <div className="flex gap-2 flex-wrap">
+          {PRESETS.map(p => (
+            <button key={p.key} onClick={() => setPreset(p.key)}
+              className={`px-3 py-1.5 rounded-full text-[10px] uppercase tracking-wider font-semibold border transition-colors ${
+                preset === p.key ? 'bg-[#1a0a10] text-white border-[#1a0a10]' : 'border-black/12 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990]'
+              }`}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Date range — visibile solo in custom */}
+        {preset === 'custom' && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-black/30 uppercase tracking-wider">Dal</span>
+              <input type="date" value={filterFrom} onChange={e => setFilterFrom(e.target.value)}
+                className="border border-black/12 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-black/30 uppercase tracking-wider">Al</span>
+              <input type="date" value={filterTo} onChange={e => setFilterTo(e.target.value)}
+                className="border border-black/12 rounded-xl px-3 py-1.5 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
+              />
+            </div>
+            {(filterFrom || filterTo) && (
+              <button onClick={() => { setFilterFrom(''); setFilterTo(''); }}
+                className="text-[11px] text-[#CF6990] hover:text-[#a8456b] transition-colors">✕ Reset</button>
+            )}
+          </div>
+        )}
+
+        {/* Fascia oraria */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[10px] text-black/30 uppercase tracking-wider">Ore</span>
+          <select value={hourFrom} onChange={e => setHourFrom(e.target.value)}
+            className="border border-black/12 rounded-xl px-2 py-1.5 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]">
+            <option value="">–</option>
+            {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2,'0')}:00</option>)}
+          </select>
+          <span className="text-black/30 text-sm">→</span>
+          <select value={hourTo} onChange={e => setHourTo(e.target.value)}
+            className="border border-black/12 rounded-xl px-2 py-1.5 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]">
+            <option value="">–</option>
+            {Array.from({ length: 24 }, (_, h) => <option key={h} value={h}>{String(h).padStart(2,'0')}:59</option>)}
+          </select>
+          {hasHourFilter && (
+            <button onClick={() => { setHourFrom(''); setHourTo(''); }}
+              className="text-[11px] text-[#CF6990] hover:text-[#a8456b] transition-colors">✕</button>
+          )}
+        </div>
+
+        {/* Summary risultato filtro */}
+        <p className="text-[11px] text-black/35">
+          {filteredOrders.length} ordini · €{totalRev.toFixed(2)} fatturato
+          {(filterFrom || filterTo) && ` · ${filterFrom || '…'} → ${filterTo || '…'}`}
+          {hasHourFilter && ` · ore ${hourFrom || '0'}–${hourTo || '23'}`}
+        </p>
+      </div>
+
       <div className="flex justify-end print:hidden">
-        <button onClick={printReport}
+        <button onClick={() => window.print()}
           className="px-4 py-2 border border-black/12 rounded-xl text-[10px] uppercase tracking-wider text-black/50 hover:border-[#CF6990] hover:text-[#CF6990] transition-colors">
           🖨 Stampa report
         </button>
       </div>
 
-      {/* Revenue + week comparison */}
+      {/* Revenue cards */}
       <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Oggi', value: rev(today), sub: null },
-          { label: 'Ultimi 30 giorni', value: rev(monthAgo), sub: null },
+          { label: 'Nel periodo', value: totalRev, sub: null },
+          { label: 'Ordini totali', value: filteredOrders.length, isCnt: true, sub: null },
           { label: 'Questa settimana', value: thisWeekRev, sub: weekRevPct ? `${weekRevPct.up ? '▲' : '▼'} ${weekRevPct.val}% vs sett. prec.` : null, up: weekRevPct?.up },
           { label: 'Ordini settimana', value: thisWeekCnt, isCnt: true, sub: weekCntPct ? `${weekCntPct.up ? '▲' : '▼'} ${weekCntPct.val}% vs sett. prec.` : null, up: weekCntPct?.up },
         ].map(s => (
@@ -217,13 +320,14 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
               <span className="text-[11px] font-bold text-[#1a0a10] w-8 text-right">{count}</span>
             </div>
           ))}
+          {Object.keys(typeCount).length === 0 && <p className="text-black/25 text-sm">Nessun ordine nel periodo</p>}
         </div>
       </div>
 
       {/* Top products */}
       <div className="bg-white rounded-2xl border border-black/6 p-4 shadow-sm">
         <p className="text-[10px] uppercase tracking-widest text-black/30 mb-3">Prodotti più venduti</p>
-        {topProducts.length === 0 && <p className="text-black/25 text-sm">Nessun dato ancora</p>}
+        {topProducts.length === 0 && <p className="text-black/25 text-sm">Nessun dato nel periodo</p>}
         <div className="space-y-2">
           {topProducts.map(([name, count], i) => (
             <div key={name} className="flex items-center gap-3">
@@ -249,6 +353,7 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
               <span className="text-[8px] text-black/25">{h}</span>
             </div>
           ))}
+          {peakHours.length === 0 && <p className="text-black/25 text-sm self-center w-full text-center">Nessun dato</p>}
         </div>
       </div>
 
@@ -269,7 +374,6 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
                       style={{ height: `${(Number(d.fatturato) / maxFat) * 80}px`, minHeight: 3 }}
                     />
                     <span className="text-[7px] text-black/25 rotate-0">{label}</span>
-                    {/* Tooltip */}
                     <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-[#1a0a10] text-white text-[9px] px-2 py-1 rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                       €{Number(d.fatturato).toFixed(0)} · {d.totale_ordini} ordini
                     </div>
@@ -317,6 +421,9 @@ function MenuTab({ adminToken }: { adminToken: string }) {
           ep[b.name] = { fixed: String(po[b.name]?.fixed ?? b.fixedPrice ?? 0) };
         }
       }
+      for (const f of FRIES) {
+        ep[f.name] = { fixed: String(po[f.name]?.fixed ?? f.price) };
+      }
       setEditPrices(ep);
       setLoaded(true);
     });
@@ -352,17 +459,22 @@ function MenuTab({ adminToken }: { adminToken: string }) {
     setSavingPrice(null);
   }
 
-  async function resetPrice(burgerName: string) {
-    const b = BURGERS.find(x => x.name === burgerName);
-    if (!b) return;
+  async function resetPrice(itemName: string) {
+    const b = BURGERS.find(x => x.name === itemName);
+    const f = FRIES.find(x => x.name === itemName);
+    if (!b && !f) return;
     const next = { ...priceOverrides };
-    delete next[burgerName];
-    setSavingPrice(burgerName);
+    delete next[itemName];
+    setSavingPrice(itemName);
     try {
       await updateSetting(adminToken, 'price_overrides', next);
       setPriceOverrides(next);
-      if (b.prices) setEditPrices(p => ({ ...p, [burgerName]: { single: String(b.prices!.single), double: String(b.prices!.double), triple: String(b.prices!.triple) } }));
-      else setEditPrices(p => ({ ...p, [burgerName]: { fixed: String(b.fixedPrice ?? 0) } }));
+      if (b) {
+        if (b.prices) setEditPrices(p => ({ ...p, [itemName]: { single: String(b.prices!.single), double: String(b.prices!.double), triple: String(b.prices!.triple) } }));
+        else setEditPrices(p => ({ ...p, [itemName]: { fixed: String(b.fixedPrice ?? 0) } }));
+      } else if (f) {
+        setEditPrices(p => ({ ...p, [itemName]: { fixed: String(f.price) } }));
+      }
     } catch { alert('Errore nel reset'); }
     setSavingPrice(null);
   }
@@ -437,6 +549,40 @@ function MenuTab({ adminToken }: { adminToken: string }) {
               <button onClick={() => savePrice(b.name)} disabled={isSaving}
                 className="mt-3 w-full py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
                 {isSaving ? 'Salvataggio…' : 'Salva prezzi'}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Prezzi Fries */}
+      <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1 pt-2">Prezzi Fries / Appetizer</p>
+      <div className="space-y-3">
+        {FRIES.map(f => {
+          const ep = editPrices[f.name] ?? {};
+          const hasOverride = !!priceOverrides[f.name];
+          const isSaving = savingPrice === f.name;
+          return (
+            <div key={f.name} className="bg-white rounded-2xl border border-black/6 shadow-sm p-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-semibold text-[#1a0a10]">{f.name}</p>
+                {hasOverride && (
+                  <button onClick={() => resetPrice(f.name)} disabled={isSaving}
+                    className="text-[9px] uppercase tracking-widest text-red-400 hover:text-red-600 transition-colors">
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center border border-black/12 rounded-xl overflow-hidden focus-within:border-[#CF6990] bg-[#fdf5f8] max-w-[120px]">
+                <span className="px-2 text-black/30 text-sm">€</span>
+                <input type="number" step="0.5" min="0" value={ep.fixed ?? ''}
+                  onChange={e => setEditPrices(p => ({ ...p, [f.name]: { fixed: e.target.value } }))}
+                  className="flex-1 py-2 pr-2 text-sm focus:outline-none bg-transparent w-0 min-w-0"
+                />
+              </div>
+              <button onClick={() => savePrice(f.name)} disabled={isSaving}
+                className="mt-3 w-full py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                {isSaving ? 'Salvataggio…' : 'Salva prezzo'}
               </button>
             </div>
           );
@@ -811,7 +957,7 @@ export default function AdminPage() {
     { key: 'ordini',      label: `Ordini${newOrderCount > 0 ? ` 🔴${newOrderCount}` : ` (${filtered.length})`}` },
     { key: 'statistiche', label: 'Stats' },
     { key: 'menu',        label: 'Menu' },
-    { key: 'smash',       label: 'Smash' },
+    { key: 'smash',       label: 'Popup' },
     { key: 'orari',       label: 'Orari' },
     { key: 'profili',     label: `Profili (${profiles.length})` },
     { key: 'foodcost',    label: 'Food Cost' },
