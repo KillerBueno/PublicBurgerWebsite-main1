@@ -981,6 +981,72 @@ function FornitoriSection() {
   );
 }
 
+// ─── Admin Reminder ───────────────────────────────────────────────────────────
+
+const SUPABASE_URL_REMIND = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_KEY_REMIND = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const PRIMARY_ADMIN = 'prrsmn91@gmail.com';
+
+function AdminReminder() {
+  const [user] = useState(() => getStoredUser());
+  const [adminEmails, setAdminEmails] = useState<string[]>([PRIMARY_ADMIN]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    fetchSetting<string[]>('admin_emails').then(v => {
+      if (v) setAdminEmails([PRIMARY_ADMIN, ...v]);
+    });
+  }, []);
+
+  const isAdmin = user && adminEmails.includes(user.email);
+
+  useEffect(() => {
+    if (!isAdmin || !user?.access_token || !SUPABASE_URL_REMIND) return;
+
+    async function fetchPending() {
+      const res = await fetch(
+        `${SUPABASE_URL_REMIND}/rest/v1/orders?status=eq.nuovo&select=id&limit=200`,
+        { headers: { apikey: SUPABASE_KEY_REMIND!, Authorization: `Bearer ${user!.access_token}` } },
+      ).catch(() => null);
+      if (!res?.ok) return;
+      const data = await res.json();
+      setPendingCount(Array.isArray(data) ? data.length : 0);
+    }
+
+    fetchPending();
+    const interval = setInterval(fetchPending, 60_000);
+    return () => clearInterval(interval);
+  }, [isAdmin]);
+
+  if (!isAdmin || pendingCount === 0 || dismissed) return null;
+
+  return (
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] w-[92%] max-w-sm">
+      <motion.div
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-[#1a0a10] text-white rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3"
+      >
+        <span className="text-xl shrink-0">⏳</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#CF6990] leading-tight">
+            {pendingCount} ordine{pendingCount > 1 ? 'i' : ''} da confermare
+          </p>
+          <p className="text-[10px] text-white/50 leading-tight mt-0.5">Vai all'admin per aggiornare lo stato</p>
+        </div>
+        <a
+          href="/admin"
+          className="shrink-0 px-3 py-1.5 bg-[#CF6990] text-white text-[10px] font-bold uppercase tracking-wide rounded-xl hover:bg-[#a8456b] transition-colors"
+        >
+          Vai
+        </a>
+        <button onClick={() => setDismissed(true)} className="shrink-0 text-white/30 hover:text-white/60 text-lg leading-none">×</button>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ShowcasePage() {
@@ -1174,6 +1240,7 @@ export default function ShowcasePage() {
 
   return (
     <>
+      <AdminReminder />
       {/* ── Chiuso Banner ── */}
       {openingHours && !isCurrentlyOpen(openingHours) && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm">
