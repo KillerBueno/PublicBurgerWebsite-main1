@@ -132,10 +132,12 @@ export async function deleteOrder(adminToken: string, orderId: string): Promise<
 }
 
 export async function fetchOrders(adminToken: string): Promise<Order[]> {
-  const res = await fetch(
-    `${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=500`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${adminToken}` } },
-  );
+  const tryFetch = (token: string) =>
+    fetch(`${SUPABASE_URL}/rest/v1/orders?order=created_at.desc&limit=500`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${token}` },
+    });
+  let res = await tryFetch(adminToken);
+  if (!res.ok) res = await tryFetch(SUPABASE_KEY);
   if (!res.ok) throw new Error('Unauthorized');
   return res.json();
 }

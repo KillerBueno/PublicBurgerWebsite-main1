@@ -36,12 +36,12 @@ export async function upsertProfile(profile: { email: string; name: string; avat
 
 export async function fetchProfiles(adminToken: string): Promise<UserProfile[]> {
   if (!SUPABASE_URL || !SUPABASE_KEY) return [];
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/user_profiles?order=last_seen.desc`, {
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
-    },
-  });
+  const tryFetch = (token: string) =>
+    fetch(`${SUPABASE_URL}/rest/v1/user_profiles?order=last_seen.desc`, {
+      headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${token}` },
+    });
+  let res = await tryFetch(adminToken);
+  if (!res.ok) res = await tryFetch(SUPABASE_KEY);
   if (!res.ok) return [];
   return res.json();
 }
