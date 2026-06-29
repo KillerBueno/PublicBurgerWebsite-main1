@@ -1107,7 +1107,7 @@ export default function ShowcasePage() {
         : [...prev, { id: crypto.randomUUID(), type: 'fry', fry, qty: 1, totalPrice: fry.price } as CartFry];
       // add selected sauces as extras
       const sauceItems: CartExtra[] = sauces.map((name) => ({
-        id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0,
+        id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0.5,
       }));
       return [...next, ...sauceItems];
     });
@@ -1863,7 +1863,7 @@ export default function ShowcasePage() {
             onConfirm={(label, price, sauces) => {
               setCart((prev) => {
                 const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price, allergens: [1, 3, 6, 10] }, qty: 1, totalPrice: price };
-                const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0 }));
+                const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0.5 }));
                 return [...prev, item, ...sauceItems];
               });
             }}
