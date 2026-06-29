@@ -1935,19 +1935,22 @@ export default function ShowcasePage() {
         {toast && <Toast key={toast + Date.now()} message={`${toast} aggiunto`} />}
       </AnimatePresence>
 
-      {/* Fast reorder bubble */}
+      {/* Fast reorder bubble — speech bubble pointing to profile avatar (top-right) */}
       <AnimatePresence>
         {lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && pageUser && (
           <motion.div
-            initial={{ x: '110%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '110%' }}
-            transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-            className="fixed bottom-24 right-4 z-50 max-w-[260px]"
+            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 26, delay: 0.4 }}
+            className="fixed top-24 right-4 z-50 w-[220px]"
           >
+            {/* Tail pointing up-right toward avatar */}
+            <div className="absolute -top-2 right-5 w-0 h-0"
+              style={{ borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderBottom: '10px solid #1a0a10' }} />
             <div className="bg-[#1a0a10] text-white rounded-2xl shadow-2xl px-4 py-3">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <p className="text-[13px] font-semibold text-white leading-snug">Cosa hai mangiato l'ultima volta...?</p>
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <p className="text-[12px] font-semibold text-white leading-snug">Cosa hai mangiato l'ultima volta...?</p>
                 <button onClick={() => setReorderDismissed(true)} className="text-white/25 hover:text-white/60 text-lg leading-none -mt-0.5 shrink-0">×</button>
               </div>
               <p className="text-[11px] text-white/45 mb-3 leading-snug">
