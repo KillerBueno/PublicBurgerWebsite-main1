@@ -105,6 +105,7 @@ export default function App() {
   if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
   if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
   if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
+  if (path === '/terms')   return <Suspense fallback={null}><LegalPage page="terms" /></Suspense>;
   if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
 
   const [splash, setSplash] = useState(() => sessionStorage.getItem('pb_splash_done') !== '1');

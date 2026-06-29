@@ -104,7 +104,7 @@ export default function LoginPage() {
         <div className="px-8 pb-8 text-center">
           <p className="text-[10px] text-black/25 leading-relaxed">
             Continuando, accetti i nostri{' '}
-            <a href="/privacy" className="underline hover:text-[#CF6990]">Termini di servizio</a>
+            <a href="/terms" className="underline hover:text-[#CF6990]">Termini di servizio</a>
             {' '}e la{' '}
             <a href="/privacy" className="underline hover:text-[#CF6990]">Privacy Policy</a>.
           </p>

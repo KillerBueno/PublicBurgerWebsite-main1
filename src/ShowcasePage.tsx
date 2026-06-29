@@ -2010,6 +2010,7 @@ export default function ShowcasePage() {
             <p>P.IVA 02854710601 — Titolare: Graziella Parravano</p>
           </div>
           <div className="flex gap-6 text-[10px] uppercase tracking-[0.3em]">
+            <a href="/terms" className="hover:text-[#CF6990] transition-colors">Termini</a>
             <a href="/privacy" className="hover:text-[#CF6990] transition-colors">Privacy Policy</a>
             <a href="/cookie" className="hover:text-[#CF6990] transition-colors">Cookie Policy</a>
           </div>
