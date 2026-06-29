@@ -250,7 +250,8 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     if (!user) return;
     const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim());
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-    window.open(url, '_blank');
+    const waWindow = window.open(url, '_blank');
+    if (waWindow) setTimeout(() => waWindow.close(), 2000);
     incrementOrderCount();
     onOrderSent?.(items);
 
