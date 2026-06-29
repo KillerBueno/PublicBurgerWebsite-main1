@@ -216,8 +216,14 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ok' | 'denied'>('idle');
   const [manualAddress, setManualAddress] = useState('');
   const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
   const user = getStoredUser();
+
+  const hasLocation = locationStatus === 'ok' || manualAddress.trim().length > 0;
+  const canSubmit =
+    time.trim().length > 0 &&
+    (orderType === 'asporto' ? name.trim().length > 0 : hasLocation);
 
   useEffect(() => {
     if (items.length > 0 && !localStorage.getItem('pb_swipe_hint_seen')) {
@@ -246,6 +252,15 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   }
 
   function handleWhatsApp() {
+    if (!canSubmit) {
+      if (orderType === 'asporto') {
+        setValidationError(!name.trim() && !time.trim() ? 'Inserisci nome e orario per procedere.' : !name.trim() ? 'Inserisci il tuo nome per il ritiro.' : 'Inserisci l\'orario preferito.');
+      } else {
+        setValidationError(!hasLocation && !time.trim() ? 'Inserisci posizione e orario per procedere.' : !hasLocation ? 'Condividi la posizione o inserisci l\'indirizzo.' : 'Inserisci l\'orario preferito.');
+      }
+      return;
+    }
+    setValidationError(null);
     const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim());
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     const waWindow = window.open(url, '_blank');
@@ -472,7 +487,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                               <input
                                 type="text"
                                 value={manualAddress}
-                                onChange={(e) => setManualAddress(e.target.value)}
+                                onChange={(e) => { setManualAddress(e.target.value); setValidationError(null); }}
                                 placeholder="Via, numero civico, città…"
                                 className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
                               />
@@ -494,13 +509,13 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">Nome per il ritiro</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">Nome per il ritiro <span className="text-red-400">*</span></p>
                       <input
                         type="text"
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { setName(e.target.value); setValidationError(null); }}
                         placeholder="Il tuo nome…"
-                        className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
+                        className={`w-full rounded-xl border bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:bg-white placeholder-black/20 transition-all ${validationError && !name.trim() ? 'border-red-400 bg-red-50' : 'border-black/10 focus:border-[#CF6990]'}`}
                       />
                     </motion.div>
                   )}
@@ -508,12 +523,12 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
 
                 {/* Orario */}
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">Orario preferito</p>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">Orario preferito <span className="text-red-400">*</span></p>
                   <input
                     type="time"
                     value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white text-black/55 transition-all"
+                    onChange={(e) => { setTime(e.target.value); setValidationError(null); }}
+                    className={`w-full rounded-xl border bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:bg-white text-black/55 transition-all ${validationError && !time.trim() ? 'border-red-400 bg-red-50' : 'border-black/10 focus:border-[#CF6990]'}`}
                   />
                 </div>
 
@@ -546,6 +561,14 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                     </div>
                     <span className="text-[10px] text-[#CF6990] font-semibold uppercase tracking-wide shrink-0">Accedi →</span>
                   </a>
+                )}
+                {validationError && (
+                  <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 px-4 py-3">
+                    <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                    </svg>
+                    <p className="text-[12px] font-semibold text-red-600">{validationError}</p>
+                  </div>
                 )}
                 <button
                   onClick={handleWhatsApp}
