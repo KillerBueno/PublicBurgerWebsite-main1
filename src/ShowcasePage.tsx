@@ -199,10 +199,12 @@ function CartFAB({ count, total, onClick }: { count: number; total: number; onCl
       whileTap={{ scale: 0.93 }}
       whileHover={{ scale: 1.05 }}
       layout
-      className="pb-fab-glow fixed bottom-20 right-6 z-40 text-white h-14 rounded-full flex items-center justify-center shadow-2xl"
+      className="fixed bottom-20 right-6 z-40 text-white h-14 rounded-full flex items-center justify-center shadow-2xl"
       style={{ background: 'linear-gradient(135deg, #1a0a10 0%, #3a1020 100%)', minWidth: '56px' }}
       transition={{ layout: { duration: 0.25, ease: [0.16, 1, 0.3, 1] } }}
     >
+      {/* Pulse ring — transform+opacity, GPU-composited, works on iOS Safari */}
+      <span className="pb-fab-pulse absolute inset-[-3px] rounded-full pointer-events-none" />
       <span className="flex items-center gap-2.5 px-4">
         <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.6} viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z" />
@@ -1308,12 +1310,19 @@ export default function ShowcasePage() {
           border-color: #CF6990 !important;
         }
 
-        /* Glow pulse for CartFAB */
-        @keyframes fabGlow {
-          0%,100% { box-shadow: 0 0 0 0 rgba(207,105,144,0); }
-          50%      { box-shadow: 0 0 0 8px rgba(207,105,144,0.15); }
+        /* Pulse ring for CartFAB — transform+opacity only, works on iOS Safari */
+        @keyframes fabPulse {
+          0%   { transform: scale(1);    opacity: 0; }
+          20%  { opacity: 0.35; }
+          80%  { transform: scale(1.22); opacity: 0; }
+          100% { transform: scale(1.22); opacity: 0; }
         }
-        .pb-fab-glow { animation: fabGlow 2.5s ease-in-out infinite; }
+        .pb-fab-pulse {
+          background: rgba(207,105,144,0.45);
+          animation: fabPulse 2.5s ease-in-out infinite;
+          will-change: transform, opacity;
+          transform: translateZ(0);
+        }
 
         /* Section label underline */
         .pb-section-label::after {
@@ -1341,7 +1350,7 @@ export default function ShowcasePage() {
 
         @media (prefers-reduced-motion: reduce) {
           .pb-blob1,.pb-blob2,.pb-blob3 { animation: none; }
-          .pb-fab-glow { animation: none; }
+          .pb-fab-pulse { animation: none; }
         }
         @keyframes shimmer-bronze {
           0%   { filter: sepia(1) hue-rotate(340deg) saturate(3) brightness(0.9) drop-shadow(0 0 10px #cd7f32); }
