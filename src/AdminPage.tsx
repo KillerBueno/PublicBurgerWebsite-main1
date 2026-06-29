@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order, type StatusEntry } from './lib/orders';
-import { getStoredUser } from './lib/supabase';
+import { getStoredUser, signOut } from './lib/supabase';
 import { fetchProfiles, setProfileOverride, effectiveCount, type UserProfile } from './lib/profiles';
 import { getTier, TIERS } from './lib/gamification';
 import {
@@ -578,6 +578,16 @@ function OrariTab({ adminToken }: { adminToken: string }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function AdminPage() {
   const loggedUser = getStoredUser();
+
+  // Validate token on mount — if expired Supabase returns 401 and orders silently come back []
+  useEffect(() => {
+    if (!loggedUser?.access_token) return;
+    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+    const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+    fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: { Authorization: `Bearer ${loggedUser.access_token}`, apikey: SUPABASE_KEY },
+    }).then(r => { if (r.status === 401) { signOut(); } }).catch(() => {});
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
   const [adminEmailsLoaded, setAdminEmailsLoaded] = useState(false);
