@@ -629,7 +629,7 @@ export default function AdminPage() {
     const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
     fetch(`${SUPABASE_URL}/auth/v1/user`, {
       headers: { Authorization: `Bearer ${loggedUser.access_token}`, apikey: SUPABASE_KEY },
-    }).then(r => { if (r.status === 401) { signOut(); } }).catch(() => {});
+    }).then(r => { if (r.status === 401 || r.status === 403) { signOut(); } }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const [adminEmails, setAdminEmails] = useState<string[]>([]);
