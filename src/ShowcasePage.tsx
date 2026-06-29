@@ -557,11 +557,16 @@ function SubNav() {
   const [active, setActive] = useState('panini');
   const [user, setUser] = useState<PBUser | null>(() => getStoredUser());
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [adminEmails, setAdminEmails] = useState<string[]>(['prrsmn91@gmail.com']);
 
   useEffect(() => {
     const refresh = () => setUser(getStoredUser());
     window.addEventListener('pb-user-changed', refresh);
     return () => window.removeEventListener('pb-user-changed', refresh);
+  }, []);
+
+  useEffect(() => {
+    fetchSetting<string[]>('admin_emails').then(v => { if (v?.length) setAdminEmails(v); });
   }, []);
 
   useEffect(() => {
@@ -658,7 +663,7 @@ function SubNav() {
                       <p className="text-[11px] font-semibold text-[#1a0a10] truncate">{user.name}</p>
                       <p className="text-[10px] text-black/35 truncate">{user.email}</p>
                     </div>
-                    {!!user && (
+                    {user && adminEmails.includes(user.email) && (
                       <a href="/admin" className="flex items-center gap-2 px-4 py-3 text-[11px] font-semibold text-[#CF6990] hover:bg-[#fdf5f8] transition-colors border-b border-black/6">
                         <span>⚙️</span> Dashboard Admin
                       </a>
