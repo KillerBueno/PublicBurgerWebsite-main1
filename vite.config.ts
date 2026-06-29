@@ -8,6 +8,8 @@ export default defineConfig({
     port: 5173,
   },
   build: {
+    target: 'es2020',
+    cssMinify: true,
     rollupOptions: {
       output: {
         manualChunks: {

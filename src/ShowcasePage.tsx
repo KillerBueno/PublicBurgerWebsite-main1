@@ -1,9 +1,9 @@
-import { useRef, useState, useEffect } from 'react';
-import { motion, useInView, useScroll, useTransform, AnimatePresence, useMotionValue, useAnimationFrame } from 'framer-motion';
+import { useRef, useState, useEffect, lazy, Suspense } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useAnimationFrame } from 'framer-motion';
 import { BURGERS, FRIES, ALLERGEN_LABELS, SALSE_ALLERGENS, type BurgerDef } from './menuData';
 import type { CartItem, CartFry, CartExtra } from './cartTypes';
-import BurgerConfigurator from './BurgerConfigurator';
-import CartPanel from './CartPanel';
+const BurgerConfigurator = lazy(() => import('./BurgerConfigurator'));
+const CartPanel = lazy(() => import('./CartPanel'));
 import { getStoredUser, signOut, type PBUser } from './lib/supabase';
 import { getOrderCount, getTier, TIERS, type Tier } from './lib/gamification';
 import { fetchSetting, isCurrentlyOpen, type MondaySmashConfig, type PriceOverrides, type OpeningHours } from './lib/settings';
@@ -75,28 +75,6 @@ function Ticker({ bg, text, items }: { bg: string; text: string; items: string[]
   );
 }
 
-// ─── Word-by-word stagger ────────────────────────────────────────────────────
-
-function WordReveal({ text, className = '' }: { text: string; className?: string }) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: '0px' });
-  const words = text.split(' ');
-  return (
-    <p ref={ref} className={className}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          className="inline-block mr-[0.25em]"
-          initial={{ opacity: 0, y: 12 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, delay: i * 0.06, ease: [0.16, 1, 0.3, 1] }}
-        >
-          {word}
-        </motion.span>
-      ))}
-    </p>
-  );
-}
 
 
 // ─── Order Counter (top-left iOS pill) ───────────────────────────────────────
@@ -381,46 +359,6 @@ function BurgerRow({ burger, index, onAdd, priceOverrides = {} }: {
 }
 
 
-// ─── Extra row (salse / bibite) ───────────────────────────────────────────────
-
-function ExtraRow({ name, price, onAdd, cart, allergens }: { name: string; price: number; onAdd: () => void; cart: CartItem[]; allergens?: number[] }) {
-  const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === name) as CartExtra[])
-    .reduce((s, i) => s + i.qty, 0);
-  const [flash, setFlash] = useState(false);
-
-  function handleAdd() {
-    onAdd();
-    setFlash(true);
-    setTimeout(() => setFlash(false), 600);
-  }
-
-  return (
-    <div className="flex items-center justify-between px-4 py-3.5 bg-white rounded-xl shadow-sm border border-black/5 mb-2">
-      <div className="flex items-center gap-4">
-        <div>
-          <span className="text-sm text-black/70 uppercase tracking-wide font-medium">{name}</span>
-          {allergens && allergens.length > 0 && (
-            <p className="text-[9px] text-black/25 tracking-wider mt-0.5">Allergeni: {allergens.join(', ')}</p>
-          )}
-        </div>
-        {qty > 0 && (
-          <span className="text-[10px] bg-[#CF6990] text-white px-1.5 py-0.5 rounded-full font-bold">×{qty}</span>
-        )}
-      </div>
-      <div className="flex items-center gap-3 shrink-0">
-        <span className="text-sm text-[#CF6990] tracking-widest">{fmt(price)}</span>
-        <motion.button
-          onClick={handleAdd}
-          animate={flash ? { scale: [1, 1.3, 1] } : {}}
-          transition={{ duration: 0.4 }}
-          className="w-7 h-7 rounded-full border border-black/15 text-black/40 hover:border-[#CF6990] hover:text-[#CF6990] text-base flex items-center justify-center transition-colors duration-200 leading-none"
-        >
-          +
-        </motion.button>
-      </div>
-    </div>
-  );
-}
 
 // ─── Fry Modal ────────────────────────────────────────────────────────────────
 
@@ -1602,7 +1540,7 @@ export default function ShowcasePage() {
                 </div>
               </div>
             </Reveal>
-            {FRIES.filter(f => !disabledProducts.includes(f.name)).map((f, i) => {
+            {FRIES.filter(f => !disabledProducts.includes(f.name)).map((f) => {
               const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
               return (
                 <motion.button
@@ -1653,7 +1591,7 @@ export default function ShowcasePage() {
                 </div>
               </div>
             </Reveal>
-            {SALSE_LIST.map((s, i) => {
+            {SALSE_LIST.map((s) => {
               const qty = (cart.filter((ci) => ci.type === 'extra' && (ci as CartExtra).name === s) as CartExtra[]).reduce((acc, ci) => acc + ci.qty, 0);
               return (
                 <motion.button
@@ -1710,7 +1648,7 @@ export default function ShowcasePage() {
               { name: 'Acqua Liscia', price: 1 },
               { name: 'Acqua Frizzante', price: 1 },
               { name: 'Forst 0,33', price: 3.5 },
-            ].map(({ name: b, price: drinkPrice }, i) => {
+            ].map(({ name: b, price: drinkPrice }) => {
               const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === b) as CartExtra[]).reduce((s, i) => s + i.qty, 0);
               return (
                 <motion.button
@@ -1911,35 +1849,39 @@ export default function ShowcasePage() {
 
       <AnimatePresence>
         {configuringBurger && (
-          <BurgerConfigurator
-            burger={configuringBurger.burger}
-            preselectedSize={configuringBurger.size}
-            onConfirm={addBurger}
-            onClose={() => setConfiguringBurger(null)}
-            disabledIngredients={disabledIngredients}
-            priceOverrides={priceOverrides}
-          />
+          <Suspense fallback={null}>
+            <BurgerConfigurator
+              burger={configuringBurger.burger}
+              preselectedSize={configuringBurger.size}
+              onConfirm={addBurger}
+              onClose={() => setConfiguringBurger(null)}
+              disabledIngredients={disabledIngredients}
+              priceOverrides={priceOverrides}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {cartOpen && (
-          <CartPanel
-            items={cart}
-            onRemove={removeItem}
-            onUpdateQty={updateQty}
-            onClose={() => setCartOpen(false)}
-            onOrderSent={(sentItems) => {
-              try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
-              setLastOrder(sentItems);
-              setReorderDismissed(false);
-              setCart([]);
-              localStorage.removeItem('pb_cart');
-              localStorage.removeItem('pb_cart_at');
-              setCartOpen(false);
-              showToast('Ordine inviato su WhatsApp!');
-            }}
-          />
+          <Suspense fallback={null}>
+            <CartPanel
+              items={cart}
+              onRemove={removeItem}
+              onUpdateQty={updateQty}
+              onClose={() => setCartOpen(false)}
+              onOrderSent={(sentItems) => {
+                try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
+                setLastOrder(sentItems);
+                setReorderDismissed(false);
+                setCart([]);
+                localStorage.removeItem('pb_cart');
+                localStorage.removeItem('pb_cart_at');
+                setCartOpen(false);
+                showToast('Ordine inviato su WhatsApp!');
+              }}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShowcasePage from './ShowcasePage';
-import { handleAuthCallback, getStoredUser } from './lib/supabase';
+import { handleAuthCallback } from './lib/supabase';
 
 const MenuDisplay = lazy(() => import('./MenuDisplay'));
 const LegalPage   = lazy(() => import('./LegalPage'));

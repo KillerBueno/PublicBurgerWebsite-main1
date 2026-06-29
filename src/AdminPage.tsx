@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order, type StatusEntry } from './lib/orders';
+import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order } from './lib/orders';
 import { getStoredUser, signOut } from './lib/supabase';
 import { fetchProfiles, setProfileOverride, effectiveCount, type UserProfile } from './lib/profiles';
 import { getTier, TIERS } from './lib/gamification';
