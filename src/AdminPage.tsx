@@ -9,9 +9,10 @@ import {
   type MondaySmashConfig, type PriceOverrides, type OpeningHours, type DayKey,
 } from './lib/settings';
 import { BURGERS, FRIES, ALL_EXTRAS } from './menuData';
+import FoodCostTab from './FoodCostTab';
 
 const PRIMARY_ADMIN = 'prrsmn91@gmail.com';
-type Tab = 'ordini' | 'statistiche' | 'menu' | 'smash' | 'orari' | 'profili';
+type Tab = 'ordini' | 'statistiche' | 'menu' | 'smash' | 'orari' | 'profili' | 'foodcost';
 
 const DAY_LABELS: Record<DayKey, string> = {
   mon: 'Lunedì', tue: 'Martedì', wed: 'Mercoledì', thu: 'Giovedì',
@@ -809,6 +810,7 @@ export default function AdminPage() {
     { key: 'smash',       label: 'Smash' },
     { key: 'orari',       label: 'Orari' },
     { key: 'profili',     label: `Profili (${profiles.length})` },
+    { key: 'foodcost',    label: 'Food Cost' },
   ];
 
   return (
@@ -1104,6 +1106,7 @@ export default function AdminPage() {
       {tab === 'menu'        && <MenuTab adminToken={loggedUser.access_token} />}
       {tab === 'smash'       && <SmashTab adminToken={loggedUser.access_token} />}
       {tab === 'orari'       && <OrariTab adminToken={loggedUser.access_token} />}
+      {tab === 'foodcost'    && <FoodCostTab adminToken={loggedUser.access_token} />}
 
       {/* ── Profili ── */}
       {tab === 'profili' && (
