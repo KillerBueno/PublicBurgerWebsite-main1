@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
@@ -79,6 +79,8 @@ function QtyControl({ qty, onMinus, onPlus }: { qty: number; onMinus: () => void
   );
 }
 
+const SWIPE_THRESHOLD = -72;
+
 function ItemCard({
   item,
   onRemove,
@@ -93,16 +95,47 @@ function ItemCard({
   const isExtra = item.type === 'extra';
   const canQty = (isFry || isExtra) && !!onUpdateQty;
 
+  const x = useMotionValue(0);
+  const deleteOpacity = useTransform(x, [0, SWIPE_THRESHOLD], [0, 1]);
+  const dragRef = useRef(false);
+
+  function handleDragEnd() {
+    if (x.get() < SWIPE_THRESHOLD) {
+      animate(x, -400, { duration: 0.25, ease: 'easeIn' }).then(onRemove);
+    } else {
+      animate(x, 0, { type: 'spring', stiffness: 400, damping: 30 });
+    }
+  }
+
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 40, transition: { duration: 0.2 } }}
-      className="bg-white rounded-2xl border border-black/6 overflow-hidden"
+      className="relative rounded-2xl overflow-hidden"
       style={{ boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}
     >
-      <div className="px-4 py-3.5 flex items-center gap-3">
+      {/* Delete background */}
+      <motion.div
+        style={{ opacity: deleteOpacity }}
+        className="absolute inset-0 bg-red-500 rounded-2xl flex items-center justify-end pr-5"
+      >
+        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </motion.div>
+
+      {/* Card content */}
+      <motion.div
+        drag="x"
+        dragConstraints={{ left: SWIPE_THRESHOLD * 1.4, right: 0 }}
+        dragElastic={{ left: 0.1, right: 0 }}
+        style={{ x }}
+        onDragStart={() => { dragRef.current = true; }}
+        onDragEnd={handleDragEnd}
+        className="relative bg-white rounded-2xl border border-black/6 px-4 py-3.5 flex items-center gap-3 cursor-grab active:cursor-grabbing select-none"
+      >
         {/* Info */}
         <div className="flex-1 min-w-0">
           {isBurger && (
@@ -170,7 +203,7 @@ function ItemCard({
             </button>
           )}
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }
