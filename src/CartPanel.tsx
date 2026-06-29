@@ -3,7 +3,6 @@ import { motion, AnimatePresence, useMotionValue, useTransform, animate } from '
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
-import { incrementOrderCount } from './lib/gamification';
 
 interface Props {
   items: CartItem[];
@@ -251,7 +250,6 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     const waWindow = window.open(url, '_blank');
     if (waWindow) setTimeout(() => waWindow.close(), 2000);
-    if (user) incrementOrderCount();
     onOrderSent?.(items);
 
     saveOrder({

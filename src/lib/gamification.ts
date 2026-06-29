@@ -1,4 +1,6 @@
 const KEY = 'pb_order_count';
+const VERSION_KEY = 'pb_order_version';
+const VERSION = 'v2'; // bumping resets all local counters to 0
 
 export interface Tier {
   name: string;
@@ -17,14 +19,17 @@ export const TIERS: Tier[] = [
 ];
 
 export function getOrderCount(): number {
+  if (localStorage.getItem(VERSION_KEY) !== VERSION) {
+    localStorage.setItem(KEY, '0');
+    localStorage.setItem(VERSION_KEY, VERSION);
+  }
   return parseInt(localStorage.getItem(KEY) || '0', 10);
 }
 
-export function incrementOrderCount(): number {
-  const next = getOrderCount() + 1;
-  localStorage.setItem(KEY, String(next));
-  window.dispatchEvent(new CustomEvent('pb-orders-changed', { detail: { count: next } }));
-  return next;
+export function setOrderCount(count: number): void {
+  localStorage.setItem(KEY, String(count));
+  localStorage.setItem(VERSION_KEY, VERSION);
+  window.dispatchEvent(new CustomEvent('pb-orders-changed', { detail: { count } }));
 }
 
 export function getTier(count: number): Tier | null {

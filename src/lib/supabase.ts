@@ -42,24 +42,12 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     // Upsert profile + sync count from Supabase
     try {
-      const { upsertProfile } = await import('./profiles');
+      const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
+      const { setOrderCount } = await import('./gamification');
       await upsertProfile(accessToken, { email: user.email, name: user.name, avatar_url: user.avatar_url });
-      // Fetch real order count via SECURITY DEFINER RPC (bypasses RLS)
-      const countRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_my_order_count`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_KEY!,
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: '{}',
-      });
-      if (countRes.ok) {
-        const serverCount = await countRes.json() as number;
-        const localCount = parseInt(localStorage.getItem('pb_order_count') || '0', 10);
-        // Take the higher value between local and server to avoid going backwards
-        localStorage.setItem('pb_order_count', String(Math.max(serverCount, localCount)));
-      }
+      const profile = await fetchProfileByEmail(accessToken, user.email);
+      // Source of truth: order_count_override set by admin on confirm. Default 0.
+      setOrderCount(profile?.order_count_override ?? 0);
     } catch {}
     return user;
   } catch {

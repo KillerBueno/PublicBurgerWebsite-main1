@@ -89,6 +89,19 @@ function OrderCounter({ hidden }: { hidden: boolean }) {
     return () => window.removeEventListener('pb-user-changed', refresh);
   }, []);
 
+  // Sync counter from Supabase on mount (admin may have confirmed orders)
+  useEffect(() => {
+    if (!user?.access_token) return;
+    import('./lib/profiles').then(({ fetchProfileByEmail }) =>
+      fetchProfileByEmail(user.access_token, user.email)
+    ).then(profile => {
+      if (!profile) return;
+      const serverCount = profile.order_count_override ?? 0;
+      import('./lib/gamification').then(({ setOrderCount }) => setOrderCount(serverCount));
+      setCount(serverCount);
+    }).catch(() => {});
+  }, [user?.email]);
+
   if (!user) return null;
   const [prevTier, setPrevTier] = useState<Tier | null>(() => getTier(getOrderCount()));
   const [unlocked, setUnlocked] = useState(false);
