@@ -30,10 +30,8 @@ const ALL_INGREDIENTS = Array.from(new Set([
 ])).filter(i => !NON_DISABLEABLE.includes(i));
 
 const ORDER_STATUSES = [
-  { value: 'nuovo',        label: 'Nuovo',           color: 'bg-blue-50 text-blue-600 border-blue-200' },
-  { value: 'preparazione', label: 'In preparazione', color: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  { value: 'pronto',       label: 'Pronto',          color: 'bg-green-50 text-green-700 border-green-200' },
-  { value: 'consegnato',   label: 'Consegnato',      color: 'bg-gray-50 text-gray-400 border-gray-200' },
+  { value: 'nuovo',        label: 'Nuovo',      color: 'bg-blue-50 text-blue-600 border-blue-200' },
+  { value: 'confermato',   label: 'Confermato', color: 'bg-green-50 text-green-700 border-green-200' },
 ];
 
 function playBeep() {
@@ -1077,47 +1075,36 @@ export default function AdminPage() {
                         exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} className="overflow-hidden">
                         <div className="border-t border-black/6 px-5 py-4 space-y-4 bg-[#fdf5f8]/60">
 
-                          {/* Status */}
-                          <div>
-                            <p className="text-[10px] uppercase tracking-widest text-black/30 mb-2">Stato ordine</p>
-                            <div className="flex flex-wrap gap-2">
-                              {ORDER_STATUSES.map(s => (
-                                <button key={s.value}
-                                  onClick={async () => {
-                                    try {
-                                      await updateOrderStatus(loggedUser.access_token, order.id, s.value, order.status_history ?? []);
-                                      setOrders(prev => prev.map(o => o.id === order.id ? {
-                                        ...o, status: s.value,
-                                        status_history: [...(o.status_history ?? []), { status: s.value, at: new Date().toISOString() }],
-                                      } : o));
-                                    } catch { alert('Errore aggiornamento stato'); }
-                                  }}
-                                  className={`text-[10px] px-3 py-1.5 rounded-full border font-semibold uppercase tracking-wider transition-all ${
-                                    (order.status ?? 'nuovo') === s.value ? s.color : 'border-black/10 text-black/30 hover:border-black/25'
-                                  }`}>
-                                  {s.label}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Storico stati */}
-                          {order.status_history && order.status_history.length > 0 && (
-                            <div>
-                              <p className="text-[10px] uppercase tracking-widest text-black/30 mb-2">Storico</p>
-                              <div className="space-y-1">
-                                {order.status_history.map((h, i) => {
-                                  const sc = ORDER_STATUSES.find(x => x.value === h.status);
-                                  return (
-                                    <div key={i} className="flex items-center gap-2">
-                                      <span className={`text-[9px] px-2 py-0.5 rounded-full border font-semibold uppercase tracking-wider ${sc?.color ?? 'border-black/10 text-black/30'}`}>{sc?.label ?? h.status}</span>
-                                      <span className="text-[9px] text-black/25">{fmtTime(h.at)}</span>
-                                    </div>
-                                  );
-                                })}
+                          {/* Conferma fedeltà */}
+                          {(() => {
+                            const isConfirmed = order.status === 'confermato';
+                            return isConfirmed ? (
+                              <div className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-green-50 border border-green-200">
+                                <span className="text-green-600 text-base">✓</span>
+                                <p className="text-[11px] font-semibold text-green-700">Ordine confermato — punto fedeltà assegnato</p>
                               </div>
-                            </div>
-                          )}
+                            ) : (
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    await updateOrderStatus(loggedUser.access_token, order.id, 'confermato', order.status_history ?? []);
+                                    const updatedOrders = orders.map(o => o.id === order.id
+                                      ? { ...o, status: 'confermato', status_history: [...(o.status_history ?? []), { status: 'confermato', at: new Date().toISOString() }] }
+                                      : o);
+                                    setOrders(updatedOrders);
+                                    // Aggiorna counter fedeltà se l'utente è loggato
+                                    if (order.user_email) {
+                                      const confirmedCount = updatedOrders.filter(o => o.user_email === order.user_email && o.status === 'confermato').length;
+                                      await setProfileOverride(loggedUser.access_token, order.user_email, confirmedCount);
+                                    }
+                                  } catch { alert('Errore nella conferma'); }
+                                }}
+                                className="w-full py-3 rounded-2xl bg-[#1a0a10] text-white text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#CF6990] transition-colors"
+                              >
+                                ✓ Conferma ordine
+                              </button>
+                            );
+                          })()}
 
                           {/* Items — raggruppati per categoria */}
                           {(() => {
