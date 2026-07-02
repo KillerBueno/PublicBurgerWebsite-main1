@@ -793,6 +793,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('ordini');
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(false);
+  const [realtimeConnected, setRealtimeConnected] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('tutti');
@@ -844,48 +845,67 @@ export default function AdminPage() {
     if (!isAdmin || !adminEmailsLoaded) return;
     loadData();
 
-    // Realtime WebSocket — notifica immediata su nuovi ordini
+    // Realtime WebSocket — notifica immediata su nuovi ordini, con riconnessione a backoff esponenziale
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
     const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
     const host = SUPABASE_URL.replace('https://', '');
     let ws: WebSocket | null = null;
     let heartbeat: ReturnType<typeof setInterval>;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let reconnectDelay = 2000;
+    let stopped = false;
 
-    try {
-      ws = new WebSocket(`wss://${host}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`);
-      ws.onopen = () => {
-        ws!.send(JSON.stringify({
-          topic: 'realtime:public:orders',
-          event: 'phx_join',
-          payload: {
-            config: {
-              broadcast: { self: false },
-              presence: { key: '' },
-              postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'orders' }],
+    function connect() {
+      try {
+        ws = new WebSocket(`wss://${host}/realtime/v1/websocket?apikey=${SUPABASE_KEY}&vsn=1.0.0`);
+        ws.onopen = () => {
+          setRealtimeConnected(true);
+          reconnectDelay = 2000;
+          ws!.send(JSON.stringify({
+            topic: 'realtime:public:orders',
+            event: 'phx_join',
+            payload: {
+              config: {
+                broadcast: { self: false },
+                presence: { key: '' },
+                postgres_changes: [{ event: 'INSERT', schema: 'public', table: 'orders' }],
+              },
             },
-          },
-          ref: '1',
-        }));
-        heartbeat = setInterval(() => {
-          if (ws?.readyState === WebSocket.OPEN)
-            ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
-        }, 30000);
-      };
-      ws.onmessage = (e) => {
-        try {
-          const msg = JSON.parse(e.data);
-          if (msg.event === 'postgres_changes' && msg.payload?.data?.type === 'INSERT') {
-            loadData();
+            ref: '1',
+          }));
+          heartbeat = setInterval(() => {
+            if (ws?.readyState === WebSocket.OPEN)
+              ws.send(JSON.stringify({ topic: 'phoenix', event: 'heartbeat', payload: {}, ref: null }));
+          }, 30000);
+        };
+        ws.onmessage = (e) => {
+          try {
+            const msg = JSON.parse(e.data);
+            if (msg.event === 'postgres_changes' && msg.payload?.data?.type === 'INSERT') {
+              loadData();
+            }
+          } catch {}
+        };
+        ws.onclose = () => {
+          setRealtimeConnected(false);
+          clearInterval(heartbeat);
+          if (!stopped) {
+            reconnectTimer = setTimeout(connect, reconnectDelay);
+            reconnectDelay = Math.min(reconnectDelay * 2, 30000);
           }
-        } catch {}
-      };
-    } catch {}
+        };
+        ws.onerror = () => { ws?.close(); };
+      } catch {}
+    }
+    connect();
 
     // Fallback polling ogni 2 minuti
     const interval = setInterval(loadData, 120000);
     return () => {
+      stopped = true;
       clearInterval(heartbeat);
       clearInterval(interval);
+      clearTimeout(reconnectTimer);
       ws?.close();
     };
   }, [isAdmin, adminEmailsLoaded]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -973,6 +993,13 @@ export default function AdminPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Stato realtime */}
+          <span className="flex items-center gap-1.5" title={realtimeConnected ? 'Realtime connesso' : 'Realtime disconnesso — aggiornamento ogni 2 min'}>
+            <span className={`w-1.5 h-1.5 rounded-full ${realtimeConnected ? 'bg-green-400' : 'bg-white/25'}`} />
+            <span className="text-[9px] uppercase tracking-[0.15em] text-white/35 hidden sm:inline">
+              {realtimeConnected ? 'Live' : 'Offline'}
+            </span>
+          </span>
           {/* Notifiche */}
           {'Notification' in window && notifPerm !== 'granted' && (
             <button onClick={requestNotifPermission}

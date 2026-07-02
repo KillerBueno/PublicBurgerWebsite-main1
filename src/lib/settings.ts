@@ -2,15 +2,23 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 export async function fetchSetting<T>(key: string): Promise<T | null> {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    console.error(`fetchSetting('${key}'): VITE_SUPABASE_URL o VITE_SUPABASE_ANON_KEY non configurate`);
+    return null;
+  }
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/settings?key=eq.${key}&select=value`,
       { headers: { apikey: SUPABASE_KEY } },
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`fetchSetting('${key}') failed: ${res.status} ${res.statusText}`);
+      return null;
+    }
     const data = await res.json();
     return (data[0]?.value as T) ?? null;
-  } catch {
+  } catch (err) {
+    console.error(`fetchSetting('${key}') threw:`, err);
     return null;
   }
 }
