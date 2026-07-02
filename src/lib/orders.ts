@@ -136,7 +136,7 @@ export async function fetchUserOrderCount(userToken: string, email: string): Pro
   if (!SUPABASE_URL || !SUPABASE_KEY) return 0;
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/orders?user_email=eq.${encodeURIComponent(email)}&select=id`,
+      `${SUPABASE_URL}/rest/v1/orders?user_email=eq.${encodeURIComponent(email)}&status=eq.confermato&select=id`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${userToken}`, 'Prefer': 'count=exact' } },
     );
     const countHeader = res.headers.get('content-range');

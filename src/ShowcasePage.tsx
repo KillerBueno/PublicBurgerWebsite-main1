@@ -92,11 +92,11 @@ function OrderCounter({ hidden }: { hidden: boolean }) {
   // Sync counter from Supabase on mount (admin may have confirmed orders)
   useEffect(() => {
     if (!user?.access_token) return;
-    import('./lib/profiles').then(({ fetchProfileByEmail }) =>
-      fetchProfileByEmail(user.access_token, user.email)
-    ).then(profile => {
-      if (!profile) return;
-      const serverCount = profile.order_count_override ?? 0;
+    Promise.all([
+      import('./lib/profiles').then(({ fetchProfileByEmail }) => fetchProfileByEmail(user.access_token, user.email)),
+      import('./lib/orders').then(({ fetchUserOrderCount }) => fetchUserOrderCount(user.access_token, user.email)),
+    ]).then(([profile, realCount]) => {
+      const serverCount = profile?.order_count_override ?? realCount;
       import('./lib/gamification').then(({ setOrderCount }) => setOrderCount(serverCount));
       setCount(serverCount);
     }).catch(() => {});
@@ -783,8 +783,8 @@ function isOpen(): boolean {
   return mins >= open;
 }
 
-function OpeningHours() {
-  const open = isOpen();
+function OpeningHours({ config }: { config: OpeningHours | null }) {
+  const open = config ? isCurrentlyOpen(config) : isOpen();
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1552,7 +1552,7 @@ export default function ShowcasePage() {
           {/* Bottom — orari + Burger Lovers, sempre visibile */}
           <div className="shrink-0 px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
             <div>
-              <OpeningHours />
+              <OpeningHours config={openingHours} />
               <h1 className="pb-display text-[13vw] md:text-[8.5vw] text-white leading-[0.85] tracking-wide uppercase overflow-hidden mt-2">
                 {'Burger\nLovers'.split('\n').map((line, li) => (
                   <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
@@ -1973,6 +1973,7 @@ export default function ShowcasePage() {
               onRemove={removeItem}
               onUpdateQty={updateQty}
               onClose={() => setCartOpen(false)}
+              disabledProducts={disabledProducts}
               onOrderSent={(sentItems) => {
                 try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
                 setLastOrder(sentItems);
