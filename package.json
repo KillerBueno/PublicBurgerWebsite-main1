@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "api": "wrangler dev --remote -c api/wrangler.jsonc"
+    "preview": "vite preview"
   },
   "dependencies": {
     "framer-motion": "^12.31.0",

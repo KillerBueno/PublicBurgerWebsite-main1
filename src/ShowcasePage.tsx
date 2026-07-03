@@ -46,7 +46,9 @@ function Ticker({ bg, text, items }: { bg: string; text: string; items: string[]
   }, []);
 
   // Scroll left at 60px/s — when one full copy has passed, reset to 0 (seamless)
+  // Skip while tab is hidden: avoids pointless re-renders/paint draining battery in background
   useAnimationFrame((_, delta) => {
+    if (document.hidden) return;
     const next = x.get() - (60 * delta) / 1000;
     if (halfWidth.current > 0 && next <= -halfWidth.current) {
       x.set(next + halfWidth.current);
