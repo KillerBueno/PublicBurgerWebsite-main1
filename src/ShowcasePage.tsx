@@ -101,7 +101,7 @@ function OrderCounter({ hidden }: { hidden: boolean }) {
       const serverCount = profile?.order_count_override ?? realCount;
       import('./lib/gamification').then(({ setOrderCount }) => setOrderCount(serverCount));
       setCount(serverCount);
-    }).catch(() => {});
+    }).catch(err => console.error('OrderCounter sync failed', err));
   }, [user?.email]);
 
   if (!user) return null;

@@ -138,7 +138,7 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: `Bearer ${adminToken}` },
       body: '{}',
-    }).then(r => r.ok ? r.json() : []).then(setDailyStats).catch(() => {});
+    }).then(r => r.ok ? r.json() : []).then(setDailyStats).catch(err => console.error('admin_stats_daily failed', err));
   }, [adminToken]);
 
   const now = new Date();

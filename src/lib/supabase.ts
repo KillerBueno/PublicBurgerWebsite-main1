@@ -43,14 +43,21 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
     // Upsert profile + sync count from Supabase
     try {
       const { upsertProfile, fetchProfileByEmail } = await import('./profiles');
+      const { fetchUserOrderCount } = await import('./orders');
       const { setOrderCount } = await import('./gamification');
       await upsertProfile(accessToken, { email: user.email, name: user.name, avatar_url: user.avatar_url });
-      const profile = await fetchProfileByEmail(accessToken, user.email);
-      // Source of truth: order_count_override set by admin on confirm. Default 0.
-      setOrderCount(profile?.order_count_override ?? 0);
-    } catch {}
+      const [profile, realCount] = await Promise.all([
+        fetchProfileByEmail(accessToken, user.email),
+        fetchUserOrderCount(accessToken, user.email),
+      ]);
+      // order_count_override (admin) ha precedenza; altrimenti conteggio ordini confermati reale
+      setOrderCount(profile?.order_count_override ?? realCount);
+    } catch (err) {
+      console.error('handleAuthCallback: profile sync failed', err);
+    }
     return user;
-  } catch {
+  } catch (err) {
+    console.error('handleAuthCallback failed', err);
     return null;
   }
 }

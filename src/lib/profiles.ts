@@ -35,7 +35,7 @@ export async function upsertProfile(
       avatar_url: profile.avatar_url,
       last_seen: new Date().toISOString(),
     }),
-  }).catch(() => {});
+  }).catch(err => console.error('upsertProfile failed', err));
 }
 
 export async function fetchProfiles(adminToken: string): Promise<UserProfile[]> {
