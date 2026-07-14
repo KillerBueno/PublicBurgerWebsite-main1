@@ -2,6 +2,9 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShowcasePage from './ShowcasePage';
 import { handleAuthCallback } from './lib/supabase';
+import CookieBanner, { initGSI } from './CookieBanner';
+
+initGSI();
 
 const MenuDisplay = lazy(() => import('./MenuDisplay'));
 const LegalPage   = lazy(() => import('./LegalPage'));
@@ -207,6 +210,7 @@ export default function App() {
         )}
       </AnimatePresence>
       <ShowcasePage />
+      <CookieBanner />
     </>
   );
 }
