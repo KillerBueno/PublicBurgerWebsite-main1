@@ -97,20 +97,20 @@ export const BURGERS: BurgerDef[] = [
     allergens: [1, 3, 7, 10, 12],
   },
   {
-    name: 'Chicken Burger',
+    name: 'Spicy Chicken',
     tag: 'Chicken',
-    spicy: false,
-    ingredients: ['Bun classico', 'Cotoletta di pollo croccante', 'Insalata', 'Pomodoro', 'Maionese'],
+    spicy: true,
+    ingredients: ['Bun classico', 'Cotoletta di pollo croccante', 'Insalata', 'Pomodoro', 'Salsa Piccante'],
     prices: null,
     fixedPrice: 8.5,
     combo: 3,
-    allergens: [1, 3, 6, 7, 10],
+    allergens: [1, 3, 6, 10, 12],
   },
   {
-    name: 'Chicken Wrap',
-    tag: 'Wrap',
+    name: 'Chicken Lime',
+    tag: 'Chicken',
     spicy: false,
-    ingredients: ['Piadina', 'Cotoletta di pollo croccante', 'Insalata', 'Pomodoro', 'Maionese'],
+    ingredients: ['Bun classico', 'Cotoletta di pollo croccante', 'Avocado', 'Insalata', 'Lime', 'Maionese'],
     prices: null,
     fixedPrice: 8.5,
     combo: 3,
@@ -124,6 +124,7 @@ export const FRIES: FryDef[] = [
   { name: 'Cheese Bacon Fries', desc: 'Patatine con cheddar e bacon croccante', price: 4.5, allergens: [7] },
   { name: 'Sweet Potatoes', desc: 'Patatine di patata dolce', price: 4.0, allergens: [] },
   { name: 'Nuggets', desc: 'Croccanti e dorati', price: 6, allergens: [1, 3, 6, 7, 9, 10, 11] },
+  { name: 'Chicken Tenders', desc: '3 pezzi di pollo croccante', price: 6, allergens: [1, 3, 6, 10] },
 ];
 
 // All unique toppings/sauces that can be added as extras

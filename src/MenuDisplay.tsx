@@ -26,8 +26,8 @@ const ALLERGENS: Record<string, number[]> = {
   'Jalapeño Popper':  [1, 3, 7],              // brioche(1,3,7) + cheddar(7) + creamy sauce philadelphia(7)
   'Pulled Pork':      [1, 3, 7, 10, 12],     // brioche(1,3,7) + coleslaw panna+mayo(3,7,10) + BBQ develey(10,12)
   'American Burger':  [1, 3, 7, 10, 12],     // bun(1,3,7) + cheddar(7) + uovo fritto(3) + BBQ(10,12)
-  'Chicken Burger':   [1, 3, 6, 7, 10],      // bun(1,3,7) + cotoletta(1,tracce6) + mayo(3,10) + senape cotoletta(10)
-  'Chicken Wrap':     [1, 3, 6, 10],         // piadina(1) + cotoletta(1,tracce6) + mayo(3,10)
+  'Spicy Chicken':    [1, 3, 6, 10, 12],     // bun(1,3,7) + cotoletta(1,tracce6) + salsa piccante(12)
+  'Chicken Lime':     [1, 3, 6, 10],         // bun(1,3,7) + cotoletta(1,tracce6) + mayo(3,10)
   'Ingordo':          [1, 3, 7, 10, 12],     // bun(1,3,7) + scamorza(7) + anelli fritti(1,3) + mayo(3,10) + BBQ(10,12)
   'Fake Burger':      [1, 3, 7, 10, 12],     // brioche(1,3,7) + cheddar(7) + mayo(3,10) + ketchup(12)
 };
@@ -42,14 +42,14 @@ const FRIES_ALLERGENS: Record<string, number[]> = {
   'Onion Rings':    [1, 2, 4, 6, 7, 10, 14], // glutine(farina+birra orzo) + tracce crostacei/pesce/soia/latte/senape/molluschi
   'Cheese Bacon':   [7],            // cheddar = latte
   'Sweet Potatoes': [],
-  'Nuggets':        [1, 3, 6, 10], // stessa cotoletta: glutine + tracce uova/soia/senape
+  'Nuggets':          [1, 3, 6, 10],
+  'Chicken Tenders':  [1, 3, 6, 10],
 };
 
 // ── BurgerItem ────────────────────────────────────────────────────────────────
 
 function BurgerItem({ burger, last }: { burger: typeof BURGERS[0]; last?: boolean }) {
   const singlePrice = burger.fixedPrice ?? burger.prices?.single ?? 0;
-  const menuPrice = singlePrice + 3;
 
   return (
     <div style={{
@@ -83,17 +83,23 @@ function BurgerItem({ burger, last }: { burger: typeof BURGERS[0]; last?: boolea
         </div>
       </div>
 
-      {/* Right: prices */}
-      <div style={{ display: 'flex', gap: 24, alignItems: 'center', flexShrink: 0, width: 200 }}>
-        <div style={{ textAlign: 'center', width: 90 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.25em', color: 'rgba(26,10,16,0.3)', textTransform: 'uppercase', marginBottom: 4 }}>Singolo</div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: DARK, letterSpacing: '-0.02em', lineHeight: 1 }}>{singlePrice % 1 === 0 ? singlePrice : singlePrice.toFixed(1)}</div>
-        </div>
-        <div style={{ width: 1, height: 50, background: 'rgba(26,10,16,0.1)', flexShrink: 0 }} />
-        <div style={{ textAlign: 'center', width: 90 }}>
-          <div style={{ fontSize: 10, letterSpacing: '0.25em', color: PINK, textTransform: 'uppercase', marginBottom: 4, fontWeight: 600 }}>Menu</div>
-          <div style={{ fontSize: 36, fontWeight: 700, color: PINK, letterSpacing: '-0.02em', lineHeight: 1 }}>{menuPrice % 1 === 0 ? menuPrice : menuPrice.toFixed(1)}</div>
-        </div>
+      {/* Right: prices — Singolo / Doppio / Triplo */}
+      <div style={{ display: 'flex', gap: 0, alignItems: 'center', flexShrink: 0 }}>
+        {[
+          { label: 'Singolo', value: singlePrice, color: DARK },
+          { label: 'Doppio',  value: burger.prices?.double ?? null, color: DARK },
+          { label: 'Triplo',  value: burger.prices?.triple ?? null, color: DARK },
+        ].map(({ label, value }, i) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center' }}>
+            {i > 0 && <div style={{ width: 1, height: 50, background: 'rgba(26,10,16,0.1)', flexShrink: 0, margin: '0 18px' }} />}
+            <div style={{ textAlign: 'center', width: 80 }}>
+              <div style={{ fontSize: 10, letterSpacing: '0.25em', color: 'rgba(26,10,16,0.3)', textTransform: 'uppercase', marginBottom: 4 }}>{label}</div>
+              <div style={{ fontSize: 34, fontWeight: 700, color: DARK, letterSpacing: '-0.02em', lineHeight: 1 }}>
+                {value !== null ? (value % 1 === 0 ? value : value.toFixed(1)) : '—'}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -151,31 +157,6 @@ function Screen1() {
         ))}
       </div>
 
-      {/* Size upsell strip */}
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'stretch', borderTop: '1px solid rgba(26,10,16,0.07)', borderBottom: '1px solid rgba(26,10,16,0.07)' }}>
-        {[
-          { label: 'Doppio', desc: '2 hamburger', extra: '+€ 4,00' },
-          { label: 'Triplo', desc: '3 hamburger', extra: '+€ 7,50' },
-        ].map(({ label, desc, extra }, i, arr) => (
-          <div key={label} style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 20,
-            padding: '16px 0',
-            borderRight: i < arr.length - 1 ? '1px solid rgba(26,10,16,0.07)' : 'none',
-            background: i === 0 ? 'rgba(26,10,16,0.015)' : 'white',
-          }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 10, letterSpacing: '0.3em', color: 'rgba(26,10,16,0.3)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 3 }}>{desc}</div>
-              <div style={{ fontSize: 24, fontWeight: 800, color: DARK, letterSpacing: '-0.02em', lineHeight: 1, textTransform: 'uppercase' }}>{label}</div>
-            </div>
-            <div style={{ width: 1, height: 32, background: 'rgba(26,10,16,0.1)' }} />
-            <div style={{ fontSize: 22, fontWeight: 700, color: PINK, letterSpacing: '-0.01em' }}>{extra}</div>
-          </div>
-        ))}
-      </div>
 
       {/* Allergen legend */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, padding: '12px 72px', borderTop: '1px solid rgba(26,10,16,0.08)', background: 'rgba(26,10,16,0.02)' }}>
