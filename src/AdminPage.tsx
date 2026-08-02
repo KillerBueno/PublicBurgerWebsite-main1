@@ -1006,7 +1006,9 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-[#1a0a10] px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/logo-public-burger.png" alt="Public Burger" className="h-9 brightness-0 invert opacity-90" />
+          <div className="bg-white rounded-xl px-2.5 py-1.5 flex items-center shrink-0">
+            <img src="/logo-public-burger.png" alt="Public Burger" className="h-7" />
+          </div>
           <div className="border-l border-white/15 pl-3">
             <p className="text-[9px] uppercase tracking-[0.35em] text-[#CF6990] font-semibold">Dashboard</p>
             <p className="text-white font-bold text-sm tracking-tight">Admin</p>

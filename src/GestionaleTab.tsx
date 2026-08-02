@@ -206,7 +206,7 @@ export default function GestionaleTab({ adminToken }: { adminToken: string }) {
   return (
     <div className="pb-20">
       {/* Sub-nav */}
-      <div className="flex gap-1 px-3 py-2.5 bg-white border-b border-black/8 overflow-x-auto">
+      <div className="flex gap-1 px-3 py-2.5 bg-white border-b border-black/8 overflow-x-auto justify-start md:justify-center">
         {SECTIONS.map(s => (
           <button
             key={s.key}
