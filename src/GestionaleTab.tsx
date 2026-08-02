@@ -524,11 +524,23 @@ function VenditeSection({ adminToken, month, months, setMonth, sales, setSales }
 
 // ─── Acquisti / Fatture ───────────────────────────────────────────────────────
 
+interface FormLine { amount: string; rate: string }
+
 const emptyPurchase = () => ({
   date: todayISO(), supplier_name: '', category: '', doc_number: '',
-  amount: '', vat_rate: '0', payment_method: '', due_date: '',
+  lines: [{ amount: '', rate: '0' }] as FormLine[],
+  payment_method: '', due_date: '',
   paid: false, notes: '', grossMode: false,
 });
+
+/** Scompone una riga: se grossMode l'importo inserito è lordo e va scorporato. */
+function calcLine(line: FormLine, grossMode: boolean) {
+  const rate = num(line.rate);
+  const entered = num(line.amount);
+  const taxable = grossMode ? entered / (1 + rate / 100) : entered;
+  const vat = taxable * (rate / 100);
+  return { rate, taxable, vat, total: taxable + vat };
+}
 
 function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPurchases, suppliers, setSuppliers }: Shared) {
   const [form, setForm] = useState(emptyPurchase());
@@ -536,12 +548,18 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<'tutti' | 'daPagare' | 'pagati'>('tutti');
 
-  // Scorporo: se grossMode l'importo inserito è lordo, altrimenti è imponibile
-  const rate = num(form.vat_rate);
-  const amount = num(form.amount);
-  const taxable = form.grossMode ? amount / (1 + rate / 100) : amount;
-  const vatAmount = taxable * (rate / 100);
-  const total = taxable + vatAmount;
+  const calcLines = form.lines.map(l => calcLine(l, form.grossMode));
+  const taxable   = calcLines.reduce((s, l) => s + l.taxable, 0);
+  const vatAmount = calcLines.reduce((s, l) => s + l.vat, 0);
+  const total     = taxable + vatAmount;
+  const multiRate = calcLines.filter(l => l.taxable > 0).length > 1;
+
+  const setLine = (i: number, patch: Partial<FormLine>) =>
+    setForm(f => ({ ...f, lines: f.lines.map((l, j) => (j === i ? { ...l, ...patch } : l)) }));
+  const addLine = () =>
+    setForm(f => ({ ...f, lines: [...f.lines, { amount: '', rate: '22' }] }));
+  const removeLine = (i: number) =>
+    setForm(f => ({ ...f, lines: f.lines.filter((_, j) => j !== i) }));
 
   const mPurch = purchases.filter(p => monthKey(p.date) === month);
   const visible = mPurch.filter(p =>
@@ -563,7 +581,7 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
 
   async function save() {
     if (!form.supplier_name.trim()) return alert('Inserisci il fornitore');
-    if (amount <= 0) return alert('Inserisci un importo valido');
+    if (total <= 0) return alert('Inserisci almeno un importo valido');
     setSaving(true);
     try {
       // Crea il fornitore al volo se non esiste
@@ -585,9 +603,17 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
         category: form.category || null,
         doc_number: form.doc_number || null,
         taxable: Number(taxable.toFixed(2)),
-        vat_rate: rate,
+        // Aliquota prevalente = quella con l'imponibile maggiore
+        vat_rate: calcLines.reduce((a, b) => (b.taxable > a.taxable ? b : a)).rate,
         vat_amount: Number(vatAmount.toFixed(2)),
         total: Number(total.toFixed(2)),
+        vat_lines: calcLines
+          .filter(l => l.taxable > 0)
+          .map(l => ({
+            rate: l.rate,
+            taxable: Number(l.taxable.toFixed(2)),
+            vat: Number(l.vat.toFixed(2)),
+          })),
         payment_method: form.payment_method || null,
         due_date: form.due_date || null,
         paid: form.paid,
@@ -674,17 +700,6 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
                   </select>
                 </Field>
 
-                <Field label={form.grossMode ? 'Importo lordo' : 'Imponibile'}>
-                  <input type="number" step="0.01" inputMode="decimal" value={form.amount}
-                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                    className={inputCls} placeholder="0,00" />
-                </Field>
-                <Field label="% IVA">
-                  <select value={form.vat_rate} onChange={e => setForm(f => ({ ...f, vat_rate: e.target.value }))} className={inputCls}>
-                    {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                  </select>
-                </Field>
-
                 <Field label="Scadenza">
                   <input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} className={inputCls} />
                 </Field>
@@ -693,12 +708,57 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
                 </Field>
               </div>
 
+              {/* Righe per aliquota */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[9px] uppercase tracking-widest text-black/35">
+                    {form.grossMode ? 'Importi lordi per aliquota' : 'Imponibili per aliquota'}
+                  </span>
+                  <button type="button" onClick={addLine}
+                    className="text-[10px] uppercase tracking-wider font-bold text-[#CF6990] hover:underline">
+                    + Aliquota
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {form.lines.map((line, i) => {
+                    const c = calcLines[i];
+                    return (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="number" step="0.01" inputMode="decimal" value={line.amount}
+                          onChange={e => setLine(i, { amount: e.target.value })}
+                          className={`${inputCls} flex-1`} placeholder="0,00"
+                        />
+                        <select value={line.rate} onChange={e => setLine(i, { rate: e.target.value })}
+                          className={`${inputCls} w-24 shrink-0`}>
+                          {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                        </select>
+                        <span className="w-20 shrink-0 text-right text-[11px] text-black/40 tabular-nums">
+                          {c.vat > 0 ? `+${eur(c.vat)}` : '—'}
+                        </span>
+                        {form.lines.length > 1 && (
+                          <button type="button" onClick={() => removeLine(i)}
+                            className="w-6 shrink-0 text-black/20 hover:text-red-400 text-base leading-none">×</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {multiRate && (
+                  <p className="text-[10px] text-black/35 mt-1.5">
+                    Fattura multi-aliquota: {calcLines.filter(l => l.taxable > 0).map(l => `${l.rate}%`).join(' + ')}
+                  </p>
+                )}
+              </div>
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.grossMode}
                   onChange={e => setForm(f => ({ ...f, grossMode: e.target.checked }))}
                   className="accent-[#CF6990] w-4 h-4" />
                 <span className="text-[11px] text-black/50">
-                  L'importo che inserisco è <strong>lordo</strong> (scorporo l'IVA automaticamente)
+                  Gli importi che inserisco sono <strong>lordi</strong> (scorporo l'IVA automaticamente)
                 </span>
               </label>
 
@@ -779,7 +839,12 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
               <div className="text-right shrink-0">
                 <p className="text-[13px] font-bold text-[#1a0a10] tabular-nums">{eur(Number(p.total))}</p>
                 {Number(p.vat_amount) > 0 && (
-                  <p className="text-[9px] text-black/30">iva {eur(Number(p.vat_amount))}</p>
+                  <p className="text-[9px] text-black/30">
+                    iva {eur(Number(p.vat_amount))}
+                    {p.vat_lines && p.vat_lines.length > 1 && (
+                      <span className="text-[#CF6990]"> · {p.vat_lines.map(l => `${l.rate}%`).join('+')}</span>
+                    )}
+                  </p>
                 )}
               </div>
               <button onClick={() => remove(p.id)} className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>

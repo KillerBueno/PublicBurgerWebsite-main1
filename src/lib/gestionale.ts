@@ -16,6 +16,13 @@ export interface Supplier {
   notes: string | null;
 }
 
+/** Riga di dettaglio IVA di una fattura (una per aliquota). */
+export interface VatLine {
+  rate: number;
+  taxable: number;
+  vat: number;
+}
+
 export interface Purchase {
   id: string;
   date: string;
@@ -24,9 +31,12 @@ export interface Purchase {
   category: string | null;
   doc_number: string | null;
   taxable: number;
+  /** Aliquota prevalente; per fatture multi-aliquota vedi vat_lines. */
   vat_rate: number;
   vat_amount: number;
   total: number;
+  /** Dettaglio per aliquota. Null sulle fatture a IVA singola. */
+  vat_lines: VatLine[] | null;
   payment_method: string | null;
   due_date: string | null;
   paid: boolean;

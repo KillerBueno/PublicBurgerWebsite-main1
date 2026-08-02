@@ -48,10 +48,12 @@ create table if not exists purchases (
   supplier_name  text not null,
   category       text,
   doc_number     text,
-  taxable        numeric(12,2) not null default 0,   -- imponibile
-  vat_rate       numeric(5,2)  not null default 0,   -- % IVA
+  taxable        numeric(12,2) not null default 0,   -- imponibile totale
+  vat_rate       numeric(5,2)  not null default 0,   -- aliquota prevalente
   vat_amount     numeric(12,2) not null default 0,
   total          numeric(12,2) not null default 0,
+  -- Dettaglio per aliquota: [{"rate":10,"taxable":100,"vat":10}, …]
+  vat_lines      jsonb,
   payment_method text,
   due_date       date,
   paid           boolean not null default false,
@@ -59,6 +61,9 @@ create table if not exists purchases (
   notes          text,
   created_at     timestamptz not null default now()
 );
+-- Migrazione per installazioni precedenti alla multi-aliquota
+alter table purchases add column if not exists vat_lines jsonb;
+
 create index if not exists purchases_date_idx     on purchases (date desc);
 create index if not exists purchases_supplier_idx on purchases (supplier_id);
 create index if not exists purchases_unpaid_idx   on purchases (paid, due_date);
