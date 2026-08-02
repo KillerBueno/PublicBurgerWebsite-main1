@@ -1,0 +1,1431 @@
+import { useState, useEffect, useMemo, type ReactNode } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  fetchTable, insertRow, updateRow, upsertRow, deleteRow,
+  PURCHASE_CATEGORIES, PAYMENT_METHODS, UTILITY_TYPES, VAT_RATES,
+  eur, monthKey, monthLabel, todayISO, saleTotal, avgTicket,
+  type Supplier, type Purchase, type DailySale, type FixedCost,
+  type Utility, type Employee, type StaffPayment,
+} from './lib/gestionale';
+import { fetchSetting, updateSetting } from './lib/settings';
+
+type Section = 'dashboard' | 'vendite' | 'acquisti' | 'fornitori' | 'costi' | 'primanota' | 'iva';
+
+const SECTIONS: { key: Section; label: string; icon: string }[] = [
+  { key: 'dashboard', label: 'Dashboard',  icon: '📊' },
+  { key: 'vendite',   label: 'Vendite',    icon: '💶' },
+  { key: 'acquisti',  label: 'Acquisti',   icon: '🧾' },
+  { key: 'fornitori', label: 'Fornitori',  icon: '🚚' },
+  { key: 'costi',     label: 'Costi',      icon: '🏠' },
+  { key: 'primanota', label: 'Prima Nota', icon: '📒' },
+  { key: 'iva',       label: 'IVA',        icon: '🏛' },
+];
+
+const num = (v: string | number): number => {
+  const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+};
+
+const fmtDay = (iso: string) =>
+  new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+
+// ─── UI primitives ────────────────────────────────────────────────────────────
+
+function Field({ label, children, wide }: { label: string; children: ReactNode; wide?: boolean }) {
+  return (
+    <label className={wide ? 'col-span-2' : ''}>
+      <span className="block text-[9px] uppercase tracking-widest text-black/35 mb-1">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+const inputCls =
+  'w-full border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-white';
+
+function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={`bg-white rounded-2xl border border-black/6 shadow-sm ${className}`}>{children}</div>
+  );
+}
+
+function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/45">{children}</h3>
+      {action}
+    </div>
+  );
+}
+
+function KpiGrid({ items }: { items: { label: string; value: string; hint?: string; tone?: 'good' | 'bad' }[] }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {items.map(k => (
+        <Card key={k.label} className="px-3 py-3">
+          <p className="text-[9px] uppercase tracking-widest text-black/35">{k.label}</p>
+          <p
+            className={`text-lg font-bold tabular-nums mt-0.5 ${
+              k.tone === 'good' ? 'text-green-600' : k.tone === 'bad' ? 'text-red-500' : 'text-[#1a0a10]'
+            }`}
+          >
+            {k.value}
+          </p>
+          {k.hint && <p className="text-[9px] text-black/30 mt-0.5">{k.hint}</p>}
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+function AddButton({ open, onClick, label }: { open: boolean; onClick: () => void; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold transition-colors ${
+        open ? 'border border-black/12 text-black/40 hover:border-black/25' : 'bg-[#1a0a10] text-white hover:bg-[#CF6990]'
+      }`}
+    >
+      {open ? 'Annulla' : `+ ${label}`}
+    </button>
+  );
+}
+
+function MonthPicker({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select value={value} onChange={e => onChange(e.target.value)} className={`${inputCls} w-auto py-1.5 text-[11px]`}>
+      {options.map(m => (
+        <option key={m} value={m}>{monthLabel(m)}</option>
+      ))}
+    </select>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
+
+export default function GestionaleTab({ adminToken }: { adminToken: string }) {
+  const [section, setSection] = useState<Section>('dashboard');
+
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [sales, setSales] = useState<DailySale[]>([]);
+  const [fixedCosts, setFixedCosts] = useState<FixedCost[]>([]);
+  const [utilities, setUtilities] = useState<Utility[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [staffPayments, setStaffPayments] = useState<StaffPayment[]>([]);
+  const [ivaRate, setIvaRate] = useState(10);
+
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [sup, pur, sal, fix, uti, emp, stf, rate] = await Promise.all([
+          fetchTable<Supplier>(adminToken, 'suppliers', 'order=name.asc'),
+          fetchTable<Purchase>(adminToken, 'purchases', 'order=date.desc&limit=2000'),
+          fetchTable<DailySale>(adminToken, 'daily_sales', 'order=date.desc&limit=1000'),
+          fetchTable<FixedCost>(adminToken, 'fixed_costs', 'order=name.asc'),
+          fetchTable<Utility>(adminToken, 'utilities', 'order=date.desc&limit=500'),
+          fetchTable<Employee>(adminToken, 'employees', 'order=name.asc'),
+          fetchTable<StaffPayment>(adminToken, 'staff_payments', 'order=date.desc&limit=1000'),
+          fetchSetting<number>('iva_rate'),
+        ]);
+        if (cancelled) return;
+        setSuppliers(sup); setPurchases(pur); setSales(sal);
+        setFixedCosts(fix); setUtilities(uti); setEmployees(emp); setStaffPayments(stf);
+        if (rate) setIvaRate(rate);
+      } catch (e) {
+        if (!cancelled) {
+          setErr(
+            e instanceof Error && e.message.includes('404')
+              ? 'Tabelle non trovate: esegui supabase-gestionale.sql nel SQL Editor di Supabase.'
+              : 'Errore nel caricamento. Verifica di aver eseguito supabase-gestionale.sql.',
+          );
+        }
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [adminToken]);
+
+  // Mesi disponibili, dal più recente
+  const months = useMemo(() => {
+    const set = new Set<string>([monthKey(todayISO())]);
+    for (const p of purchases) set.add(monthKey(p.date));
+    for (const s of sales) set.add(monthKey(s.date));
+    for (const u of utilities) set.add(monthKey(u.date));
+    for (const s of staffPayments) set.add(monthKey(s.date));
+    return [...set].sort().reverse();
+  }, [purchases, sales, utilities, staffPayments]);
+
+  const [month, setMonth] = useState(monthKey(todayISO()));
+  useEffect(() => {
+    if (months.length && !months.includes(month)) setMonth(months[0]);
+  }, [months]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) {
+    return (
+      <div className="text-center py-20">
+        <div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto" />
+      </div>
+    );
+  }
+
+  if (err) {
+    return (
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <div className="text-4xl mb-4">🗄</div>
+        <p className="text-sm text-black/60 mb-2 font-semibold">Gestionale non inizializzato</p>
+        <p className="text-[12px] text-black/40 leading-relaxed">{err}</p>
+      </div>
+    );
+  }
+
+  const shared = {
+    adminToken, month, months, setMonth,
+    suppliers, setSuppliers, purchases, setPurchases, sales, setSales,
+    fixedCosts, setFixedCosts, utilities, setUtilities,
+    employees, setEmployees, staffPayments, setStaffPayments,
+    ivaRate, setIvaRate,
+  };
+
+  return (
+    <div className="pb-20">
+      {/* Sub-nav */}
+      <div className="flex gap-1 px-3 py-2.5 bg-white border-b border-black/8 overflow-x-auto">
+        {SECTIONS.map(s => (
+          <button
+            key={s.key}
+            onClick={() => setSection(s.key)}
+            className={`shrink-0 px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold transition-colors ${
+              section === s.key
+                ? 'bg-[#1a0a10] text-white'
+                : 'text-black/35 hover:text-black/60 hover:bg-black/4'
+            }`}
+          >
+            <span className="mr-1">{s.icon}</span>
+            {s.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="p-4 max-w-3xl mx-auto space-y-5">
+        {section === 'dashboard' && <DashboardSection {...shared} />}
+        {section === 'vendite'   && <VenditeSection {...shared} />}
+        {section === 'acquisti'  && <AcquistiSection {...shared} />}
+        {section === 'fornitori' && <FornitoriSection {...shared} />}
+        {section === 'costi'     && <CostiSection {...shared} />}
+        {section === 'primanota' && <PrimaNotaSection {...shared} />}
+        {section === 'iva'       && <IvaSection {...shared} />}
+      </div>
+    </div>
+  );
+}
+
+// Props condivise fra le sezioni
+interface Shared {
+  adminToken: string;
+  month: string;
+  months: string[];
+  setMonth: (m: string) => void;
+  suppliers: Supplier[];
+  setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+  purchases: Purchase[];
+  setPurchases: React.Dispatch<React.SetStateAction<Purchase[]>>;
+  sales: DailySale[];
+  setSales: React.Dispatch<React.SetStateAction<DailySale[]>>;
+  fixedCosts: FixedCost[];
+  setFixedCosts: React.Dispatch<React.SetStateAction<FixedCost[]>>;
+  utilities: Utility[];
+  setUtilities: React.Dispatch<React.SetStateAction<Utility[]>>;
+  employees: Employee[];
+  setEmployees: React.Dispatch<React.SetStateAction<Employee[]>>;
+  staffPayments: StaffPayment[];
+  setStaffPayments: React.Dispatch<React.SetStateAction<StaffPayment[]>>;
+  ivaRate: number;
+  setIvaRate: (r: number) => void;
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+function DashboardSection({ month, months, setMonth, sales, purchases, utilities, staffPayments, fixedCosts }: Shared) {
+  const inMonth = <T extends { date: string }>(list: T[]) => list.filter(x => monthKey(x.date) === month);
+
+  const mSales = inMonth(sales);
+  const mPurch = inMonth(purchases);
+  const mUtil  = inMonth(utilities);
+  const mStaff = inMonth(staffPayments);
+
+  const revenue     = mSales.reduce((s, x) => s + saleTotal(x), 0);
+  const fiscal      = mSales.reduce((s, x) => s + Number(x.fiscal_total), 0);
+  const orders      = mSales.reduce((s, x) => s + x.num_orders, 0);
+  const purchTotal  = mPurch.reduce((s, x) => s + Number(x.total), 0);
+  const utilTotal   = mUtil.reduce((s, x) => s + Number(x.amount), 0);
+  const staffTotal  = mStaff.reduce((s, x) => s + Number(x.amount), 0);
+  const fixedTotal  = fixedCosts.filter(c => c.active).reduce((s, x) => s + Number(x.monthly_amount), 0);
+  const costs       = purchTotal + utilTotal + staffTotal + fixedTotal;
+  const margin      = revenue - costs;
+
+  // Mese precedente
+  const prevMonth = (() => {
+    const [y, m] = month.split('-').map(Number);
+    const d = new Date(y, m - 2, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  })();
+  const prevRevenue = sales.filter(s => monthKey(s.date) === prevMonth).reduce((s, x) => s + saleTotal(x), 0);
+  const variation = prevRevenue > 0 ? ((revenue - prevRevenue) / prevRevenue) * 100 : null;
+
+  const topSuppliers = useMemo(() => {
+    const totals: Record<string, number> = {};
+    for (const p of purchases) totals[p.supplier_name] = (totals[p.supplier_name] ?? 0) + Number(p.total);
+    return Object.entries(totals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [purchases]);
+
+  const unpaid = purchases.filter(p => !p.paid);
+  const unpaidTotal = unpaid.reduce((s, p) => s + Number(p.total), 0);
+  const overdue = unpaid.filter(p => p.due_date && p.due_date < todayISO());
+
+  const incidence = (v: number) => (revenue > 0 ? `${((v / revenue) * 100).toFixed(1)}% ricavi` : '—');
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-[#1a0a10]">Riepilogo mensile</h2>
+        <MonthPicker value={month} onChange={setMonth} options={months} />
+      </div>
+
+      <KpiGrid
+        items={[
+          { label: 'Incassato', value: eur(revenue), hint: `${mSales.length} giornate` },
+          { label: 'Fiscale', value: eur(fiscal) },
+          {
+            label: 'Var. mese prec.',
+            value: variation === null ? '—' : `${variation > 0 ? '+' : ''}${variation.toFixed(1)}%`,
+            tone: variation === null ? undefined : variation >= 0 ? 'good' : 'bad',
+          },
+          { label: 'Scontrino medio', value: orders > 0 ? eur(revenue / orders) : '—', hint: `${orders} ordini` },
+        ]}
+      />
+
+      <div>
+        <SectionTitle>Uscite del mese</SectionTitle>
+        <KpiGrid
+          items={[
+            { label: 'Acquisti', value: eur(purchTotal), hint: incidence(purchTotal) },
+            { label: 'Personale', value: eur(staffTotal), hint: incidence(staffTotal) },
+            { label: 'Utenze', value: eur(utilTotal), hint: incidence(utilTotal) },
+            { label: 'Costi fissi', value: eur(fixedTotal), hint: incidence(fixedTotal) },
+          ]}
+        />
+      </div>
+
+      <Card className="px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[9px] uppercase tracking-widest text-black/35">Margine stimato</p>
+            <p className={`text-2xl font-bold tabular-nums ${margin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+              {eur(margin)}
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-widest text-black/35">Costi totali</p>
+            <p className="text-sm font-bold text-black/60 tabular-nums">{eur(costs)}</p>
+            {revenue > 0 && (
+              <p className="text-[10px] text-black/35 mt-0.5">{((costs / revenue) * 100).toFixed(1)}% dei ricavi</p>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      {unpaid.length > 0 && (
+        <Card className={`px-4 py-3.5 ${overdue.length ? 'border-red-200 bg-red-50/40' : ''}`}>
+          <div className="flex items-center gap-3">
+            <span className="text-xl">{overdue.length ? '⚠️' : '⏳'}</span>
+            <div className="flex-1">
+              <p className="text-[12px] font-bold text-[#1a0a10]">
+                {unpaid.length} fattur{unpaid.length > 1 ? 'e' : 'a'} da pagare · {eur(unpaidTotal)}
+              </p>
+              {overdue.length > 0 && (
+                <p className="text-[11px] text-red-500 font-semibold mt-0.5">
+                  {overdue.length} già scadut{overdue.length > 1 ? 'e' : 'a'}
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {topSuppliers.length > 0 && (
+        <div>
+          <SectionTitle>Top fornitori (storico)</SectionTitle>
+          <Card className="divide-y divide-black/6">
+            {topSuppliers.map(([name, total], i) => (
+              <div key={name} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="text-[10px] font-bold text-black/25 w-4">{i + 1}</span>
+                <span className="flex-1 text-[12px] text-[#1a0a10] truncate">{name}</span>
+                <span className="text-[12px] font-bold text-[#CF6990] tabular-nums">{eur(total)}</span>
+              </div>
+            ))}
+          </Card>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Vendite giornaliere ──────────────────────────────────────────────────────
+
+const emptySale = () => ({
+  date: todayISO(), cash: '', pos: '', takeaway: '', delivery: '',
+  deliveroo: '', justeat: '', num_orders: '', proforma_total: '', notes: '',
+});
+
+function VenditeSection({ adminToken, month, months, setMonth, sales, setSales }: Shared) {
+  const [form, setForm] = useState(emptySale());
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const mSales = sales.filter(s => monthKey(s.date) === month);
+  const totals = mSales.reduce(
+    (a, s) => ({
+      cash: a.cash + Number(s.cash),
+      pos: a.pos + Number(s.pos),
+      deliveroo: a.deliveroo + Number(s.deliveroo),
+      justeat: a.justeat + Number(s.justeat),
+      total: a.total + saleTotal(s),
+    }),
+    { cash: 0, pos: 0, deliveroo: 0, justeat: 0, total: 0 },
+  );
+
+  // Il totale fiscale è la somma dei canali tracciati a scontrino
+  const fiscalPreview =
+    num(form.cash) + num(form.pos) + num(form.deliveroo) + num(form.justeat);
+  const grandPreview = fiscalPreview + num(form.proforma_total);
+
+  async function save() {
+    if (!form.date) return alert('Inserisci la data');
+    setSaving(true);
+    try {
+      const row = await upsertRow<DailySale>(adminToken, 'daily_sales', {
+        date: form.date,
+        cash: num(form.cash),
+        pos: num(form.pos),
+        takeaway: num(form.takeaway),
+        delivery: num(form.delivery),
+        deliveroo: num(form.deliveroo),
+        justeat: num(form.justeat),
+        num_orders: Math.round(num(form.num_orders)),
+        fiscal_total: fiscalPreview,
+        proforma_total: num(form.proforma_total),
+        notes: form.notes || null,
+      }, 'date');
+      setSales(prev => [row, ...prev.filter(s => s.date !== row.date)].sort((a, b) => b.date.localeCompare(a.date)));
+      setForm(emptySale());
+      setOpen(false);
+    } catch (e) {
+      alert(`Errore: ${e instanceof Error ? e.message : 'sconosciuto'}`);
+    }
+    setSaving(false);
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Eliminare questa giornata?')) return;
+    try {
+      await deleteRow(adminToken, 'daily_sales', id);
+      setSales(prev => prev.filter(s => s.id !== id));
+    } catch { alert('Errore eliminazione'); }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <MonthPicker value={month} onChange={setMonth} options={months} />
+        <AddButton open={open} onClick={() => setOpen(o => !o)} label="Giornata" />
+      </div>
+
+      <KpiGrid
+        items={[
+          { label: 'Totale mese', value: eur(totals.total) },
+          { label: 'Contanti', value: eur(totals.cash) },
+          { label: 'POS', value: eur(totals.pos) },
+          { label: 'Delivery app', value: eur(totals.deliveroo + totals.justeat) },
+        ]}
+      />
+
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <Card className="p-4 space-y-3">
+              <p className="text-[11px] text-black/40">
+                Inserendo una data già registrata, i valori vengono sovrascritti.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Data"><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputCls} /></Field>
+                <Field label="N° ordini"><input type="number" inputMode="numeric" value={form.num_orders} onChange={e => setForm(f => ({ ...f, num_orders: e.target.value }))} className={inputCls} placeholder="0" /></Field>
+                <Field label="Contanti"><input type="number" step="0.01" inputMode="decimal" value={form.cash} onChange={e => setForm(f => ({ ...f, cash: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="POS (SumUp)"><input type="number" step="0.01" inputMode="decimal" value={form.pos} onChange={e => setForm(f => ({ ...f, pos: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Deliveroo"><input type="number" step="0.01" inputMode="decimal" value={form.deliveroo} onChange={e => setForm(f => ({ ...f, deliveroo: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Just Eat"><input type="number" step="0.01" inputMode="decimal" value={form.justeat} onChange={e => setForm(f => ({ ...f, justeat: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Asporto in sede"><input type="number" step="0.01" inputMode="decimal" value={form.takeaway} onChange={e => setForm(f => ({ ...f, takeaway: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Consegne proprie"><input type="number" step="0.01" inputMode="decimal" value={form.delivery} onChange={e => setForm(f => ({ ...f, delivery: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Proforma (non fiscale)"><input type="number" step="0.01" inputMode="decimal" value={form.proforma_total} onChange={e => setForm(f => ({ ...f, proforma_total: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Note"><input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inputCls} placeholder="…" /></Field>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl bg-[#fdf5f8] px-3 py-2.5">
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-black/35">Fiscale</p>
+                  <p className="text-sm font-bold text-[#1a0a10] tabular-nums">{eur(fiscalPreview)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] uppercase tracking-widest text-black/35">Totale incassi</p>
+                  <p className="text-base font-bold text-[#CF6990] tabular-nums">{eur(grandPreview)}</p>
+                </div>
+              </div>
+
+              <button onClick={save} disabled={saving}
+                className="w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                {saving ? 'Salvataggio…' : 'Salva giornata'}
+              </button>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Card className="divide-y divide-black/6">
+        {mSales.length === 0 && <p className="text-center text-black/25 py-10 text-[12px]">Nessuna giornata registrata</p>}
+        {mSales.map(s => (
+          <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+            <div className="w-11 shrink-0">
+              <p className="text-[11px] font-bold text-[#1a0a10]">{fmtDay(s.date)}</p>
+              <p className="text-[9px] text-black/30 capitalize">
+                {new Date(s.date).toLocaleDateString('it-IT', { weekday: 'short' })}
+              </p>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-black/45">
+                💵 {eur(Number(s.cash))} · 💳 {eur(Number(s.pos))}
+                {Number(s.deliveroo) + Number(s.justeat) > 0 && ` · 🛵 ${eur(Number(s.deliveroo) + Number(s.justeat))}`}
+              </p>
+              <p className="text-[10px] text-black/30">
+                {s.num_orders} ordini · scontrino {avgTicket(s) ? eur(avgTicket(s)) : '—'}
+              </p>
+            </div>
+            <span className="text-[13px] font-bold text-[#1a0a10] tabular-nums shrink-0">{eur(saleTotal(s))}</span>
+            <button onClick={() => remove(s.id)} className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>
+          </div>
+        ))}
+      </Card>
+    </>
+  );
+}
+
+// ─── Acquisti / Fatture ───────────────────────────────────────────────────────
+
+const emptyPurchase = () => ({
+  date: todayISO(), supplier_name: '', category: '', doc_number: '',
+  amount: '', vat_rate: '0', payment_method: '', due_date: '',
+  paid: false, notes: '', grossMode: false,
+});
+
+function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPurchases, suppliers, setSuppliers }: Shared) {
+  const [form, setForm] = useState(emptyPurchase());
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [filter, setFilter] = useState<'tutti' | 'daPagare' | 'pagati'>('tutti');
+
+  // Scorporo: se grossMode l'importo inserito è lordo, altrimenti è imponibile
+  const rate = num(form.vat_rate);
+  const amount = num(form.amount);
+  const taxable = form.grossMode ? amount / (1 + rate / 100) : amount;
+  const vatAmount = taxable * (rate / 100);
+  const total = taxable + vatAmount;
+
+  const mPurch = purchases.filter(p => monthKey(p.date) === month);
+  const visible = mPurch.filter(p =>
+    filter === 'tutti' ? true : filter === 'daPagare' ? !p.paid : p.paid,
+  );
+  const monthTotal = mPurch.reduce((s, p) => s + Number(p.total), 0);
+  const unpaidTotal = mPurch.filter(p => !p.paid).reduce((s, p) => s + Number(p.total), 0);
+
+  // Categoria suggerita dal fornitore già noto
+  function onSupplierChange(name: string) {
+    const known = suppliers.find(s => s.name.toLowerCase() === name.trim().toLowerCase());
+    setForm(f => ({
+      ...f,
+      supplier_name: name,
+      category: known?.category ?? f.category,
+      payment_method: known?.payment_terms ?? f.payment_method,
+    }));
+  }
+
+  async function save() {
+    if (!form.supplier_name.trim()) return alert('Inserisci il fornitore');
+    if (amount <= 0) return alert('Inserisci un importo valido');
+    setSaving(true);
+    try {
+      // Crea il fornitore al volo se non esiste
+      let supplier = suppliers.find(
+        s => s.name.toLowerCase() === form.supplier_name.trim().toLowerCase(),
+      );
+      if (!supplier) {
+        supplier = await insertRow<Supplier>(adminToken, 'suppliers', {
+          name: form.supplier_name.trim(),
+          category: form.category || null,
+        });
+        setSuppliers(prev => [...prev, supplier!].sort((a, b) => a.name.localeCompare(b.name)));
+      }
+
+      const row = await insertRow<Purchase>(adminToken, 'purchases', {
+        date: form.date,
+        supplier_id: supplier.id,
+        supplier_name: supplier.name,
+        category: form.category || null,
+        doc_number: form.doc_number || null,
+        taxable: Number(taxable.toFixed(2)),
+        vat_rate: rate,
+        vat_amount: Number(vatAmount.toFixed(2)),
+        total: Number(total.toFixed(2)),
+        payment_method: form.payment_method || null,
+        due_date: form.due_date || null,
+        paid: form.paid,
+        paid_date: form.paid ? form.date : null,
+        notes: form.notes || null,
+      });
+      setPurchases(prev => [row, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      setForm(emptyPurchase());
+      setOpen(false);
+    } catch (e) {
+      alert(`Errore: ${e instanceof Error ? e.message : 'sconosciuto'}`);
+    }
+    setSaving(false);
+  }
+
+  async function togglePaid(p: Purchase) {
+    const next = !p.paid;
+    try {
+      const row = await updateRow<Purchase>(adminToken, 'purchases', p.id, {
+        paid: next,
+        paid_date: next ? todayISO() : null,
+      });
+      setPurchases(prev => prev.map(x => (x.id === p.id ? row : x)));
+    } catch { alert('Errore aggiornamento'); }
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Eliminare questa fattura?')) return;
+    try {
+      await deleteRow(adminToken, 'purchases', id);
+      setPurchases(prev => prev.filter(p => p.id !== id));
+    } catch { alert('Errore eliminazione'); }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <MonthPicker value={month} onChange={setMonth} options={months} />
+        <AddButton open={open} onClick={() => setOpen(o => !o)} label="Fattura" />
+      </div>
+
+      <KpiGrid
+        items={[
+          { label: 'Acquisti mese', value: eur(monthTotal), hint: `${mPurch.length} documenti` },
+          { label: 'Da pagare', value: eur(unpaidTotal), tone: unpaidTotal > 0 ? 'bad' : undefined },
+          { label: 'IVA credito', value: eur(mPurch.reduce((s, p) => s + Number(p.vat_amount), 0)) },
+          { label: 'Fornitori', value: String(new Set(mPurch.map(p => p.supplier_name)).size) },
+        ]}
+      />
+
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <Card className="p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Data documento">
+                  <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="N° documento">
+                  <input type="text" value={form.doc_number} onChange={e => setForm(f => ({ ...f, doc_number: e.target.value }))} className={inputCls} placeholder="es. 128/A" />
+                </Field>
+
+                <Field label="Fornitore" wide>
+                  <input
+                    type="text" list="suppliers-list" value={form.supplier_name}
+                    onChange={e => onSupplierChange(e.target.value)}
+                    className={inputCls} placeholder="Scrivi o scegli — se nuovo viene creato"
+                  />
+                  <datalist id="suppliers-list">
+                    {suppliers.map(s => <option key={s.id} value={s.name} />)}
+                  </datalist>
+                </Field>
+
+                <Field label="Categoria">
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={inputCls}>
+                    <option value="">—</option>
+                    {PURCHASE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="Pagamento">
+                  <select value={form.payment_method} onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))} className={inputCls}>
+                    <option value="">—</option>
+                    {PAYMENT_METHODS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+
+                <Field label={form.grossMode ? 'Importo lordo' : 'Imponibile'}>
+                  <input type="number" step="0.01" inputMode="decimal" value={form.amount}
+                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                    className={inputCls} placeholder="0,00" />
+                </Field>
+                <Field label="% IVA">
+                  <select value={form.vat_rate} onChange={e => setForm(f => ({ ...f, vat_rate: e.target.value }))} className={inputCls}>
+                    {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
+                  </select>
+                </Field>
+
+                <Field label="Scadenza">
+                  <input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="Note">
+                  <input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inputCls} placeholder="…" />
+                </Field>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.grossMode}
+                  onChange={e => setForm(f => ({ ...f, grossMode: e.target.checked }))}
+                  className="accent-[#CF6990] w-4 h-4" />
+                <span className="text-[11px] text-black/50">
+                  L'importo che inserisco è <strong>lordo</strong> (scorporo l'IVA automaticamente)
+                </span>
+              </label>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.paid}
+                  onChange={e => setForm(f => ({ ...f, paid: e.target.checked }))}
+                  className="accent-[#CF6990] w-4 h-4" />
+                <span className="text-[11px] text-black/50">Già pagata</span>
+              </label>
+
+              <div className="grid grid-cols-3 gap-2 rounded-xl bg-[#fdf5f8] px-3 py-2.5 text-center">
+                {[
+                  { l: 'Imponibile', v: taxable },
+                  { l: 'IVA', v: vatAmount },
+                  { l: 'Totale', v: total },
+                ].map((x, i) => (
+                  <div key={x.l}>
+                    <p className="text-[9px] uppercase tracking-widest text-black/35">{x.l}</p>
+                    <p className={`font-bold tabular-nums ${i === 2 ? 'text-[#CF6990] text-base' : 'text-[#1a0a10] text-sm'}`}>
+                      {eur(x.v)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={save} disabled={saving}
+                className="w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                {saving ? 'Salvataggio…' : 'Registra fattura'}
+              </button>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex gap-1.5">
+        {([
+          ['tutti', 'Tutti'],
+          ['daPagare', 'Da pagare'],
+          ['pagati', 'Pagati'],
+        ] as const).map(([k, l]) => (
+          <button key={k} onClick={() => setFilter(k)}
+            className={`px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold transition-colors ${
+              filter === k ? 'bg-[#CF6990] text-white' : 'bg-white border border-black/8 text-black/35 hover:text-black/60'
+            }`}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      <Card className="divide-y divide-black/6">
+        {visible.length === 0 && <p className="text-center text-black/25 py-10 text-[12px]">Nessuna fattura</p>}
+        {visible.map(p => {
+          const isOverdue = !p.paid && p.due_date && p.due_date < todayISO();
+          return (
+            <div key={p.id} className={`flex items-center gap-3 px-4 py-3 ${isOverdue ? 'bg-red-50/50' : ''}`}>
+              <button onClick={() => togglePaid(p)}
+                title={p.paid ? 'Segna come da pagare' : 'Segna come pagata'}
+                className={`w-6 h-6 rounded-full border-2 shrink-0 flex items-center justify-center text-[11px] transition-colors ${
+                  p.paid ? 'bg-green-500 border-green-500 text-white' : 'border-black/15 text-transparent hover:border-[#CF6990]'
+                }`}>
+                ✓
+              </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-[#1a0a10] truncate">
+                  {p.supplier_name}
+                  {p.doc_number && <span className="text-black/30 font-normal"> · {p.doc_number}</span>}
+                </p>
+                <p className="text-[10px] text-black/35">
+                  {fmtDay(p.date)}
+                  {p.category && ` · ${p.category}`}
+                  {p.due_date && !p.paid && (
+                    <span className={isOverdue ? 'text-red-500 font-semibold' : ''}>
+                      {' '}· scade {fmtDay(p.due_date)}
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-[13px] font-bold text-[#1a0a10] tabular-nums">{eur(Number(p.total))}</p>
+                {Number(p.vat_amount) > 0 && (
+                  <p className="text-[9px] text-black/30">iva {eur(Number(p.vat_amount))}</p>
+                )}
+              </div>
+              <button onClick={() => remove(p.id)} className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>
+            </div>
+          );
+        })}
+      </Card>
+    </>
+  );
+}
+
+// ─── Fornitori ────────────────────────────────────────────────────────────────
+
+function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases }: Shared) {
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: '', vat_number: '', category: '', contact: '',
+    phone: '', email: '', payment_terms: '', iban: '', notes: '',
+  });
+
+  const stats = useMemo(() => {
+    const map: Record<string, { total: number; count: number; last: string }> = {};
+    for (const p of purchases) {
+      const cur = map[p.supplier_name] ?? { total: 0, count: 0, last: '' };
+      cur.total += Number(p.total);
+      cur.count += 1;
+      if (p.date > cur.last) cur.last = p.date;
+      map[p.supplier_name] = cur;
+    }
+    return map;
+  }, [purchases]);
+
+  const sorted = [...suppliers].sort(
+    (a, b) => (stats[b.name]?.total ?? 0) - (stats[a.name]?.total ?? 0),
+  );
+
+  async function save() {
+    if (!form.name.trim()) return alert('Inserisci il nome');
+    setSaving(true);
+    try {
+      const row = await insertRow<Supplier>(adminToken, 'suppliers', {
+        name: form.name.trim(),
+        vat_number: form.vat_number || null,
+        category: form.category || null,
+        contact: form.contact || null,
+        phone: form.phone || null,
+        email: form.email || null,
+        payment_terms: form.payment_terms || null,
+        iban: form.iban || null,
+        notes: form.notes || null,
+      });
+      setSuppliers(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+      setForm({ name: '', vat_number: '', category: '', contact: '', phone: '', email: '', payment_terms: '', iban: '', notes: '' });
+      setOpen(false);
+    } catch (e) {
+      const msg = e instanceof Error && e.message.includes('duplicate')
+        ? 'Esiste già un fornitore con questo nome'
+        : 'Errore nel salvataggio';
+      alert(msg);
+    }
+    setSaving(false);
+  }
+
+  async function remove(id: string, name: string) {
+    if (!confirm(`Eliminare ${name}? Le fatture registrate restano.`)) return;
+    try {
+      await deleteRow(adminToken, 'suppliers', id);
+      setSuppliers(prev => prev.filter(s => s.id !== id));
+    } catch { alert('Errore eliminazione'); }
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-[#1a0a10]">Anagrafica ({suppliers.length})</h2>
+        <AddButton open={open} onClick={() => setOpen(o => !o)} label="Fornitore" />
+      </div>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <Card className="p-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Nome" wide>
+                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Ragione sociale" />
+                </Field>
+                <Field label="P.IVA / CF">
+                  <input type="text" value={form.vat_number} onChange={e => setForm(f => ({ ...f, vat_number: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="Categoria">
+                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={inputCls}>
+                    <option value="">—</option>
+                    {PURCHASE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="Referente">
+                  <input type="text" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="Telefono">
+                  <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="Email">
+                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} />
+                </Field>
+                <Field label="Condizioni pagamento">
+                  <select value={form.payment_terms} onChange={e => setForm(f => ({ ...f, payment_terms: e.target.value }))} className={inputCls}>
+                    <option value="">—</option>
+                    {PAYMENT_METHODS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </Field>
+                <Field label="IBAN" wide>
+                  <input type="text" value={form.iban} onChange={e => setForm(f => ({ ...f, iban: e.target.value }))} className={inputCls} />
+                </Field>
+              </div>
+              <button onClick={save} disabled={saving}
+                className="w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                {saving ? 'Salvataggio…' : 'Salva fornitore'}
+              </button>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <Card className="divide-y divide-black/6">
+        {sorted.length === 0 && <p className="text-center text-black/25 py-10 text-[12px]">Nessun fornitore</p>}
+        {sorted.map((s, i) => {
+          const st = stats[s.name];
+          return (
+            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
+              <span className="text-[10px] font-bold text-black/20 w-4 shrink-0">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-[12px] font-semibold text-[#1a0a10] truncate">{s.name}</p>
+                <p className="text-[10px] text-black/35 truncate">
+                  {s.category ?? '—'}
+                  {s.phone && ` · ${s.phone}`}
+                  {st && ` · ${st.count} fatt. · ultima ${fmtDay(st.last)}`}
+                </p>
+              </div>
+              <span className="text-[12px] font-bold text-[#CF6990] tabular-nums shrink-0">
+                {eur(st?.total ?? 0)}
+              </span>
+              <button onClick={() => remove(s.id, s.name)} className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>
+            </div>
+          );
+        })}
+      </Card>
+    </>
+  );
+}
+
+// ─── Costi (fissi, utenze, personale) ─────────────────────────────────────────
+
+function CostiSection({
+  adminToken, month, months, setMonth,
+  fixedCosts, setFixedCosts, utilities, setUtilities,
+  employees, setEmployees, staffPayments, setStaffPayments,
+}: Shared) {
+  const [openForm, setOpenForm] = useState<'fisso' | 'utenza' | 'dipendente' | 'paga' | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const [fixedForm, setFixedForm] = useState({ name: '', monthly_amount: '', due_day: '' });
+  const [utilForm, setUtilForm]   = useState({ date: todayISO(), type: UTILITY_TYPES[0], amount: '', notes: '' });
+  const [empForm, setEmpForm]     = useState({ name: '', daily_pay: '' });
+  const [payForm, setPayForm]     = useState({ date: todayISO(), employee_id: '', days: '1', amount: '' });
+
+  const mUtil  = utilities.filter(u => monthKey(u.date) === month);
+  const mStaff = staffPayments.filter(s => monthKey(s.date) === month);
+  const fixedTotal = fixedCosts.filter(c => c.active).reduce((s, c) => s + Number(c.monthly_amount), 0);
+
+  const toggle = (f: typeof openForm) => setOpenForm(cur => (cur === f ? null : f));
+
+  async function addFixed() {
+    if (!fixedForm.name.trim()) return alert('Inserisci la voce');
+    setSaving(true);
+    try {
+      const row = await insertRow<FixedCost>(adminToken, 'fixed_costs', {
+        name: fixedForm.name.trim(),
+        monthly_amount: num(fixedForm.monthly_amount),
+        due_day: fixedForm.due_day ? Math.round(num(fixedForm.due_day)) : null,
+      });
+      setFixedCosts(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+      setFixedForm({ name: '', monthly_amount: '', due_day: '' });
+      setOpenForm(null);
+    } catch { alert('Errore nel salvataggio'); }
+    setSaving(false);
+  }
+
+  async function addUtility() {
+    if (num(utilForm.amount) <= 0) return alert('Inserisci un importo valido');
+    setSaving(true);
+    try {
+      const row = await insertRow<Utility>(adminToken, 'utilities', {
+        date: utilForm.date,
+        type: utilForm.type,
+        amount: num(utilForm.amount),
+        notes: utilForm.notes || null,
+      });
+      setUtilities(prev => [row, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      setUtilForm({ date: todayISO(), type: UTILITY_TYPES[0], amount: '', notes: '' });
+      setOpenForm(null);
+    } catch { alert('Errore nel salvataggio'); }
+    setSaving(false);
+  }
+
+  async function addEmployee() {
+    if (!empForm.name.trim()) return alert('Inserisci il nome');
+    setSaving(true);
+    try {
+      const row = await insertRow<Employee>(adminToken, 'employees', {
+        name: empForm.name.trim(),
+        daily_pay: num(empForm.daily_pay),
+      });
+      setEmployees(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
+      setEmpForm({ name: '', daily_pay: '' });
+      setOpenForm(null);
+    } catch { alert('Errore nel salvataggio'); }
+    setSaving(false);
+  }
+
+  async function addPayment() {
+    const emp = employees.find(e => e.id === payForm.employee_id);
+    if (!emp) return alert('Scegli un dipendente');
+    const amount = payForm.amount ? num(payForm.amount) : Number(emp.daily_pay) * num(payForm.days);
+    setSaving(true);
+    try {
+      const row = await insertRow<StaffPayment>(adminToken, 'staff_payments', {
+        date: payForm.date,
+        employee_id: emp.id,
+        employee_name: emp.name,
+        days: num(payForm.days),
+        amount,
+      });
+      setStaffPayments(prev => [row, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      setPayForm({ date: todayISO(), employee_id: '', days: '1', amount: '' });
+      setOpenForm(null);
+    } catch { alert('Errore nel salvataggio'); }
+    setSaving(false);
+  }
+
+  const payPreview = (() => {
+    const emp = employees.find(e => e.id === payForm.employee_id);
+    if (!emp) return 0;
+    return payForm.amount ? num(payForm.amount) : Number(emp.daily_pay) * num(payForm.days);
+  })();
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <MonthPicker value={month} onChange={setMonth} options={months} />
+      </div>
+
+      <KpiGrid
+        items={[
+          { label: 'Costi fissi', value: eur(fixedTotal), hint: 'al mese' },
+          { label: 'Utenze mese', value: eur(mUtil.reduce((s, u) => s + Number(u.amount), 0)) },
+          { label: 'Personale mese', value: eur(mStaff.reduce((s, p) => s + Number(p.amount), 0)) },
+          { label: 'Dipendenti', value: String(employees.filter(e => e.active).length) },
+        ]}
+      />
+
+      {/* Costi fissi */}
+      <div>
+        <SectionTitle action={<AddButton open={openForm === 'fisso'} onClick={() => toggle('fisso')} label="Voce" />}>
+          Costi fissi mensili
+        </SectionTitle>
+        <AnimatePresence>
+          {openForm === 'fisso' && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-2">
+              <Card className="p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Voce" wide><input type="text" value={fixedForm.name} onChange={e => setFixedForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="es. Affitto" /></Field>
+                  <Field label="Importo mensile"><input type="number" step="0.01" inputMode="decimal" value={fixedForm.monthly_amount} onChange={e => setFixedForm(f => ({ ...f, monthly_amount: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                  <Field label="Giorno scadenza"><input type="number" min="1" max="31" value={fixedForm.due_day} onChange={e => setFixedForm(f => ({ ...f, due_day: e.target.value }))} className={inputCls} placeholder="1-31" /></Field>
+                </div>
+                <button onClick={addFixed} disabled={saving} className="w-full py-2.5 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                  {saving ? '…' : 'Aggiungi'}
+                </button>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Card className="divide-y divide-black/6">
+          {fixedCosts.length === 0 && <p className="text-center text-black/25 py-8 text-[12px]">Nessun costo fisso</p>}
+          {fixedCosts.map(c => (
+            <div key={c.id} className="flex items-center gap-3 px-4 py-2.5">
+              <button
+                onClick={async () => {
+                  try {
+                    const row = await updateRow<FixedCost>(adminToken, 'fixed_costs', c.id, { active: !c.active });
+                    setFixedCosts(prev => prev.map(x => (x.id === c.id ? row : x)));
+                  } catch { alert('Errore'); }
+                }}
+                className={`w-4 h-4 rounded-full border-2 shrink-0 ${c.active ? 'bg-green-500 border-green-500' : 'border-black/15'}`}
+                title={c.active ? 'Attivo' : 'Sospeso'}
+              />
+              <span className={`flex-1 text-[12px] truncate ${c.active ? 'text-[#1a0a10]' : 'text-black/30 line-through'}`}>
+                {c.name}
+                {c.due_day && <span className="text-black/30"> · il {c.due_day}</span>}
+              </span>
+              <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">{eur(Number(c.monthly_amount))}</span>
+              <button
+                onClick={async () => {
+                  if (!confirm(`Eliminare ${c.name}?`)) return;
+                  try {
+                    await deleteRow(adminToken, 'fixed_costs', c.id);
+                    setFixedCosts(prev => prev.filter(x => x.id !== c.id));
+                  } catch { alert('Errore'); }
+                }}
+                className="text-black/20 hover:text-red-400 text-sm shrink-0"
+              >×</button>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* Utenze */}
+      <div>
+        <SectionTitle action={<AddButton open={openForm === 'utenza'} onClick={() => toggle('utenza')} label="Bolletta" />}>
+          Utenze
+        </SectionTitle>
+        <AnimatePresence>
+          {openForm === 'utenza' && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-2">
+              <Card className="p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Data"><input type="date" value={utilForm.date} onChange={e => setUtilForm(f => ({ ...f, date: e.target.value }))} className={inputCls} /></Field>
+                  <Field label="Tipo">
+                    <select value={utilForm.type} onChange={e => setUtilForm(f => ({ ...f, type: e.target.value }))} className={inputCls}>
+                      {UTILITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </Field>
+                  <Field label="Importo"><input type="number" step="0.01" inputMode="decimal" value={utilForm.amount} onChange={e => setUtilForm(f => ({ ...f, amount: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                  <Field label="Note"><input type="text" value={utilForm.notes} onChange={e => setUtilForm(f => ({ ...f, notes: e.target.value }))} className={inputCls} /></Field>
+                </div>
+                <button onClick={addUtility} disabled={saving} className="w-full py-2.5 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                  {saving ? '…' : 'Aggiungi'}
+                </button>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <Card className="divide-y divide-black/6">
+          {mUtil.length === 0 && <p className="text-center text-black/25 py-8 text-[12px]">Nessuna utenza nel mese</p>}
+          {mUtil.map(u => (
+            <div key={u.id} className="flex items-center gap-3 px-4 py-2.5">
+              <span className="text-[10px] text-black/30 w-11 shrink-0">{fmtDay(u.date)}</span>
+              <span className="flex-1 text-[12px] text-[#1a0a10] truncate">{u.type}</span>
+              <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">{eur(Number(u.amount))}</span>
+              <button
+                onClick={async () => {
+                  try {
+                    await deleteRow(adminToken, 'utilities', u.id);
+                    setUtilities(prev => prev.filter(x => x.id !== u.id));
+                  } catch { alert('Errore'); }
+                }}
+                className="text-black/20 hover:text-red-400 text-sm shrink-0"
+              >×</button>
+            </div>
+          ))}
+        </Card>
+      </div>
+
+      {/* Personale */}
+      <div>
+        <SectionTitle action={
+          <div className="flex gap-1.5">
+            <AddButton open={openForm === 'dipendente'} onClick={() => toggle('dipendente')} label="Dipendente" />
+            {employees.length > 0 && <AddButton open={openForm === 'paga'} onClick={() => toggle('paga')} label="Paga" />}
+          </div>
+        }>
+          Personale
+        </SectionTitle>
+
+        <AnimatePresence>
+          {openForm === 'dipendente' && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-2">
+              <Card className="p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Nome"><input type="text" value={empForm.name} onChange={e => setEmpForm(f => ({ ...f, name: e.target.value }))} className={inputCls} /></Field>
+                  <Field label="Paga giornaliera"><input type="number" step="0.01" inputMode="decimal" value={empForm.daily_pay} onChange={e => setEmpForm(f => ({ ...f, daily_pay: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                </div>
+                <button onClick={addEmployee} disabled={saving} className="w-full py-2.5 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                  {saving ? '…' : 'Aggiungi'}
+                </button>
+              </Card>
+            </motion.div>
+          )}
+          {openForm === 'paga' && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-2">
+              <Card className="p-3 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Dipendente" wide>
+                    <select value={payForm.employee_id} onChange={e => setPayForm(f => ({ ...f, employee_id: e.target.value }))} className={inputCls}>
+                      <option value="">Scegli…</option>
+                      {employees.filter(e => e.active).map(e => (
+                        <option key={e.id} value={e.id}>{e.name} — {eur(Number(e.daily_pay))}/g</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Data"><input type="date" value={payForm.date} onChange={e => setPayForm(f => ({ ...f, date: e.target.value }))} className={inputCls} /></Field>
+                  <Field label="Giornate"><input type="number" step="0.5" value={payForm.days} onChange={e => setPayForm(f => ({ ...f, days: e.target.value }))} className={inputCls} /></Field>
+                  <Field label="Importo (vuoto = calcolato)" wide>
+                    <input type="number" step="0.01" inputMode="decimal" value={payForm.amount} onChange={e => setPayForm(f => ({ ...f, amount: e.target.value }))} className={inputCls} placeholder={payPreview ? eur(payPreview) : '0,00'} />
+                  </Field>
+                </div>
+                {payPreview > 0 && (
+                  <p className="text-[11px] text-black/45 text-center">
+                    Verrà registrato: <strong className="text-[#CF6990]">{eur(payPreview)}</strong>
+                  </p>
+                )}
+                <button onClick={addPayment} disabled={saving} className="w-full py-2.5 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                  {saving ? '…' : 'Registra paga'}
+                </button>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <Card className="divide-y divide-black/6 mb-2">
+          {employees.length === 0 && <p className="text-center text-black/25 py-8 text-[12px]">Nessun dipendente</p>}
+          {employees.map(e => {
+            const paidThisMonth = mStaff.filter(p => p.employee_id === e.id).reduce((s, p) => s + Number(p.amount), 0);
+            return (
+              <div key={e.id} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="flex-1 text-[12px] text-[#1a0a10] truncate">
+                  {e.name}
+                  <span className="text-black/30"> · {eur(Number(e.daily_pay))}/g</span>
+                </span>
+                <span className="text-[11px] text-black/40 tabular-nums shrink-0">mese {eur(paidThisMonth)}</span>
+                <button
+                  onClick={async () => {
+                    if (!confirm(`Eliminare ${e.name}?`)) return;
+                    try {
+                      await deleteRow(adminToken, 'employees', e.id);
+                      setEmployees(prev => prev.filter(x => x.id !== e.id));
+                    } catch { alert('Errore'); }
+                  }}
+                  className="text-black/20 hover:text-red-400 text-sm shrink-0"
+                >×</button>
+              </div>
+            );
+          })}
+        </Card>
+
+        {mStaff.length > 0 && (
+          <Card className="divide-y divide-black/6">
+            {mStaff.map(p => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-2.5">
+                <span className="text-[10px] text-black/30 w-11 shrink-0">{fmtDay(p.date)}</span>
+                <span className="flex-1 text-[12px] text-[#1a0a10] truncate">
+                  {p.employee_name}
+                  <span className="text-black/30"> · {p.days}g</span>
+                </span>
+                <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">{eur(Number(p.amount))}</span>
+                <button
+                  onClick={async () => {
+                    try {
+                      await deleteRow(adminToken, 'staff_payments', p.id);
+                      setStaffPayments(prev => prev.filter(x => x.id !== p.id));
+                    } catch { alert('Errore'); }
+                  }}
+                  className="text-black/20 hover:text-red-400 text-sm shrink-0"
+                >×</button>
+              </div>
+            ))}
+          </Card>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ─── Prima Nota ───────────────────────────────────────────────────────────────
+
+function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities, staffPayments }: Shared) {
+  const rows = useMemo(() => {
+    const byDay: Record<string, { in: number; purch: number; other: number }> = {};
+    const touch = (d: string) => (byDay[d] ??= { in: 0, purch: 0, other: 0 });
+
+    for (const s of sales) if (monthKey(s.date) === month) touch(s.date).in += saleTotal(s);
+    for (const p of purchases) if (monthKey(p.date) === month) touch(p.date).purch += Number(p.total);
+    for (const u of utilities) if (monthKey(u.date) === month) touch(u.date).other += Number(u.amount);
+    for (const s of staffPayments) if (monthKey(s.date) === month) touch(s.date).other += Number(s.amount);
+
+    let running = 0;
+    return Object.entries(byDay)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, v]) => {
+        const out = v.purch + v.other;
+        const balance = v.in - out;
+        running += balance;
+        return { date, in: v.in, purch: v.purch, other: v.other, out, balance, running };
+      });
+  }, [month, sales, purchases, utilities, staffPayments]);
+
+  const totals = rows.reduce(
+    (a, r) => ({ in: a.in + r.in, out: a.out + r.out }),
+    { in: 0, out: 0 },
+  );
+  const net = totals.in - totals.out;
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <h2 className="text-sm font-bold text-[#1a0a10]">Prima Nota</h2>
+        <MonthPicker value={month} onChange={setMonth} options={months} />
+      </div>
+
+      <KpiGrid
+        items={[
+          { label: 'Entrate', value: eur(totals.in), tone: 'good' },
+          { label: 'Uscite', value: eur(totals.out), tone: 'bad' },
+          { label: 'Saldo', value: eur(net), tone: net >= 0 ? 'good' : 'bad' },
+          { label: 'Giornate', value: String(rows.length) },
+        ]}
+      />
+
+      <Card className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="border-b border-black/8 text-black/35">
+              <th className="text-left  px-3 py-2 font-semibold uppercase tracking-wider text-[9px]">Data</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">Entrate</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">Acquisti</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">Altro</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">Saldo</th>
+              <th className="text-right px-3 py-2 font-semibold uppercase tracking-wider text-[9px]">Progr.</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/5">
+            {rows.length === 0 && (
+              <tr><td colSpan={6} className="text-center text-black/25 py-10">Nessun movimento nel mese</td></tr>
+            )}
+            {rows.map(r => (
+              <tr key={r.date}>
+                <td className="px-3 py-2 text-black/50 whitespace-nowrap">{fmtDay(r.date)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-green-600">{r.in ? eur(r.in) : '—'}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-black/45">{r.purch ? eur(r.purch) : '—'}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-black/45">{r.other ? eur(r.other) : '—'}</td>
+                <td className={`px-2 py-2 text-right tabular-nums font-semibold ${r.balance >= 0 ? 'text-[#1a0a10]' : 'text-red-500'}`}>
+                  {eur(r.balance)}
+                </td>
+                <td className={`px-3 py-2 text-right tabular-nums font-bold ${r.running >= 0 ? 'text-[#CF6990]' : 'text-red-500'}`}>
+                  {eur(r.running)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Card>
+    </>
+  );
+}
+
+// ─── IVA ──────────────────────────────────────────────────────────────────────
+
+function IvaSection({ adminToken, sales, purchases, ivaRate, setIvaRate }: Shared) {
+  const [saving, setSaving] = useState(false);
+
+  const rows = useMemo(() => {
+    const months = new Set<string>();
+    for (const s of sales) months.add(monthKey(s.date));
+    for (const p of purchases) months.add(monthKey(p.date));
+
+    return [...months].sort().reverse().map(m => {
+      const gross = sales
+        .filter(s => monthKey(s.date) === m)
+        .reduce((sum, s) => sum + Number(s.fiscal_total), 0);
+      // Scorporo dell'IVA dai corrispettivi lordi
+      const debit = gross - gross / (1 + ivaRate / 100);
+      const credit = purchases
+        .filter(p => monthKey(p.date) === m)
+        .reduce((sum, p) => sum + Number(p.vat_amount), 0);
+      return { month: m, gross, debit, credit, due: debit - credit };
+    });
+  }, [sales, purchases, ivaRate]);
+
+  const yearTotal = rows.reduce((s, r) => s + r.due, 0);
+
+  async function saveRate(v: number) {
+    setIvaRate(v);
+    setSaving(true);
+    try { await updateSetting(adminToken, 'iva_rate', v); } catch { /* non bloccante */ }
+    setSaving(false);
+  }
+
+  return (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-bold text-[#1a0a10]">Riepilogo IVA</h2>
+        <label className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-black/35">Aliquota</span>
+          <select value={ivaRate} onChange={e => saveRate(Number(e.target.value))}
+            className={`${inputCls} w-auto py-1.5 text-[11px]`} disabled={saving}>
+            {VAT_RATES.filter(r => r > 0).map(r => <option key={r} value={r}>{r}%</option>)}
+          </select>
+        </label>
+      </div>
+
+      <Card className="px-4 py-3 bg-amber-50/60 border-amber-200">
+        <p className="text-[11px] text-amber-800 leading-relaxed">
+          ⚠️ Stima indicativa calcolata scorporando il {ivaRate}% dai corrispettivi fiscali.
+          Verifica sempre con il commercialista prima di versare.
+        </p>
+      </Card>
+
+      <Card className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="border-b border-black/8 text-black/35">
+              <th className="text-left  px-3 py-2 font-semibold uppercase tracking-wider text-[9px]">Mese</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">Corrispettivi</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">A debito</th>
+              <th className="text-right px-2 py-2 font-semibold uppercase tracking-wider text-[9px]">A credito</th>
+              <th className="text-right px-3 py-2 font-semibold uppercase tracking-wider text-[9px]">Da versare</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-black/5">
+            {rows.length === 0 && (
+              <tr><td colSpan={5} className="text-center text-black/25 py-10">Nessun dato disponibile</td></tr>
+            )}
+            {rows.map(r => (
+              <tr key={r.month}>
+                <td className="px-3 py-2 text-black/55 capitalize whitespace-nowrap">{monthLabel(r.month)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-black/45">{eur(r.gross)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-black/45">{eur(r.debit)}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-green-600">{eur(r.credit)}</td>
+                <td className={`px-3 py-2 text-right tabular-nums font-bold ${r.due > 0 ? 'text-[#CF6990]' : 'text-green-600'}`}>
+                  {eur(r.due)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          {rows.length > 0 && (
+            <tfoot>
+              <tr className="border-t-2 border-black/10 bg-[#fdf5f8]">
+                <td className="px-3 py-2.5 font-bold text-[#1a0a10] text-[10px] uppercase tracking-wider" colSpan={4}>
+                  Totale periodo
+                </td>
+                <td className="px-3 py-2.5 text-right tabular-nums font-bold text-[#CF6990]">{eur(yearTotal)}</td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </Card>
+    </>
+  );
+}

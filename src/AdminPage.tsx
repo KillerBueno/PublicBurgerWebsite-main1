@@ -2,17 +2,41 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order } from './lib/orders';
 import { getStoredUser, signOut } from './lib/supabase';
-import { fetchProfiles, setProfileOverride, effectiveCount, type UserProfile } from './lib/profiles';
-import { getTier, TIERS } from './lib/gamification';
+import { fetchProfiles, type UserProfile } from './lib/profiles';
 import {
   fetchSetting, updateSetting, isCurrentlyOpen,
   type MondaySmashConfig, type PriceOverrides, type OpeningHours, type DayKey,
 } from './lib/settings';
 import { BURGERS, FRIES, ALL_EXTRAS } from './menuData';
 import FoodCostTab from './FoodCostTab';
+import ClientiTab from './ClientiTab';
+import GestionaleTab from './GestionaleTab';
 
 const PRIMARY_ADMIN = 'prrsmn91@gmail.com';
-type Tab = 'ordini' | 'statistiche' | 'menu' | 'smash' | 'orari' | 'profili' | 'foodcost';
+type Tab =
+  | 'ordini' | 'clienti' | 'statistiche'
+  | 'gestionale' | 'foodcost'
+  | 'menu' | 'smash' | 'orari' | 'impostazioni';
+
+type Group = 'operativo' | 'gestionale' | 'sito';
+
+const GROUPS: { key: Group; label: string; tabs: Tab[] }[] = [
+  { key: 'operativo',  label: 'Operativo',  tabs: ['ordini', 'clienti', 'statistiche'] },
+  { key: 'gestionale', label: 'Gestionale', tabs: ['gestionale', 'foodcost'] },
+  { key: 'sito',       label: 'Sito',       tabs: ['menu', 'smash', 'orari', 'impostazioni'] },
+];
+
+const TAB_LABELS: Record<Tab, string> = {
+  ordini: 'Ordini',
+  clienti: 'Clienti',
+  statistiche: 'Stats',
+  gestionale: 'Contabilità',
+  foodcost: 'Food Cost',
+  menu: 'Menu',
+  smash: 'Popup',
+  orari: 'Orari',
+  impostazioni: 'Impostazioni',
+};
 
 const DAY_LABELS: Record<DayKey, string> = {
   mon: 'Lunedì', tue: 'Martedì', wed: 'Mercoledì', thu: 'Giovedì',
@@ -801,8 +825,6 @@ export default function AdminPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [profiles, setProfiles] = useState<UserProfile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
-  const [editingEmail, setEditingEmail] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
   const [newOrderCount, setNewOrderCount] = useState(0);
   const lastOrderId = useRef<string | null>(null);
   const tokenRef = useRef<string | null>(loggedUser?.access_token ?? null);
@@ -951,15 +973,13 @@ export default function AdminPage() {
     </div>
   );
 
-  const tabs: { key: Tab; label: string }[] = [
-    { key: 'ordini',      label: `Ordini${newOrderCount > 0 ? ` 🔴${newOrderCount}` : ` (${filtered.length})`}` },
-    { key: 'statistiche', label: 'Stats' },
-    { key: 'menu',        label: 'Menu' },
-    { key: 'smash',       label: 'Popup' },
-    { key: 'orari',       label: 'Orari' },
-    { key: 'profili',     label: `Profili (${profiles.length})` },
-    { key: 'foodcost',    label: 'Food Cost' },
-  ];
+  const activeGroup = GROUPS.find(g => g.tabs.includes(tab)) ?? GROUPS[0];
+
+  const tabLabel = (t: Tab) => {
+    if (t === 'ordini') return `Ordini${newOrderCount > 0 ? ` 🔴${newOrderCount}` : ` (${filtered.length})`}`;
+    if (t === 'clienti') return `Clienti (${profiles.length})`;
+    return TAB_LABELS[t];
+  };
 
   return (
     <div className="min-h-screen bg-[#f7f0f3]">
@@ -1000,15 +1020,28 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex bg-white border-b border-black/8 overflow-x-auto">
-        {tabs.map(t => (
-          <button key={t.key}
-            onClick={() => { setTab(t.key); if (t.key === 'ordini') setNewOrderCount(0); }}
-            className={`flex-1 min-w-fit py-3 px-2 text-[10px] uppercase tracking-[0.15em] font-semibold whitespace-nowrap transition-colors ${
-              tab === t.key ? 'text-[#CF6990] border-b-2 border-[#CF6990]' : 'text-black/30 hover:text-black/60'
+      {/* Gruppi */}
+      <div className="flex bg-[#1a0a10]">
+        {GROUPS.map(g => (
+          <button key={g.key}
+            onClick={() => { setTab(g.tabs[0]); if (g.tabs[0] === 'ordini') setNewOrderCount(0); }}
+            className={`flex-1 py-2.5 text-[10px] uppercase tracking-[0.2em] font-bold transition-colors ${
+              activeGroup.key === g.key ? 'text-white border-b-2 border-[#CF6990]' : 'text-white/30 hover:text-white/60'
             }`}>
-            {t.label}
+            {g.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tabs del gruppo attivo */}
+      <div className="flex bg-white border-b border-black/8 overflow-x-auto">
+        {activeGroup.tabs.map(t => (
+          <button key={t}
+            onClick={() => { setTab(t); if (t === 'ordini') setNewOrderCount(0); }}
+            className={`flex-1 min-w-fit py-3 px-3 text-[10px] uppercase tracking-[0.15em] font-semibold whitespace-nowrap transition-colors ${
+              tab === t ? 'text-[#CF6990] border-b-2 border-[#CF6990]' : 'text-black/30 hover:text-black/60'
+            }`}>
+            {tabLabel(t)}
           </button>
         ))}
       </div>
@@ -1245,8 +1278,22 @@ export default function AdminPage() {
       {tab === 'orari'       && <OrariTab adminToken={loggedUser.access_token} />}
       {tab === 'foodcost'    && <FoodCostTab adminToken={loggedUser.access_token} />}
 
-      {/* ── Profili ── */}
-      {tab === 'profili' && (
+      {tab === 'gestionale' && <GestionaleTab adminToken={loggedUser.access_token} />}
+
+      {/* ── Clienti ── */}
+      {tab === 'clienti' && (
+        profilesLoading ? <Spinner /> : (
+          <ClientiTab
+            orders={orders}
+            profiles={profiles}
+            adminToken={loggedUser.access_token}
+            onProfilesChange={setProfiles}
+          />
+        )
+      )}
+
+      {/* ── Impostazioni ── */}
+      {tab === 'impostazioni' && (
         <div className="p-4 space-y-4 max-w-2xl mx-auto pb-16">
           {isPrimaryAdmin && (
             <div className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
@@ -1278,94 +1325,6 @@ export default function AdminPage() {
             </div>
           )}
 
-          {profilesLoading && <Spinner />}
-          {!profilesLoading && profiles.length === 0 && <p className="text-center text-black/30 py-16 text-sm uppercase tracking-wider">Nessun profilo ancora</p>}
-
-          {profiles.map(p => {
-            const count = effectiveCount(p);
-            const tier = getTier(count);
-            const nextTier = tier ? TIERS.find(t => t.min === tier.nextMin) ?? null : TIERS[0];
-            const isEditing = editingEmail === p.email;
-            const isExtraAdmin = adminEmails.includes(p.email);
-
-            return (
-              <motion.div key={p.email} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl border border-black/6 px-5 py-4 shadow-sm">
-                <div className="flex items-center gap-3">
-                  {p.avatar_url
-                    ? <img src={p.avatar_url} className="w-10 h-10 rounded-full border border-black/8 shrink-0" />
-                    : <span className="w-10 h-10 rounded-full bg-[#CF6990] text-white text-sm font-bold flex items-center justify-center shrink-0">{p.name?.[0]?.toUpperCase()}</span>
-                  }
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-sm text-[#1a0a10] truncate">{p.name}</p>
-                      {isExtraAdmin && <span className="text-[9px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#FBE8EF] text-[#CF6990] border border-[#CF6990]/20 font-semibold shrink-0">Admin</span>}
-                    </div>
-                    <p className="text-[11px] text-black/35 truncate">{p.email}</p>
-                    <p className="text-[10px] text-black/25 mt-0.5">Prima visita: {new Date(p.first_seen).toLocaleDateString('it-IT')}</p>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    {tier ? <p className="text-[11px] font-bold" style={{ color: tier.color }}>{tier.name}</p>
-                      : nextTier ? <p className="text-[10px] text-black/25">→ {nextTier.name}</p> : null}
-                    <p className="text-xl font-bold text-[#1a0a10]">{count}</p>
-                    <p className="text-[9px] text-black/25 uppercase tracking-wide">ordini</p>
-                    {p.order_count_override !== null && <p className="text-[9px] text-[#CF6990]">override</p>}
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-black/6 flex items-center justify-between gap-3">
-                  {isEditing ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input type="number" min="0" value={editValue} onChange={e => setEditValue(e.target.value)}
-                        placeholder="Override…"
-                        className="flex-1 border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
-                        autoFocus
-                      />
-                      <button onClick={async () => {
-                        const raw = editValue.trim();
-                        const val = raw === '' ? null : parseInt(raw, 10);
-                        if (raw !== '' && isNaN(val!)) return;
-                        try {
-                          await setProfileOverride(loggedUser.access_token, p.email, val);
-                          setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: val } : x));
-                          setEditingEmail(null);
-                        } catch { alert('Errore nel salvataggio.'); }
-                      }} className="px-3 py-2 bg-[#1a0a10] text-white text-[10px] uppercase tracking-wider rounded-xl hover:bg-[#CF6990] transition-colors">Salva</button>
-                      <button onClick={async () => {
-                        setEditingEmail(null);
-                        if (p.order_count_override !== null) {
-                          try {
-                            await setProfileOverride(loggedUser.access_token, p.email, null);
-                            setProfiles(prev => prev.map(x => x.email === p.email ? { ...x, order_count_override: null } : x));
-                          } catch { alert('Errore nel reset.'); }
-                        }
-                      }} className="px-3 py-2 border border-black/12 text-black/40 text-[10px] uppercase tracking-wider rounded-xl hover:border-red-300 hover:text-red-400 transition-colors">
-                        {p.order_count_override !== null ? 'Reset' : 'Annulla'}
-                      </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => { setEditingEmail(p.email); setEditValue(p.order_count_override?.toString() ?? ''); }}
-                      className="text-[10px] uppercase tracking-[0.2em] text-black/30 hover:text-[#CF6990] transition-colors">
-                      ✏ Modifica punteggio
-                    </button>
-                  )}
-
-                  {isPrimaryAdmin && p.email !== PRIMARY_ADMIN && (
-                    <button onClick={async () => {
-                      const next = isExtraAdmin ? adminEmails.filter(e => e !== p.email) : [...adminEmails, p.email];
-                      await saveAdminEmails(next);
-                    }} disabled={savingAdmins}
-                      className={`text-[10px] uppercase tracking-[0.15em] px-3 py-1.5 rounded-xl border font-semibold transition-colors shrink-0 ${
-                        isExtraAdmin
-                          ? 'border-[#CF6990]/30 text-[#CF6990] hover:bg-red-50 hover:border-red-300 hover:text-red-400'
-                          : 'border-black/12 text-black/30 hover:border-[#CF6990] hover:text-[#CF6990]'
-                      }`}>
-                      {isExtraAdmin ? '− Admin' : '+ Admin'}
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
         </div>
       )}
     </div>

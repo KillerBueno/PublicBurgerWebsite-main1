@@ -60,7 +60,31 @@
       "PowerShell(cd \"C:\\\\Users\\\\prrsm\\\\PublicBurgerWebsite-main1\"; $env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); python .claude/skills/ui-ux-pro-max/scripts/search.py \"glassmorphism dark premium animation\" --domain style 2>&1 | Select-Object -First 80)",
       "PowerShell(Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force)",
       "Bash(identify /Users/simone/Desktop/PublicBurgerWebsite-main/public/logo-public-512.png)",
-      "Bash(grep -i \"cheese bacon\" /dev/stdin 2>/dev/null || echo \"not found\")"
+      "Bash(grep -i \"cheese bacon\" /dev/stdin 2>/dev/null || echo \"not found\")",
+      "Bash(git remote *)",
+      "Bash(security find-internet-password *)",
+      "Bash(git ls-remote *)",
+      "mcp__claude-in-chrome__navigate",
+      "mcp__claude-in-chrome__get_page_text",
+      "mcp__claude-in-chrome__find",
+      "mcp__claude-in-chrome__computer",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__select_browser",
+      "Bash(find /Users/simone/Desktop -maxdepth 3 -iname \"*.xlsx\" -o -iname \"*.xlsm\" 2>/dev/null | grep -vi node_modules | grep -vi ui-ux-pro | head -40; echo \"---downloads---\"; find /Users/simone/Downloads -maxdepth 2 -iname \"*.xlsx\" -o -iname \"*.xlsm\" 2>/dev/null | head -20)",
+      "Bash(markitdown \"/Users/simone/Desktop/Gestionale_Public.xlsx\")",
+      "Bash(python3)",
+      "Bash(python3 -c \"import sys; print\\(sys.executable\\)\")",
+      "Bash(pip3 install *)",
+      "Bash(python3 -c \"import openpyxl; print\\('ok', openpyxl.__version__\\)\")",
+      "Bash(python3 /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/300a5a55-2862-488b-a4e3-3a8d201b8e14/scratchpad/format.py)",
+      "Read(//Users/simone/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/35efe01e-1306-4d48-858c-50f02385192f/84337f0f-7f17-4071-861d-7eb66c380949/skills/xlsx/**)",
+      "Bash(python3 scripts/recalc.py \"/Users/simone/Desktop/Gestionale_Public_STYLED.xlsx\" 60)",
+      "mcp__claude-in-chrome__list_connected_browsers",
+      "Bash(rm -f \"/Users/simone/Desktop/FATTURE_XML/TEST_multiIVA.xml\" \"/Users/simone/Desktop/FATTURE_XML/TEST_singola.xml\" \"/Users/simone/Desktop/fatture_da_incollare.csv\" && ls -la /Users/simone/Desktop/FATTURE_XML/ && ls -la /Users/simone/Desktop/converti_fatture.py)",
+      "Bash(python3 /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/300a5a55-2862-488b-a4e3-3a8d201b8e14/scratchpad/dark.py)",
+      "Read(//Users/simone/Desktop/**)",
+      "Bash(python3 -)",
+      "Bash(echo \"EXIT_TSC=$?\")"
     ]
   }
 }
