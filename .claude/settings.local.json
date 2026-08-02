@@ -87,7 +87,11 @@
       "Bash(echo \"EXIT_TSC=$?\")",
       "PowerShell(Get-Command node, python3, py -ErrorAction SilentlyContinue)",
       "Bash(find /c/Users/prrsm/PublicBurgerWebsite-main1 -name \"*.env.local\" -o -name \".env.local\" 2>/dev/null; find /c/Users/prrsm -maxdepth 3 -name \".env.local\" 2>/dev/null)",
-      "Bash(python3 -c \"import json;json.load\\(open\\('.claude/settings.local.json'\\)\\);print\\('JSON valido'\\)\")"
+      "Bash(python3 -c \"import json;json.load\\(open\\('.claude/settings.local.json'\\)\\);print\\('JSON valido'\\)\")",
+      "Bash(gh auth *)",
+      "Read(//Users/simone/**)",
+      "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8 -T git@github.com)",
+      "Bash(git merge *)"
     ]
   }
 }
