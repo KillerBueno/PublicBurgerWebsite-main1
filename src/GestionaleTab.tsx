@@ -8,6 +8,7 @@ import {
   type Utility, type Employee, type StaffPayment,
 } from './lib/gestionale';
 import { fetchSetting, updateSetting } from './lib/settings';
+import { parseInvoiceFiles, type ParsedInvoice, type ParseError } from './lib/fatturapa';
 
 type Section = 'dashboard' | 'vendite' | 'acquisti' | 'fornitori' | 'costi' | 'primanota' | 'iva';
 
@@ -547,6 +548,7 @@ function calcLine(line: FormLine, grossMode: boolean) {
 function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPurchases, suppliers, setSuppliers }: Shared) {
   const [form, setForm] = useState(emptyPurchase());
   const [open, setOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState<'tutti' | 'daPagare' | 'pagati'>('tutti');
 
@@ -652,10 +654,35 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <MonthPicker value={month} onChange={setMonth} options={months} />
-        <AddButton open={open} onClick={() => setOpen(o => !o)} label="Fattura" />
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => { setImportOpen(o => !o); setOpen(false); }}
+            className={`px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-wider font-bold transition-colors ${
+              importOpen ? 'border border-black/12 text-black/40 hover:border-black/25' : 'border border-[#CF6990] text-[#CF6990] hover:bg-[#FBE8EF]'
+            }`}
+          >
+            {importOpen ? 'Chiudi' : '↥ Importa XML'}
+          </button>
+          <AddButton open={open} onClick={() => { setOpen(o => !o); setImportOpen(false); }} label="Fattura" />
+        </div>
       </div>
+
+      <AnimatePresence>
+        {importOpen && (
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+            <ImportXmlPanel
+              adminToken={adminToken}
+              suppliers={suppliers}
+              setSuppliers={setSuppliers}
+              purchases={purchases}
+              setPurchases={setPurchases}
+              onDone={() => setImportOpen(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <KpiGrid
         items={[
@@ -857,6 +884,203 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
         })}
       </Card>
     </>
+  );
+}
+
+// ─── Import XML FatturaPA ─────────────────────────────────────────────────────
+
+const dupKey = (supplier: string, doc: string, date: string) =>
+  `${supplier.trim().toLowerCase()}|${(doc ?? '').trim()}|${date}`;
+
+function ImportXmlPanel({
+  adminToken, suppliers, setSuppliers, purchases, setPurchases, onDone,
+}: {
+  adminToken: string;
+  suppliers: Supplier[];
+  setSuppliers: React.Dispatch<React.SetStateAction<Supplier[]>>;
+  purchases: Purchase[];
+  setPurchases: React.Dispatch<React.SetStateAction<Purchase[]>>;
+  onDone: () => void;
+}) {
+  const [parsed, setParsed] = useState<ParsedInvoice[]>([]);
+  const [errors, setErrors] = useState<ParseError[]>([]);
+  const [skip, setSkip] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState<number | null>(null);
+
+  // Doppioni: stesso fornitore, stesso numero, stessa data
+  const existing = useMemo(
+    () => new Set(purchases.map(p => dupKey(p.supplier_name, p.doc_number ?? '', p.date))),
+    [purchases],
+  );
+
+  const isDup = (inv: ParsedInvoice) => existing.has(dupKey(inv.supplier_name, inv.doc_number, inv.date));
+
+  async function onFiles(list: FileList | null) {
+    if (!list?.length) return;
+    setBusy(true); setDone(null);
+    const res = await parseInvoiceFiles(Array.from(list));
+    setParsed(res.invoices);
+    setErrors(res.errors);
+    // I doppioni partono deselezionati
+    setSkip(new Set(res.invoices.flatMap((inv, i) => (isDup(inv) ? [i] : []))));
+    setBusy(false);
+  }
+
+  const selected = parsed.filter((_, i) => !skip.has(i));
+
+  async function runImport() {
+    if (!selected.length) return;
+    setBusy(true);
+    const cache = new Map(suppliers.map(s => [s.name.trim().toLowerCase(), s]));
+    const newSuppliers: Supplier[] = [];
+    const newPurchases: Purchase[] = [];
+
+    try {
+      for (const inv of selected) {
+        const key = inv.supplier_name.trim().toLowerCase();
+        let supplier = cache.get(key);
+        if (!supplier) {
+          supplier = await insertRow<Supplier>(adminToken, 'suppliers', {
+            name: inv.supplier_name.trim(),
+            vat_number: inv.supplier_vat,
+          });
+          cache.set(key, supplier);
+          newSuppliers.push(supplier);
+        }
+
+        const row = await insertRow<Purchase>(adminToken, 'purchases', {
+          date: inv.date,
+          supplier_id: supplier.id,
+          supplier_name: supplier.name,
+          // Categoria ereditata dall'anagrafica; sui fornitori nuovi resta da assegnare
+          category: supplier.category ?? null,
+          doc_number: inv.doc_number,
+          taxable: inv.taxable,
+          vat_rate: inv.vat_lines.reduce(
+            (a, b) => (Math.abs(b.taxable) > Math.abs(a.taxable) ? b : a),
+            inv.vat_lines[0] ?? { rate: 0, taxable: 0, vat: 0 },
+          ).rate,
+          vat_amount: inv.vat_amount,
+          total: inv.total,
+          vat_lines: inv.vat_lines,
+          payment_method: inv.payment_method,
+          due_date: inv.due_date,
+          paid: false,
+          notes: inv.is_credit_note ? `Nota di credito ${inv.doc_type}` : null,
+        });
+        newPurchases.push(row);
+      }
+
+      if (newSuppliers.length) {
+        setSuppliers(prev => [...prev, ...newSuppliers].sort((a, b) => a.name.localeCompare(b.name)));
+      }
+      setPurchases(prev => [...newPurchases, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+      setDone(newPurchases.length);
+      setParsed([]); setSkip(new Set());
+    } catch (e) {
+      alert(`Import interrotto: ${e instanceof Error ? e.message : 'errore'}\n\nLe fatture già importate sono state salvate.`);
+      if (newPurchases.length) setPurchases(prev => [...newPurchases, ...prev].sort((a, b) => b.date.localeCompare(a.date)));
+    }
+    setBusy(false);
+  }
+
+  const totalSel = selected.reduce((s, i) => s + i.total, 0);
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div>
+        <p className="text-[12px] font-bold text-[#1a0a10] mb-1">Importa fatture elettroniche</p>
+        <p className="text-[11px] text-black/40 leading-relaxed">
+          Seleziona i file <strong>.xml</strong> scaricati da Fatture e Corrispettivi o dal commercialista.
+          Imponibili e aliquote vengono letti dal riepilogo IVA del documento.
+        </p>
+      </div>
+
+      <input
+        type="file" accept=".xml,text/xml,application/xml" multiple disabled={busy}
+        onChange={e => onFiles(e.target.files)}
+        className="block w-full text-[11px] text-black/50 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-[10px] file:uppercase file:tracking-wider file:font-bold file:bg-[#1a0a10] file:text-white hover:file:bg-[#CF6990] file:cursor-pointer cursor-pointer"
+      />
+
+      {busy && <p className="text-[11px] text-black/40 text-center py-2">Elaborazione…</p>}
+
+      {done !== null && (
+        <div className="rounded-xl bg-green-50 border border-green-200 px-3 py-2.5 flex items-center gap-2">
+          <span className="text-green-600">✓</span>
+          <p className="text-[11px] text-green-700 font-semibold flex-1">
+            {done} fattur{done === 1 ? 'a importata' : 'e importate'}
+          </p>
+          <button onClick={onDone} className="text-[10px] uppercase tracking-wider text-green-700 font-bold hover:underline">
+            Chiudi
+          </button>
+        </div>
+      )}
+
+      {errors.length > 0 && (
+        <div className="rounded-xl bg-red-50 border border-red-200 px-3 py-2.5 space-y-1">
+          {errors.map(e => (
+            <p key={e.fileName} className="text-[10px] text-red-600">
+              <strong>{e.fileName}</strong> — {e.message}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {parsed.length > 0 && (
+        <>
+          <div className="border border-black/8 rounded-xl divide-y divide-black/6 max-h-80 overflow-y-auto">
+            {parsed.map((inv, i) => {
+              const dup = isDup(inv);
+              const checked = !skip.has(i);
+              return (
+                <label key={`${inv.fileName}-${i}`} className="flex items-center gap-2.5 px-3 py-2.5 cursor-pointer hover:bg-black/2">
+                  <input
+                    type="checkbox" checked={checked}
+                    onChange={() => setSkip(prev => {
+                      const next = new Set(prev);
+                      if (checked) next.add(i); else next.delete(i);
+                      return next;
+                    })}
+                    className="accent-[#CF6990] w-4 h-4 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-semibold text-[#1a0a10] truncate">
+                      {inv.supplier_name}
+                      <span className="text-black/30 font-normal"> · {inv.doc_number}</span>
+                    </p>
+                    <p className="text-[10px] text-black/35">
+                      {inv.date ? fmtDay(inv.date) : '—'}
+                      {inv.vat_lines.length > 0 && ` · ${inv.vat_lines.map(l => `${l.rate}%`).join('+')}`}
+                      {inv.payment_method && ` · ${inv.payment_method}`}
+                      {dup && <span className="text-orange-500 font-semibold"> · già presente</span>}
+                      {inv.is_credit_note && <span className="text-[#CF6990] font-semibold"> · nota di credito</span>}
+                    </p>
+                  </div>
+                  <span className={`text-[12px] font-bold tabular-nums shrink-0 ${inv.total < 0 ? 'text-[#CF6990]' : 'text-[#1a0a10]'}`}>
+                    {eur(inv.total)}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-black/40">
+              {selected.length} di {parsed.length} selezionate
+            </span>
+            <span className="font-bold text-[#1a0a10] tabular-nums">{eur(totalSel)}</span>
+          </div>
+
+          <button
+            onClick={runImport} disabled={busy || selected.length === 0}
+            className="w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40"
+          >
+            {busy ? 'Import in corso…' : `Importa ${selected.length} fattur${selected.length === 1 ? 'a' : 'e'}`}
+          </button>
+        </>
+      )}
+    </Card>
   );
 }
 
