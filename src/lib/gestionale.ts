@@ -181,6 +181,23 @@ export async function upsertRow<T>(
   return data[0];
 }
 
+/**
+ * Le fatture salvano anche il nome del fornitore: rinominandolo in anagrafica
+ * vanno allineate, altrimenti lo storico si spezza in due voci distinte.
+ */
+export async function renameSupplierOnPurchases(
+  token: string,
+  supplierId: string,
+  newName: string,
+): Promise<void> {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/purchases?supplier_id=eq.${supplierId}`, {
+    method: 'PATCH',
+    headers: authHeaders(token, { Prefer: 'return=minimal' }),
+    body: JSON.stringify({ supplier_name: newName }),
+  });
+  if (!res.ok) throw new Error(`Allineamento fatture fallito (${res.status})`);
+}
+
 export async function deleteRow(token: string, table: TableName, id: string): Promise<void> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'DELETE',

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  fetchTable, insertRow, updateRow, upsertRow, deleteRow,
+  fetchTable, insertRow, updateRow, upsertRow, deleteRow, renameSupplierOnPurchases,
   PURCHASE_CATEGORIES, PAYMENT_METHODS, UTILITY_TYPES, VAT_RATES,
   eur, monthKey, monthLabel, todayISO, saleTotal, avgTicket,
   type Supplier, type Purchase, type DailySale, type FixedCost,
@@ -1098,13 +1098,85 @@ function ImportXmlPanel({
 
 // ─── Fornitori ────────────────────────────────────────────────────────────────
 
-function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases }: Shared) {
+const emptySupplier = () => ({
+  name: '', vat_number: '', category: '', contact: '',
+  phone: '', email: '', payment_terms: '', iban: '', notes: '',
+});
+type SupplierForm = ReturnType<typeof emptySupplier>;
+
+const supplierToForm = (s: Supplier): SupplierForm => ({
+  name: s.name,
+  vat_number: s.vat_number ?? '',
+  category: s.category ?? '',
+  contact: s.contact ?? '',
+  phone: s.phone ?? '',
+  email: s.email ?? '',
+  payment_terms: s.payment_terms ?? '',
+  iban: s.iban ?? '',
+  notes: s.notes ?? '',
+});
+
+const formToRow = (f: SupplierForm) => ({
+  name: f.name.trim(),
+  vat_number: f.vat_number.trim() || null,
+  category: f.category || null,
+  contact: f.contact.trim() || null,
+  phone: f.phone.trim() || null,
+  email: f.email.trim() || null,
+  payment_terms: f.payment_terms || null,
+  iban: f.iban.trim() || null,
+  notes: f.notes.trim() || null,
+});
+
+/** Campi anagrafica, condivisi fra creazione e modifica. */
+function SupplierFields({
+  value, onChange,
+}: { value: SupplierForm; onChange: (patch: Partial<SupplierForm>) => void }) {
+  return (
+    <div className="grid grid-cols-2 gap-3">
+      <Field label="Nome" wide>
+        <input type="text" value={value.name} onChange={e => onChange({ name: e.target.value })} className={inputCls} placeholder="Ragione sociale" />
+      </Field>
+      <Field label="P.IVA / CF">
+        <input type="text" value={value.vat_number} onChange={e => onChange({ vat_number: e.target.value })} className={inputCls} />
+      </Field>
+      <Field label="Categoria">
+        <select value={value.category} onChange={e => onChange({ category: e.target.value })} className={inputCls}>
+          <option value="">—</option>
+          {PURCHASE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+      <Field label="Referente">
+        <input type="text" value={value.contact} onChange={e => onChange({ contact: e.target.value })} className={inputCls} />
+      </Field>
+      <Field label="Telefono">
+        <input type="tel" value={value.phone} onChange={e => onChange({ phone: e.target.value })} className={inputCls} />
+      </Field>
+      <Field label="Email" wide>
+        <input type="email" value={value.email} onChange={e => onChange({ email: e.target.value })} className={inputCls} />
+      </Field>
+      <Field label="Condizioni pagamento">
+        <select value={value.payment_terms} onChange={e => onChange({ payment_terms: e.target.value })} className={inputCls}>
+          <option value="">—</option>
+          {PAYMENT_METHODS.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </Field>
+      <Field label="IBAN">
+        <input type="text" value={value.iban} onChange={e => onChange({ iban: e.target.value })} className={inputCls} />
+      </Field>
+      <Field label="Note" wide>
+        <input type="text" value={value.notes} onChange={e => onChange({ notes: e.target.value })} className={inputCls} placeholder="…" />
+      </Field>
+    </div>
+  );
+}
+
+function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases, setPurchases }: Shared) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    name: '', vat_number: '', category: '', contact: '',
-    phone: '', email: '', payment_terms: '', iban: '', notes: '',
-  });
+  const [form, setForm] = useState(emptySupplier());
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState(emptySupplier());
 
   const stats = useMemo(() => {
     const map: Record<string, { total: number; count: number; last: string }> = {};
@@ -1122,29 +1194,52 @@ function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases }: Sh
     (a, b) => (stats[b.name]?.total ?? 0) - (stats[a.name]?.total ?? 0),
   );
 
+  const dupMessage = (e: unknown) =>
+    e instanceof Error && e.message.includes('duplicate')
+      ? 'Esiste già un fornitore con questo nome'
+      : `Errore nel salvataggio${e instanceof Error ? `: ${e.message}` : ''}`;
+
   async function save() {
     if (!form.name.trim()) return alert('Inserisci il nome');
     setSaving(true);
     try {
-      const row = await insertRow<Supplier>(adminToken, 'suppliers', {
-        name: form.name.trim(),
-        vat_number: form.vat_number || null,
-        category: form.category || null,
-        contact: form.contact || null,
-        phone: form.phone || null,
-        email: form.email || null,
-        payment_terms: form.payment_terms || null,
-        iban: form.iban || null,
-        notes: form.notes || null,
-      });
+      const row = await insertRow<Supplier>(adminToken, 'suppliers', formToRow(form));
       setSuppliers(prev => [...prev, row].sort((a, b) => a.name.localeCompare(b.name)));
-      setForm({ name: '', vat_number: '', category: '', contact: '', phone: '', email: '', payment_terms: '', iban: '', notes: '' });
+      setForm(emptySupplier());
       setOpen(false);
     } catch (e) {
-      const msg = e instanceof Error && e.message.includes('duplicate')
-        ? 'Esiste già un fornitore con questo nome'
-        : 'Errore nel salvataggio';
-      alert(msg);
+      alert(dupMessage(e));
+    }
+    setSaving(false);
+  }
+
+  function startEdit(s: Supplier) {
+    setEditingId(s.id);
+    setEditForm(supplierToForm(s));
+    setOpen(false);
+  }
+
+  async function saveEdit(original: Supplier) {
+    const name = editForm.name.trim();
+    if (!name) return alert('Inserisci il nome');
+    const renamed = name !== original.name;
+
+    setSaving(true);
+    try {
+      const row = await updateRow<Supplier>(adminToken, 'suppliers', original.id, formToRow(editForm));
+      // Le fatture salvano il nome: senza allinearle lo storico si spezzerebbe
+      if (renamed) {
+        await renameSupplierOnPurchases(adminToken, original.id, name);
+        setPurchases(prev =>
+          prev.map(p => (p.supplier_id === original.id ? { ...p, supplier_name: name } : p)),
+        );
+      }
+      setSuppliers(prev =>
+        prev.map(s => (s.id === original.id ? row : s)).sort((a, b) => a.name.localeCompare(b.name)),
+      );
+      setEditingId(null);
+    } catch (e) {
+      alert(dupMessage(e));
     }
     setSaving(false);
   }
@@ -1168,38 +1263,7 @@ function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases }: Sh
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <Card className="p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Nome" wide>
-                  <input type="text" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} placeholder="Ragione sociale" />
-                </Field>
-                <Field label="P.IVA / CF">
-                  <input type="text" value={form.vat_number} onChange={e => setForm(f => ({ ...f, vat_number: e.target.value }))} className={inputCls} />
-                </Field>
-                <Field label="Categoria">
-                  <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={inputCls}>
-                    <option value="">—</option>
-                    {PURCHASE_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </Field>
-                <Field label="Referente">
-                  <input type="text" value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} className={inputCls} />
-                </Field>
-                <Field label="Telefono">
-                  <input type="tel" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} className={inputCls} />
-                </Field>
-                <Field label="Email">
-                  <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className={inputCls} />
-                </Field>
-                <Field label="Condizioni pagamento">
-                  <select value={form.payment_terms} onChange={e => setForm(f => ({ ...f, payment_terms: e.target.value }))} className={inputCls}>
-                    <option value="">—</option>
-                    {PAYMENT_METHODS.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </Field>
-                <Field label="IBAN" wide>
-                  <input type="text" value={form.iban} onChange={e => setForm(f => ({ ...f, iban: e.target.value }))} className={inputCls} />
-                </Field>
-              </div>
+              <SupplierFields value={form} onChange={patch => setForm(f => ({ ...f, ...patch }))} />
               <button onClick={save} disabled={saving}
                 className="w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
                 {saving ? 'Salvataggio…' : 'Salva fornitore'}
@@ -1213,21 +1277,61 @@ function FornitoriSection({ adminToken, suppliers, setSuppliers, purchases }: Sh
         {sorted.length === 0 && <p className="text-center text-black/25 py-10 text-[12px]">Nessun fornitore</p>}
         {sorted.map((s, i) => {
           const st = stats[s.name];
+          const isEditing = editingId === s.id;
           return (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <span className="text-[10px] font-bold text-black/20 w-4 shrink-0">{i + 1}</span>
-              <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-semibold text-[#1a0a10] truncate">{s.name}</p>
-                <p className="text-[10px] text-black/35 truncate">
-                  {s.category ?? '—'}
-                  {s.phone && ` · ${s.phone}`}
-                  {st && ` · ${st.count} fatt. · ultima ${fmtDay(st.last)}`}
-                </p>
+            <div key={s.id}>
+              <div className="flex items-center gap-3 px-4 py-3">
+                <span className="text-[10px] font-bold text-black/20 w-4 shrink-0">{i + 1}</span>
+                <button
+                  onClick={() => (isEditing ? setEditingId(null) : startEdit(s))}
+                  className="flex-1 min-w-0 text-left group"
+                >
+                  <p className="text-[12px] font-semibold text-[#1a0a10] truncate group-hover:text-[#CF6990] transition-colors">
+                    {s.name}
+                  </p>
+                  <p className="text-[10px] text-black/35 truncate">
+                    {s.category ?? 'categoria da assegnare'}
+                    {s.phone && ` · ${s.phone}`}
+                    {st && ` · ${st.count} fatt. · ultima ${fmtDay(st.last)}`}
+                  </p>
+                </button>
+                <span className="text-[12px] font-bold text-[#CF6990] tabular-nums shrink-0">
+                  {eur(st?.total ?? 0)}
+                </span>
+                <button onClick={() => (isEditing ? setEditingId(null) : startEdit(s))}
+                  title="Modifica"
+                  className={`shrink-0 text-sm transition-colors ${isEditing ? 'text-[#CF6990]' : 'text-black/20 hover:text-[#CF6990]'}`}>
+                  ✎
+                </button>
+                <button onClick={() => remove(s.id, s.name)}
+                  title="Elimina"
+                  className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>
               </div>
-              <span className="text-[12px] font-bold text-[#CF6990] tabular-nums shrink-0">
-                {eur(st?.total ?? 0)}
-              </span>
-              <button onClick={() => remove(s.id, s.name)} className="text-black/20 hover:text-red-400 text-sm shrink-0">×</button>
+
+              <AnimatePresence>
+                {isEditing && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="px-4 pb-4 pt-1 space-y-3 bg-[#fdf5f8]/60 border-t border-black/6">
+                      <SupplierFields value={editForm} onChange={patch => setEditForm(f => ({ ...f, ...patch }))} />
+                      {editForm.name.trim() !== s.name && st && (
+                        <p className="text-[10px] text-[#CF6990]">
+                          Rinominando il fornitore aggiorno anche le {st.count} fatture già registrate.
+                        </p>
+                      )}
+                      <div className="flex gap-2">
+                        <button onClick={() => saveEdit(s)} disabled={saving}
+                          className="flex-1 py-2.5 bg-[#1a0a10] text-white text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:bg-[#CF6990] transition-colors disabled:opacity-40">
+                          {saving ? 'Salvataggio…' : 'Salva modifiche'}
+                        </button>
+                        <button onClick={() => setEditingId(null)}
+                          className="px-4 py-2.5 border border-black/12 text-black/40 text-[10px] uppercase tracking-[0.2em] font-bold rounded-xl hover:border-black/25 transition-colors">
+                          Annulla
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}

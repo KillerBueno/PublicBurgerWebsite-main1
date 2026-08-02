@@ -93,7 +93,8 @@
       "Bash(ssh -o StrictHostKeyChecking=no -o ConnectTimeout=8 -T git@github.com)",
       "Bash(git merge *)",
       "Bash(pbcopy)",
-      "Bash(pbpaste)"
+      "Bash(pbpaste)",
+      "Bash(awk '/^function FornitoriSection/,/^\\\\/\\\\/ ─── Costi/' src/GestionaleTab.tsx)"
     ]
   }
 }
