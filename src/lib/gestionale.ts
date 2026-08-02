@@ -111,6 +111,18 @@ export type TableName =
 
 // ─── CRUD generico ────────────────────────────────────────────────────────────
 
+// Il token passato dai componenti è catturato all'apertura del pannello e dopo
+// un'ora scade (JWT expired). getAccessToken lo rinnova se serve; qui usiamo
+// sempre quello fresco, col token del chiamante come fallback.
+async function freshToken(fallback: string): Promise<string> {
+  try {
+    const { getAccessToken } = await import('./supabase');
+    return (await getAccessToken()) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function authHeaders(token: string, extra: Record<string, string> = {}) {
   return {
     'Content-Type': 'application/json',
@@ -126,7 +138,7 @@ export async function fetchTable<T>(
   query = '',
 ): Promise<T[]> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
-    headers: authHeaders(token),
+    headers: authHeaders(await freshToken(token)),
   });
   if (!res.ok) throw new Error(`Caricamento ${table} fallito (${res.status})`);
   return res.json();
@@ -139,7 +151,7 @@ export async function insertRow<T>(
 ): Promise<T> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: 'POST',
-    headers: authHeaders(token, { Prefer: 'return=representation' }),
+    headers: authHeaders(await freshToken(token), { Prefer: 'return=representation' }),
     body: JSON.stringify(row),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -155,7 +167,7 @@ export async function updateRow<T>(
 ): Promise<T> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'PATCH',
-    headers: authHeaders(token, { Prefer: 'return=representation' }),
+    headers: authHeaders(await freshToken(token), { Prefer: 'return=representation' }),
     body: JSON.stringify(patch),
   });
   if (!res.ok) throw new Error(await res.text());
@@ -171,7 +183,7 @@ export async function upsertRow<T>(
 ): Promise<T> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
     method: 'POST',
-    headers: authHeaders(token, {
+    headers: authHeaders(await freshToken(token), {
       Prefer: 'resolution=merge-duplicates,return=representation',
     }),
     body: JSON.stringify(row),
@@ -192,7 +204,7 @@ export async function renameSupplierOnPurchases(
 ): Promise<void> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/purchases?supplier_id=eq.${supplierId}`, {
     method: 'PATCH',
-    headers: authHeaders(token, { Prefer: 'return=minimal' }),
+    headers: authHeaders(await freshToken(token), { Prefer: 'return=minimal' }),
     body: JSON.stringify({ supplier_name: newName }),
   });
   if (!res.ok) throw new Error(`Allineamento fatture fallito (${res.status})`);
@@ -201,7 +213,7 @@ export async function renameSupplierOnPurchases(
 export async function deleteRow(token: string, table: TableName, id: string): Promise<void> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
     method: 'DELETE',
-    headers: authHeaders(token, { Prefer: 'return=minimal' }),
+    headers: authHeaders(await freshToken(token), { Prefer: 'return=minimal' }),
   });
   if (!res.ok) throw new Error(`Eliminazione fallita (${res.status})`);
 }
@@ -209,7 +221,7 @@ export async function deleteRow(token: string, table: TableName, id: string): Pr
 export async function fetchCustomerStats(token: string): Promise<CustomerStat[]> {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_customer_stats`, {
     method: 'POST',
-    headers: authHeaders(token),
+    headers: authHeaders(await freshToken(token)),
     body: '{}',
   });
   if (!res.ok) return [];

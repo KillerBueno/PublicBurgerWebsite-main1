@@ -11,6 +11,10 @@ export interface PBUser {
   name: string;
   avatar_url: string;
   access_token: string;
+  /** Serve a rinnovare l'access_token, che dura un'ora. */
+  refresh_token?: string;
+  /** Scadenza dell'access_token, in secondi epoch. */
+  expires_at?: number;
 }
 
 // Parse token from URL hash after OAuth redirect (hash already cleaned in index.html)
@@ -20,6 +24,10 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
   const params = new URLSearchParams(saved.startsWith('#') ? saved.slice(1) : saved);
   const accessToken = params.get('access_token');
   if (!accessToken) return null;
+
+  const refreshToken = params.get('refresh_token') ?? undefined;
+  const expiresAt = Number(params.get('expires_at'))
+    || nowSec() + (Number(params.get('expires_in')) || 3600);
 
   sessionStorage.removeItem('pb_oauth_hash');
   window.history.replaceState(null, '', window.location.pathname);
@@ -38,6 +46,8 @@ export async function handleAuthCallback(): Promise<PBUser | null> {
       name: data.user_metadata?.full_name || data.email,
       avatar_url: data.user_metadata?.avatar_url || '',
       access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     // Upsert profile + sync count from Supabase
@@ -69,6 +79,55 @@ export function getStoredUser(): PBUser | null {
   } catch {
     return null;
   }
+}
+
+function nowSec() {
+  return Math.floor(Date.now() / 1000);
+}
+
+// Una sola richiesta di rinnovo anche se più chiamate scadono insieme
+let refreshing: Promise<string | null> | null = null;
+
+async function refreshSession(user: PBUser): Promise<string | null> {
+  if (!SUPABASE_URL || !user.refresh_token) return null;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY! },
+      body: JSON.stringify({ refresh_token: user.refresh_token }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.access_token) return null;
+
+    const updated: PBUser = {
+      ...user,
+      access_token: data.access_token,
+      refresh_token: data.refresh_token ?? user.refresh_token,
+      expires_at: data.expires_at ?? nowSec() + (data.expires_in ?? 3600),
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('pb-user-changed'));
+    return updated.access_token;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Token valido per le chiamate autenticate: lo rinnova se sta per scadere.
+ * L'access_token di Supabase dura un'ora, dopodiché le API rispondono
+ * "JWT expired" e ogni salvataggio fallisce.
+ */
+export async function getAccessToken(): Promise<string | null> {
+  const user = getStoredUser();
+  if (!user) return null;
+
+  const stillValid = user.expires_at && user.expires_at - nowSec() > 60;
+  if (stillValid || !user.refresh_token) return user.access_token;
+
+  refreshing ??= refreshSession(user).finally(() => { refreshing = null; });
+  return (await refreshing) ?? user.access_token;
 }
 
 export function signOut() {

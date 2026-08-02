@@ -1,6 +1,16 @@
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
+// Il token admin catturato all'apertura scade dopo un'ora: rinnovalo se serve.
+async function freshToken(fallback: string): Promise<string> {
+  try {
+    const { getAccessToken } = await import('./supabase');
+    return (await getAccessToken()) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 export interface OrderItem {
   type: 'burger' | 'fry' | 'extra';
   name: string;
@@ -68,7 +78,7 @@ export async function updateOrderStatus(
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
+      Authorization: `Bearer ${await freshToken(adminToken)}`,
       Prefer: 'return=minimal',
     },
     body: JSON.stringify({ status, status_history: history }),
@@ -86,7 +96,7 @@ export async function updateOrderNotes(
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
+      Authorization: `Bearer ${await freshToken(adminToken)}`,
       Prefer: 'return=minimal',
     },
     body: JSON.stringify({ admin_notes }),
@@ -125,7 +135,7 @@ export async function deleteOrder(adminToken: string, orderId: string): Promise<
     method: 'DELETE',
     headers: {
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
+      Authorization: `Bearer ${await freshToken(adminToken)}`,
       Prefer: 'return=minimal',
     },
   });

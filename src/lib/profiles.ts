@@ -61,12 +61,17 @@ export async function setProfileOverride(
   if (!SUPABASE_URL || !SUPABASE_KEY) return;
   const fn = override === null ? 'reset_profile_override' : 'set_profile_override';
   const body = override === null ? { user_email: email } : { user_email: email, new_override: override };
+  let token = adminToken;
+  try {
+    const { getAccessToken } = await import('./supabase');
+    token = (await getAccessToken()) ?? adminToken;
+  } catch { /* usa il token passato */ }
   const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
+      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(body),
   });
