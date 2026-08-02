@@ -153,9 +153,9 @@ export default function GestionaleTab({ adminToken }: { adminToken: string }) {
     return () => { cancelled = true; };
   }, [adminToken]);
 
-  // Mesi disponibili, dal più recente
-  const months = useMemo(() => {
-    const set = new Set<string>([monthKey(todayISO())]);
+  // Mesi che contengono davvero movimenti
+  const dataMonths = useMemo(() => {
+    const set = new Set<string>();
     for (const p of purchases) set.add(monthKey(p.date));
     for (const s of sales) set.add(monthKey(s.date));
     for (const u of utilities) set.add(monthKey(u.date));
@@ -163,10 +163,19 @@ export default function GestionaleTab({ adminToken }: { adminToken: string }) {
     return [...set].sort().reverse();
   }, [purchases, sales, utilities, staffPayments]);
 
-  const [month, setMonth] = useState(monthKey(todayISO()));
+  // Nel menu c'è sempre anche il mese corrente, per poterci registrare
+  const months = useMemo(
+    () => [...new Set([monthKey(todayISO()), ...dataMonths])].sort().reverse(),
+    [dataMonths],
+  );
+
+  const [month, setMonth] = useState('');
   useEffect(() => {
-    if (months.length && !months.includes(month)) setMonth(months[0]);
-  }, [months]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (month && months.includes(month)) return;
+    // Si apre sul mese più recente con movimenti: se il corrente è vuoto
+    // i dati sembrerebbero spariti
+    setMonth(dataMonths[0] ?? monthKey(todayISO()));
+  }, [dataMonths, months]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
@@ -461,8 +470,11 @@ function VenditeSection({ adminToken, month, months, setMonth, sales, setSales }
         {open && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
             <Card className="p-4 space-y-3">
-              <p className="text-[11px] text-black/40">
-                Inserendo una data già registrata, i valori vengono sovrascritti.
+              <p className="text-[11px] text-black/40 leading-relaxed">
+                Il fiscale è la somma di contanti, POS, Deliveroo e Just Eat.
+                I campi <strong>di cui</strong> sono una ripartizione informativa e non si sommano:
+                un asporto pagato in contanti è già dentro i contanti.
+                Reinserendo una data già registrata, i valori vengono sovrascritti.
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Data"><input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} className={inputCls} /></Field>
@@ -471,8 +483,8 @@ function VenditeSection({ adminToken, month, months, setMonth, sales, setSales }
                 <Field label="POS (SumUp)"><input type="number" step="0.01" inputMode="decimal" value={form.pos} onChange={e => setForm(f => ({ ...f, pos: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
                 <Field label="Deliveroo"><input type="number" step="0.01" inputMode="decimal" value={form.deliveroo} onChange={e => setForm(f => ({ ...f, deliveroo: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
                 <Field label="Just Eat"><input type="number" step="0.01" inputMode="decimal" value={form.justeat} onChange={e => setForm(f => ({ ...f, justeat: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
-                <Field label="Asporto in sede"><input type="number" step="0.01" inputMode="decimal" value={form.takeaway} onChange={e => setForm(f => ({ ...f, takeaway: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
-                <Field label="Consegne proprie"><input type="number" step="0.01" inputMode="decimal" value={form.delivery} onChange={e => setForm(f => ({ ...f, delivery: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Di cui asporto"><input type="number" step="0.01" inputMode="decimal" value={form.takeaway} onChange={e => setForm(f => ({ ...f, takeaway: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
+                <Field label="Di cui consegne"><input type="number" step="0.01" inputMode="decimal" value={form.delivery} onChange={e => setForm(f => ({ ...f, delivery: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
                 <Field label="Proforma (non fiscale)"><input type="number" step="0.01" inputMode="decimal" value={form.proforma_total} onChange={e => setForm(f => ({ ...f, proforma_total: e.target.value }))} className={inputCls} placeholder="0,00" /></Field>
                 <Field label="Note"><input type="text" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inputCls} placeholder="…" /></Field>
               </div>
@@ -1548,7 +1560,7 @@ function CostiSection({
 
 // ─── Prima Nota ───────────────────────────────────────────────────────────────
 
-function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities, staffPayments }: Shared) {
+function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities, staffPayments, fixedCosts }: Shared) {
   const rows = useMemo(() => {
     const byDay: Record<string, { in: number; purch: number; other: number }> = {};
     const touch = (d: string) => (byDay[d] ??= { in: 0, purch: 0, other: 0 });
@@ -1557,6 +1569,18 @@ function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities
     for (const p of purchases) if (monthKey(p.date) === month) touch(p.date).purch += Number(p.total);
     for (const u of utilities) if (monthKey(u.date) === month) touch(u.date).other += Number(u.amount);
     for (const s of staffPayments) if (monthKey(s.date) === month) touch(s.date).other += Number(s.amount);
+
+    // Costi fissi ricorrenti, imputati al giorno di scadenza: senza questi il
+    // saldo non tornerebbe col margine della Dashboard
+    if (month) {
+      const [y, m] = month.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      for (const c of fixedCosts) {
+        if (!c.active || Number(c.monthly_amount) === 0) continue;
+        const day = Math.min(Math.max(c.due_day ?? 1, 1), lastDay);
+        touch(`${month}-${String(day).padStart(2, '0')}`).other += Number(c.monthly_amount);
+      }
+    }
 
     let running = 0;
     return Object.entries(byDay)
@@ -1567,7 +1591,7 @@ function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities
         running += balance;
         return { date, in: v.in, purch: v.purch, other: v.other, out, balance, running };
       });
-  }, [month, sales, purchases, utilities, staffPayments]);
+  }, [month, sales, purchases, utilities, staffPayments, fixedCosts]);
 
   const totals = rows.reduce(
     (a, r) => ({ in: a.in + r.in, out: a.out + r.out }),
@@ -1624,6 +1648,12 @@ function PrimaNotaSection({ month, months, setMonth, sales, purchases, utilities
           </tbody>
         </table>
       </Card>
+
+      <p className="text-[10px] text-black/35 leading-relaxed">
+        <strong>Altro</strong> comprende utenze, personale e costi fissi mensili
+        (imputati al giorno di scadenza). Il saldo del mese coincide con il margine della Dashboard.
+        Il progressivo riparte da zero a ogni mese.
+      </p>
     </>
   );
 }
