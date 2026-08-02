@@ -158,6 +158,12 @@ function CookiePolicy() {
               <td className="py-2 pr-3">Persistente</td>
               <td className="py-2">Ricorda che l'utente ha già visto il suggerimento di swipe sul carrello. Nessun dato personale.</td>
             </tr>
+            <tr className="border-b border-black/5">
+              <td className="py-2 pr-3 font-mono">pb_cookie_consent</td>
+              <td className="py-2 pr-3">localStorage</td>
+              <td className="py-2 pr-3">Persistente</td>
+              <td className="py-2">Memorizza la scelta espressa nel banner cookie (accettazione o rifiuto), per non riproporlo a ogni visita.</td>
+            </tr>
           </tbody>
         </table>
         <p className="mt-4">
@@ -167,17 +173,26 @@ function CookiePolicy() {
 
       <Section title="3. Cookie di terze parti">
         <p>
-          Il sito non installa cookie di terze parti. Il pulsante WhatsApp reindirizza a un servizio esterno soggetto alla propria <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#CF6990]">Privacy Policy</a>.
+          Previo consenso espresso tramite il banner cookie, il sito carica lo script di autenticazione di <strong>Google LLC</strong> (Google Sign-In), che può installare cookie di terze parti soggetti alla <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="text-[#CF6990]">Privacy Policy di Google</a>. In caso di rifiuto, lo script non viene caricato e il login tramite Google non è disponibile; tutte le altre funzionalità del sito restano pienamente utilizzabili.
+        </p>
+        <p>
+          Il pulsante WhatsApp reindirizza a un servizio esterno soggetto alla propria <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#CF6990]">Privacy Policy</a>.
         </p>
       </Section>
 
-      <Section title="4. Come disabilitare i cookie">
+      <Section title="4. Gestione del consenso">
+        <p>
+          Alla prima visita viene mostrato un banner che consente di accettare o rifiutare i cookie di terze parti. La scelta può essere modificata in qualsiasi momento cancellando i dati di navigazione del browser per questo sito: al successivo accesso il banner verrà riproposto.
+        </p>
+      </Section>
+
+      <Section title="5. Come disabilitare i cookie">
         <p>
           È possibile disabilitare i cookie tecnici dalle impostazioni del browser, ma questo potrebbe compromettere il corretto funzionamento del sito.
         </p>
       </Section>
 
-      <Section title="5. Contatti">
+      <Section title="6. Contatti">
         <p>
           Per informazioni: <a href="mailto:public.isoladelliri@gmail.com" className="text-[#CF6990]">public.isoladelliri@gmail.com</a>
         </p>

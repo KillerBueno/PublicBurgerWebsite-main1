@@ -1,0 +1,657 @@
+{
+  ".agents/skills/ui-ux-pro-max/data/_sync_all.py": {
+    "mtime": 1782729212.5987577,
+    "ast_hash": "ce3fd6613eee315556671046b7a76a6f",
+    "semantic_hash": "ce3fd6613eee315556671046b7a76a6f"
+  },
+  ".agents/skills/ui-ux-pro-max/scripts/core.py": {
+    "mtime": 1782729212.619758,
+    "ast_hash": "579bd996ca10aa22a33c712a172d8b90",
+    "semantic_hash": "579bd996ca10aa22a33c712a172d8b90"
+  },
+  ".agents/skills/ui-ux-pro-max/scripts/design_system.py": {
+    "mtime": 1782729212.619758,
+    "ast_hash": "f10fa759d4a25dcd16d1a6d72a505a5c",
+    "semantic_hash": "f10fa759d4a25dcd16d1a6d72a505a5c"
+  },
+  ".agents/skills/ui-ux-pro-max/scripts/search.py": {
+    "mtime": 1782729212.620758,
+    "ast_hash": "89f1dc15dbd0ecd96999deaf936e3166",
+    "semantic_hash": "89f1dc15dbd0ecd96999deaf936e3166"
+  },
+  ".claude/launch.json": {
+    "mtime": 1782219419.518373,
+    "ast_hash": "7cff0c7ea37ce3e13f21975628b67f07",
+    "semantic_hash": "7cff0c7ea37ce3e13f21975628b67f07"
+  },
+  ".claude/settings.local.json": {
+    "mtime": 1782738215.1330576,
+    "ast_hash": "4a7dc5d6c82503200594cb3134f9c8e7",
+    "semantic_hash": "4a7dc5d6c82503200594cb3134f9c8e7"
+  },
+  ".claude/skills/ui-ux-pro-max/data/_sync_all.py": {
+    "mtime": 1782729212.5987577,
+    "ast_hash": "ce3fd6613eee315556671046b7a76a6f",
+    "semantic_hash": "ce3fd6613eee315556671046b7a76a6f"
+  },
+  ".claude/skills/ui-ux-pro-max/scripts/core.py": {
+    "mtime": 1782729212.619758,
+    "ast_hash": "579bd996ca10aa22a33c712a172d8b90",
+    "semantic_hash": "579bd996ca10aa22a33c712a172d8b90"
+  },
+  ".claude/skills/ui-ux-pro-max/scripts/design_system.py": {
+    "mtime": 1782729212.619758,
+    "ast_hash": "f10fa759d4a25dcd16d1a6d72a505a5c",
+    "semantic_hash": "f10fa759d4a25dcd16d1a6d72a505a5c"
+  },
+  ".claude/skills/ui-ux-pro-max/scripts/search.py": {
+    "mtime": 1782729212.620758,
+    "ast_hash": "89f1dc15dbd0ecd96999deaf936e3166",
+    "semantic_hash": "89f1dc15dbd0ecd96999deaf936e3166"
+  },
+  "FILIPPO/api/auth_utils.ts": {
+    "mtime": 1782219419.5213728,
+    "ast_hash": "96bfed0db4e37def8d2aa4cfe1c0c17f",
+    "semantic_hash": "96bfed0db4e37def8d2aa4cfe1c0c17f"
+  },
+  "FILIPPO/api/index.ts": {
+    "mtime": 1782219419.5213728,
+    "ast_hash": "688ec7b9240a6b80b62d36105cb68060",
+    "semantic_hash": "688ec7b9240a6b80b62d36105cb68060"
+  },
+  "FILIPPO/src/components/InstallPWA.tsx": {
+    "mtime": 1782219419.5233727,
+    "ast_hash": "67184a4b0ce2f35cc2ab576c8dc05fea",
+    "semantic_hash": "67184a4b0ce2f35cc2ab576c8dc05fea"
+  },
+  "FILIPPO/src/components/MaintenanceGuard.tsx": {
+    "mtime": 1782219419.524372,
+    "ast_hash": "b0cc859539a47cd31ff4e922e6938640",
+    "semantic_hash": "b0cc859539a47cd31ff4e922e6938640"
+  },
+  "FILIPPO/src/components/admin/AdminLayout.tsx": {
+    "mtime": 1782219419.524372,
+    "ast_hash": "ef95c98f6d50bc4415bfb5a39c0c0f23",
+    "semantic_hash": "ef95c98f6d50bc4415bfb5a39c0c0f23"
+  },
+  "FILIPPO/src/components/cart/CartDrawer.tsx": {
+    "mtime": 1782219419.5253727,
+    "ast_hash": "5617eebd3804205310538368225bc208",
+    "semantic_hash": "5617eebd3804205310538368225bc208"
+  },
+  "FILIPPO/src/components/cart/CheckoutModal.tsx": {
+    "mtime": 1782219419.5263722,
+    "ast_hash": "ecba3236a64ccdeb25c032ee780bc401",
+    "semantic_hash": "ecba3236a64ccdeb25c032ee780bc401"
+  },
+  "FILIPPO/src/components/layout/Footer.tsx": {
+    "mtime": 1782219419.5263722,
+    "ast_hash": "ff0e96b432cfcb2a3faae40487dc1a81",
+    "semantic_hash": "ff0e96b432cfcb2a3faae40487dc1a81"
+  },
+  "FILIPPO/src/components/layout/Header.tsx": {
+    "mtime": 1782219419.5273714,
+    "ast_hash": "52481f15b64bbe0aaaa156eab77c6772",
+    "semantic_hash": "52481f15b64bbe0aaaa156eab77c6772"
+  },
+  "FILIPPO/src/components/layout/Layout.tsx": {
+    "mtime": 1782219419.5273714,
+    "ast_hash": "0a15ecf314f935da23c0fcc80b70aaa6",
+    "semantic_hash": "0a15ecf314f935da23c0fcc80b70aaa6"
+  },
+  "FILIPPO/src/components/layout/OpenStatus.tsx": {
+    "mtime": 1782219419.5283728,
+    "ast_hash": "9b119a0fb9232fcc5b89bbd04ca8872a",
+    "semantic_hash": "9b119a0fb9232fcc5b89bbd04ca8872a"
+  },
+  "FILIPPO/src/components/layout/ScrollToTop.tsx": {
+    "mtime": 1782219419.5283728,
+    "ast_hash": "358f925be882e6b261c4e209be99bee5",
+    "semantic_hash": "358f925be882e6b261c4e209be99bee5"
+  },
+  "FILIPPO/src/components/menu/ProductCard.tsx": {
+    "mtime": 1782219419.529373,
+    "ast_hash": "e2c5744d72838cabb5f5c201ac9203d8",
+    "semantic_hash": "e2c5744d72838cabb5f5c201ac9203d8"
+  },
+  "FILIPPO/src/context/AuthContext.tsx": {
+    "mtime": 1782219419.5303714,
+    "ast_hash": "cd7452c975d27b123a2afc8296c6bd67",
+    "semantic_hash": "cd7452c975d27b123a2afc8296c6bd67"
+  },
+  "FILIPPO/src/context/CartContext.tsx": {
+    "mtime": 1782219419.5303714,
+    "ast_hash": "9d5f01437d508126e5396b0e0911f5a5",
+    "semantic_hash": "9d5f01437d508126e5396b0e0911f5a5"
+  },
+  "FILIPPO/src/context/ConfigContext.tsx": {
+    "mtime": 1782219419.5313723,
+    "ast_hash": "fcdce554b84246fec04651f2364d54d5",
+    "semantic_hash": "fcdce554b84246fec04651f2364d54d5"
+  },
+  "FILIPPO/src/hooks/useOpeningHours.ts": {
+    "mtime": 1782219419.5313723,
+    "ast_hash": "c6d4caf0d04116426610149fc7dae9f7",
+    "semantic_hash": "c6d4caf0d04116426610149fc7dae9f7"
+  },
+  "FILIPPO/src/pages/AuthPage.tsx": {
+    "mtime": 1782219419.5323732,
+    "ast_hash": "3819a1d59efb633486eea8f23a497b90",
+    "semantic_hash": "3819a1d59efb633486eea8f23a497b90"
+  },
+  "FILIPPO/src/pages/CheckoutPage.tsx": {
+    "mtime": 1782219419.5333724,
+    "ast_hash": "c3cbcbf0d5e75205935518ee1d6dec44",
+    "semantic_hash": "c3cbcbf0d5e75205935518ee1d6dec44"
+  },
+  "FILIPPO/src/pages/HomePage.tsx": {
+    "mtime": 1782219419.5333724,
+    "ast_hash": "614ef4a07d7b520322d13d9467a53871",
+    "semantic_hash": "614ef4a07d7b520322d13d9467a53871"
+  },
+  "FILIPPO/src/pages/MenuPage.tsx": {
+    "mtime": 1782219419.5343728,
+    "ast_hash": "9af6709f89e27a2f4c6fab91f7ec243a",
+    "semantic_hash": "9af6709f89e27a2f4c6fab91f7ec243a"
+  },
+  "FILIPPO/src/pages/OrderDetailsPage.tsx": {
+    "mtime": 1782219419.535372,
+    "ast_hash": "b982b251ff67f7b6b6aee903bbdb7b0d",
+    "semantic_hash": "b982b251ff67f7b6b6aee903bbdb7b0d"
+  },
+  "FILIPPO/src/pages/ProfilePage.tsx": {
+    "mtime": 1782219419.535372,
+    "ast_hash": "05849e9450eaeb64605f3c5c9ce72545",
+    "semantic_hash": "05849e9450eaeb64605f3c5c9ce72545"
+  },
+  "FILIPPO/src/pages/admin/AdminDashboard.tsx": {
+    "mtime": 1782219419.5363715,
+    "ast_hash": "50554f91390f9e21a632b6d0deef6bd0",
+    "semantic_hash": "50554f91390f9e21a632b6d0deef6bd0"
+  },
+  "FILIPPO/src/pages/admin/KitchenDisplay.tsx": {
+    "mtime": 1782219419.5363715,
+    "ast_hash": "811767bec1155d3cecce4eadf9cf9b1b",
+    "semantic_hash": "811767bec1155d3cecce4eadf9cf9b1b"
+  },
+  "FILIPPO/src/pages/admin/MenuManagement.tsx": {
+    "mtime": 1782219419.537372,
+    "ast_hash": "21cbb69cd51c47d600ebc2537c509477",
+    "semantic_hash": "21cbb69cd51c47d600ebc2537c509477"
+  },
+  "FILIPPO/src/pages/admin/OrderManagement.tsx": {
+    "mtime": 1782219419.537372,
+    "ast_hash": "b07a6b8f79560030398f92ddea9fe0c7",
+    "semantic_hash": "b07a6b8f79560030398f92ddea9fe0c7"
+  },
+  "FILIPPO/src/pages/admin/RiderScanner.tsx": {
+    "mtime": 1782219419.5383728,
+    "ast_hash": "c766b7d34e0fbac42ca9134c62eb1d83",
+    "semantic_hash": "c766b7d34e0fbac42ca9134c62eb1d83"
+  },
+  "FILIPPO/src/pages/admin/RiderTracker.tsx": {
+    "mtime": 1782219419.5383728,
+    "ast_hash": "6dbc1f81a51c47941a0160b0c8cba873",
+    "semantic_hash": "6dbc1f81a51c47941a0160b0c8cba873"
+  },
+  "FILIPPO/src/pages/admin/SettingsManagement.tsx": {
+    "mtime": 1782219419.5393727,
+    "ast_hash": "9689d46cee877f4d2f5150afb08f71be",
+    "semantic_hash": "9689d46cee877f4d2f5150afb08f71be"
+  },
+  "FILIPPO/src/pages/admin/StatsManagement.tsx": {
+    "mtime": 1782219419.5393727,
+    "ast_hash": "1fddafc0733dc6f23836dbb0835e0e73",
+    "semantic_hash": "1fddafc0733dc6f23836dbb0835e0e73"
+  },
+  "FILIPPO/src/services/api.ts": {
+    "mtime": 1782219419.540371,
+    "ast_hash": "7e32b76c28dd826ef86645b68c9cddc5",
+    "semantic_hash": "7e32b76c28dd826ef86645b68c9cddc5"
+  },
+  "FILIPPO/src/types/index.ts": {
+    "mtime": 1782219419.540371,
+    "ast_hash": "2265e25e760983703e01b4c64f911e10",
+    "semantic_hash": "2265e25e760983703e01b4c64f911e10"
+  },
+  "FILIPPO/src/utils/serviceWorker.ts": {
+    "mtime": 1782219419.5413716,
+    "ast_hash": "34221d2f1a51df012346ca4a01270d51",
+    "semantic_hash": "34221d2f1a51df012346ca4a01270d51"
+  },
+  "FILIPPO/src/utils/timeUtils.ts": {
+    "mtime": 1782219419.5413716,
+    "ast_hash": "e48eb3e2e2c6e49556792c4b8070028f",
+    "semantic_hash": "e48eb3e2e2c6e49556792c4b8070028f"
+  },
+  "FILIPPO/src/utils/whatsappUtils.ts": {
+    "mtime": 1782219419.5423715,
+    "ast_hash": "33d158fde91b2f18c655ccee5fc89952",
+    "semantic_hash": "33d158fde91b2f18c655ccee5fc89952"
+  },
+  "eslint.config.js": {
+    "mtime": 1782219419.5423715,
+    "ast_hash": "957218024dbfdaaccd46c509d5e3089f",
+    "semantic_hash": "957218024dbfdaaccd46c509d5e3089f"
+  },
+  "package.json": {
+    "mtime": 1782738135.0575302,
+    "ast_hash": "3160efcad2d07fc079f55d9ea5fcb799",
+    "semantic_hash": "3160efcad2d07fc079f55d9ea5fcb799"
+  },
+  "postcss.config.js": {
+    "mtime": 1782219419.548371,
+    "ast_hash": "b0197450f6657a0e29dfc069e083f364",
+    "semantic_hash": "b0197450f6657a0e29dfc069e083f364"
+  },
+  "public/manifest.json": {
+    "mtime": 1782219419.5503721,
+    "ast_hash": "ee693d91ccb2ac28e89636af841ce2e1",
+    "semantic_hash": "ee693d91ccb2ac28e89636af841ce2e1"
+  },
+  "public/service-worker.js": {
+    "mtime": 1782219419.5503721,
+    "ast_hash": "1ce9a357e047cb1047ff8514f76a09de",
+    "semantic_hash": "1ce9a357e047cb1047ff8514f76a09de"
+  },
+  "record.mjs": {
+    "mtime": 1782219419.5503721,
+    "ast_hash": "f1ef0dce25b4a6693e0b6ce8f15034d0",
+    "semantic_hash": "f1ef0dce25b4a6693e0b6ce8f15034d0"
+  },
+  "screenshot.mjs": {
+    "mtime": 1782219419.5513754,
+    "ast_hash": "9d6e66f0bd71714b44d50c221953270c",
+    "semantic_hash": "9d6e66f0bd71714b44d50c221953270c"
+  },
+  "skills-lock.json": {
+    "mtime": 1782729216.3349822,
+    "ast_hash": "843fa104a4929008a12ace6b2cadf86c",
+    "semantic_hash": "843fa104a4929008a12ace6b2cadf86c"
+  },
+  "src/AdminPage.tsx": {
+    "mtime": 1782737818.9353075,
+    "ast_hash": "8b9349cdcbf5651449c3b0d8e0d09e3c",
+    "semantic_hash": "8b9349cdcbf5651449c3b0d8e0d09e3c"
+  },
+  "src/App.tsx": {
+    "mtime": 1782730864.817952,
+    "ast_hash": "452620c6928d96236d3c0585fdcf6359",
+    "semantic_hash": "452620c6928d96236d3c0585fdcf6359"
+  },
+  "src/BurgerConfigurator.tsx": {
+    "mtime": 1782730864.817952,
+    "ast_hash": "fa4dbda0dcdf5cb478c06a4780c19cce",
+    "semantic_hash": "fa4dbda0dcdf5cb478c06a4780c19cce"
+  },
+  "src/CartPanel.tsx": {
+    "mtime": 1782745294.0969548,
+    "ast_hash": "123fed7af0dfaf07fbda344d92a0b897",
+    "semantic_hash": "123fed7af0dfaf07fbda344d92a0b897"
+  },
+  "src/FoodCostTab.tsx": {
+    "mtime": 1782738349.5073607,
+    "ast_hash": "8ed4c930f49a79b46fc4412454620102",
+    "semantic_hash": "8ed4c930f49a79b46fc4412454620102"
+  },
+  "src/LegalPage.tsx": {
+    "mtime": 1782219419.5533738,
+    "ast_hash": "7ea4f616c2177afc7b1c4efb65da10d6",
+    "semantic_hash": "7ea4f616c2177afc7b1c4efb65da10d6"
+  },
+  "src/LoginPage.tsx": {
+    "mtime": 1782736004.125328,
+    "ast_hash": "5a94f0f402cc9ce773d2884954410d8c",
+    "semantic_hash": "5a94f0f402cc9ce773d2884954410d8c"
+  },
+  "src/MenuDisplay.tsx": {
+    "mtime": 1782221252.1223125,
+    "ast_hash": "40a581e18507218617b0b64b06161aff",
+    "semantic_hash": "40a581e18507218617b0b64b06161aff"
+  },
+  "src/ShowcasePage.tsx": {
+    "mtime": 1782746506.5443623,
+    "ast_hash": "72e949bda8862c16683773fec66e96a7",
+    "semantic_hash": "72e949bda8862c16683773fec66e96a7"
+  },
+  "src/cartTypes.ts": {
+    "mtime": 1782219419.5553718,
+    "ast_hash": "e501f208aed01e6db94910fcca5ae6f1",
+    "semantic_hash": "e501f208aed01e6db94910fcca5ae6f1"
+  },
+  "src/lib/admins.ts": {
+    "mtime": 1782730936.019198,
+    "ast_hash": "d10decb75f9d1964192251987e3d820e",
+    "semantic_hash": "d10decb75f9d1964192251987e3d820e"
+  },
+  "src/lib/gamification.ts": {
+    "mtime": 1782219419.5563715,
+    "ast_hash": "f20f0d7bbb3b0acf1bb9692406ad941d",
+    "semantic_hash": "f20f0d7bbb3b0acf1bb9692406ad941d"
+  },
+  "src/lib/orders.ts": {
+    "mtime": 1782735188.1757364,
+    "ast_hash": "4042cecda465d831dd0b7aebafc71d66",
+    "semantic_hash": "4042cecda465d831dd0b7aebafc71d66"
+  },
+  "src/lib/profiles.ts": {
+    "mtime": 1782730919.0218127,
+    "ast_hash": "cc9fe5b4edfc2b1e5575aa86b6c9a421",
+    "semantic_hash": "cc9fe5b4edfc2b1e5575aa86b6c9a421"
+  },
+  "src/lib/settings.ts": {
+    "mtime": 1782730864.8219507,
+    "ast_hash": "a1cb27c605454f880af25f2e55accd02",
+    "semantic_hash": "a1cb27c605454f880af25f2e55accd02"
+  },
+  "src/lib/supabase.ts": {
+    "mtime": 1782730864.82295,
+    "ast_hash": "113e5a7b55d1984c057569bd1dd06025",
+    "semantic_hash": "113e5a7b55d1984c057569bd1dd06025"
+  },
+  "src/main.tsx": {
+    "mtime": 1782219419.5573723,
+    "ast_hash": "df3369963799e47ef5a77cdca932abf0",
+    "semantic_hash": "df3369963799e47ef5a77cdca932abf0"
+  },
+  "src/menuData.backup2.ts": {
+    "mtime": 1782219419.5573723,
+    "ast_hash": "89fbbfcb04593158ec55fcfc40af50dc",
+    "semantic_hash": "89fbbfcb04593158ec55fcfc40af50dc"
+  },
+  "src/menuData.ts": {
+    "mtime": 1782221187.0785937,
+    "ast_hash": "ea9fb7603f0fc44ae575fd0753eaf96f",
+    "semantic_hash": "ea9fb7603f0fc44ae575fd0753eaf96f"
+  },
+  "tailwind.config.js": {
+    "mtime": 1782219419.5583715,
+    "ast_hash": "b8ec96d9e34d97143680a7084027c5c9",
+    "semantic_hash": "b8ec96d9e34d97143680a7084027c5c9"
+  },
+  "tsconfig.app.json": {
+    "mtime": 1782219419.5583715,
+    "ast_hash": "89eb759c9b2174fc82eef0073f1e930a",
+    "semantic_hash": "89eb759c9b2174fc82eef0073f1e930a"
+  },
+  "tsconfig.json": {
+    "mtime": 1782219419.5593715,
+    "ast_hash": "98148e71a43e0cc6373a58f40709246a",
+    "semantic_hash": "98148e71a43e0cc6373a58f40709246a"
+  },
+  "tsconfig.node.json": {
+    "mtime": 1782219419.5593715,
+    "ast_hash": "c5c9cdf8e005158c0b05c527b5634360",
+    "semantic_hash": "c5c9cdf8e005158c0b05c527b5634360"
+  },
+  "vercel.json": {
+    "mtime": 1782219419.5593715,
+    "ast_hash": "ffb347b128ac7e04b389c5d15898915c",
+    "semantic_hash": "ffb347b128ac7e04b389c5d15898915c"
+  },
+  "vite.config.ts": {
+    "mtime": 1782219419.5603719,
+    "ast_hash": "a504db4ad439113c22e0c8e6d574762d",
+    "semantic_hash": "a504db4ad439113c22e0c8e6d574762d"
+  },
+  ".agents/skills/frontend-design/LICENSE.txt": {
+    "mtime": 1782728330.9389374,
+    "ast_hash": "29256199be2a609aac596980ffc11996",
+    "semantic_hash": "29256199be2a609aac596980ffc11996"
+  },
+  ".agents/skills/frontend-design/SKILL.md": {
+    "mtime": 1782728330.9399378,
+    "ast_hash": "f5c3db69b9c6a00578301dd0cbe90253",
+    "semantic_hash": "f5c3db69b9c6a00578301dd0cbe90253"
+  },
+  ".agents/skills/security-best-practices/LICENSE.txt": {
+    "mtime": 1782728871.1361268,
+    "ast_hash": "2100d7efc453bde03b318f0329ecf6d4",
+    "semantic_hash": "2100d7efc453bde03b318f0329ecf6d4"
+  },
+  ".agents/skills/security-best-practices/SKILL.md": {
+    "mtime": 1782728871.1361268,
+    "ast_hash": "cf02e3fd229bbdb64c162925bfc2df95",
+    "semantic_hash": "cf02e3fd229bbdb64c162925bfc2df95"
+  },
+  ".agents/skills/security-best-practices/agents/openai.yaml": {
+    "mtime": 1782728871.1371267,
+    "ast_hash": "f60f7f5b7eb1296e1011d15105999d5f",
+    "semantic_hash": "f60f7f5b7eb1296e1011d15105999d5f"
+  },
+  ".agents/skills/security-best-practices/references/golang-general-backend-security.md": {
+    "mtime": 1782728871.138127,
+    "ast_hash": "efded3a93f9789f77c2270a6561cb082",
+    "semantic_hash": "efded3a93f9789f77c2270a6561cb082"
+  },
+  ".agents/skills/security-best-practices/references/javascript-express-web-server-security.md": {
+    "mtime": 1782728871.139241,
+    "ast_hash": "0744af922e62d5fc7a62ef273b8d2843",
+    "semantic_hash": "0744af922e62d5fc7a62ef273b8d2843"
+  },
+  ".agents/skills/security-best-practices/references/javascript-general-web-frontend-security.md": {
+    "mtime": 1782728871.1398125,
+    "ast_hash": "d880b5df9a5575fa9d74c8ace8c16e51",
+    "semantic_hash": "d880b5df9a5575fa9d74c8ace8c16e51"
+  },
+  ".agents/skills/security-best-practices/references/javascript-jquery-web-frontend-security.md": {
+    "mtime": 1782728871.1398125,
+    "ast_hash": "743e9dc2c9fc7e37a3a9c36777499c26",
+    "semantic_hash": "743e9dc2c9fc7e37a3a9c36777499c26"
+  },
+  ".agents/skills/security-best-practices/references/javascript-typescript-nextjs-web-server-security.md": {
+    "mtime": 1782728871.1408174,
+    "ast_hash": "c5db4d1db9cc882dcc72ed1b7d7c4905",
+    "semantic_hash": "c5db4d1db9cc882dcc72ed1b7d7c4905"
+  },
+  ".agents/skills/security-best-practices/references/javascript-typescript-react-web-frontend-security.md": {
+    "mtime": 1782728871.1418183,
+    "ast_hash": "2ea09beec7c2a8b630097fce092ea8d5",
+    "semantic_hash": "2ea09beec7c2a8b630097fce092ea8d5"
+  },
+  ".agents/skills/security-best-practices/references/javascript-typescript-vue-web-frontend-security.md": {
+    "mtime": 1782728871.1418183,
+    "ast_hash": "6ae64754400a793db0cb6fdcc1509d97",
+    "semantic_hash": "6ae64754400a793db0cb6fdcc1509d97"
+  },
+  ".agents/skills/security-best-practices/references/python-django-web-server-security.md": {
+    "mtime": 1782728871.142817,
+    "ast_hash": "7a016ddc24d00f5ff72f36532ef7f41d",
+    "semantic_hash": "7a016ddc24d00f5ff72f36532ef7f41d"
+  },
+  ".agents/skills/security-best-practices/references/python-fastapi-web-server-security.md": {
+    "mtime": 1782728871.142817,
+    "ast_hash": "e4b56076eecafac052486b7f1253e45b",
+    "semantic_hash": "e4b56076eecafac052486b7f1253e45b"
+  },
+  ".agents/skills/security-best-practices/references/python-flask-web-server-security.md": {
+    "mtime": 1782728871.1438172,
+    "ast_hash": "8103c0e208fc57a07504630b938001e1",
+    "semantic_hash": "8103c0e208fc57a07504630b938001e1"
+  },
+  ".agents/skills/ui-ux-pro-max/SKILL.md": {
+    "mtime": 1782729212.5987577,
+    "ast_hash": "bd7c18e3228d947e5fbd6f0ad60d0ee3",
+    "semantic_hash": "bd7c18e3228d947e5fbd6f0ad60d0ee3"
+  },
+  ".claude/skills/frontend-design/LICENSE.txt": {
+    "mtime": 1782728330.9389374,
+    "ast_hash": "29256199be2a609aac596980ffc11996",
+    "semantic_hash": "29256199be2a609aac596980ffc11996"
+  },
+  ".claude/skills/frontend-design/SKILL.md": {
+    "mtime": 1782728330.9399378,
+    "ast_hash": "f5c3db69b9c6a00578301dd0cbe90253",
+    "semantic_hash": "f5c3db69b9c6a00578301dd0cbe90253"
+  },
+  ".claude/skills/security-best-practices/LICENSE.txt": {
+    "mtime": 1782728871.1361268,
+    "ast_hash": "2100d7efc453bde03b318f0329ecf6d4",
+    "semantic_hash": "2100d7efc453bde03b318f0329ecf6d4"
+  },
+  ".claude/skills/security-best-practices/SKILL.md": {
+    "mtime": 1782728871.1361268,
+    "ast_hash": "cf02e3fd229bbdb64c162925bfc2df95",
+    "semantic_hash": "cf02e3fd229bbdb64c162925bfc2df95"
+  },
+  ".claude/skills/security-best-practices/agents/openai.yaml": {
+    "mtime": 1782728871.1371267,
+    "ast_hash": "f60f7f5b7eb1296e1011d15105999d5f",
+    "semantic_hash": "f60f7f5b7eb1296e1011d15105999d5f"
+  },
+  ".claude/skills/security-best-practices/references/golang-general-backend-security.md": {
+    "mtime": 1782728871.138127,
+    "ast_hash": "efded3a93f9789f77c2270a6561cb082",
+    "semantic_hash": "efded3a93f9789f77c2270a6561cb082"
+  },
+  ".claude/skills/security-best-practices/references/javascript-express-web-server-security.md": {
+    "mtime": 1782728871.139241,
+    "ast_hash": "0744af922e62d5fc7a62ef273b8d2843",
+    "semantic_hash": "0744af922e62d5fc7a62ef273b8d2843"
+  },
+  ".claude/skills/security-best-practices/references/javascript-general-web-frontend-security.md": {
+    "mtime": 1782728871.1398125,
+    "ast_hash": "d880b5df9a5575fa9d74c8ace8c16e51",
+    "semantic_hash": "d880b5df9a5575fa9d74c8ace8c16e51"
+  },
+  ".claude/skills/security-best-practices/references/javascript-jquery-web-frontend-security.md": {
+    "mtime": 1782728871.1398125,
+    "ast_hash": "743e9dc2c9fc7e37a3a9c36777499c26",
+    "semantic_hash": "743e9dc2c9fc7e37a3a9c36777499c26"
+  },
+  ".claude/skills/security-best-practices/references/javascript-typescript-nextjs-web-server-security.md": {
+    "mtime": 1782728871.1408174,
+    "ast_hash": "c5db4d1db9cc882dcc72ed1b7d7c4905",
+    "semantic_hash": "c5db4d1db9cc882dcc72ed1b7d7c4905"
+  },
+  ".claude/skills/security-best-practices/references/javascript-typescript-react-web-frontend-security.md": {
+    "mtime": 1782728871.1418183,
+    "ast_hash": "2ea09beec7c2a8b630097fce092ea8d5",
+    "semantic_hash": "2ea09beec7c2a8b630097fce092ea8d5"
+  },
+  ".claude/skills/security-best-practices/references/javascript-typescript-vue-web-frontend-security.md": {
+    "mtime": 1782728871.1418183,
+    "ast_hash": "6ae64754400a793db0cb6fdcc1509d97",
+    "semantic_hash": "6ae64754400a793db0cb6fdcc1509d97"
+  },
+  ".claude/skills/security-best-practices/references/python-django-web-server-security.md": {
+    "mtime": 1782728871.142817,
+    "ast_hash": "7a016ddc24d00f5ff72f36532ef7f41d",
+    "semantic_hash": "7a016ddc24d00f5ff72f36532ef7f41d"
+  },
+  ".claude/skills/security-best-practices/references/python-fastapi-web-server-security.md": {
+    "mtime": 1782728871.142817,
+    "ast_hash": "e4b56076eecafac052486b7f1253e45b",
+    "semantic_hash": "e4b56076eecafac052486b7f1253e45b"
+  },
+  ".claude/skills/security-best-practices/references/python-flask-web-server-security.md": {
+    "mtime": 1782728871.1438172,
+    "ast_hash": "8103c0e208fc57a07504630b938001e1",
+    "semantic_hash": "8103c0e208fc57a07504630b938001e1"
+  },
+  ".claude/skills/ui-ux-pro-max/SKILL.md": {
+    "mtime": 1782729212.5987577,
+    "ast_hash": "bd7c18e3228d947e5fbd6f0ad60d0ee3",
+    "semantic_hash": "bd7c18e3228d947e5fbd6f0ad60d0ee3"
+  },
+  "README.md": {
+    "mtime": 1782219419.5423715,
+    "ast_hash": "b11a4fc9d75ea5862efa40b2441c7c75",
+    "semantic_hash": "b11a4fc9d75ea5862efa40b2441c7c75"
+  },
+  "design-system/MASTER.md": {
+    "mtime": 1782730058.3404994,
+    "ast_hash": "c6bf0ae14bd37ceb9f16cee1084df120",
+    "semantic_hash": "c6bf0ae14bd37ceb9f16cee1084df120"
+  },
+  "design-system/publicburger/MASTER.md": {
+    "mtime": 1782729873.9720414,
+    "ast_hash": "93dc6df88b6f2117b29e64708521ade9",
+    "semantic_hash": "93dc6df88b6f2117b29e64708521ade9"
+  },
+  "index.html": {
+    "mtime": 1782746844.0325172,
+    "ast_hash": "4d9864e08f26e47441b13c89f1f657cb",
+    "semantic_hash": "4d9864e08f26e47441b13c89f1f657cb"
+  },
+  "LOGO MACELL.1980  DEF.-1.pdf": {
+    "mtime": 1782227551.884054,
+    "ast_hash": "f513cd48c71dd59d71561bca5394f17d",
+    "semantic_hash": "f513cd48c71dd59d71561bca5394f17d"
+  },
+  "FILIPPO/src/assets/react.svg": {
+    "mtime": 1782219419.5233727,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "LOGO MACELL.1980  DEF.-1.png": {
+    "mtime": 1782227856.6209877,
+    "ast_hash": "45182f61e329cbf86bb6129e1cb3957d",
+    "semantic_hash": "45182f61e329cbf86bb6129e1cb3957d"
+  },
+  "just-eat-logo-png_seeklogo-408326.png": {
+    "mtime": 1782222281.9618087,
+    "ast_hash": "027b3131a5c4e5c68de0fe5c2d8396c0",
+    "semantic_hash": "027b3131a5c4e5c68de0fe5c2d8396c0"
+  },
+  "kisspng-deliveroo-logo-brand-food-delivery-1713922910643.webp": {
+    "mtime": 1782222300.1728504,
+    "ast_hash": "8e54364e0f52d7d9fb4d3fefd430645b",
+    "semantic_hash": "8e54364e0f52d7d9fb4d3fefd430645b"
+  },
+  "logo non solo pane.jpg": {
+    "mtime": 1782226439.7351296,
+    "ast_hash": "29b66c5eca08b8fd4b49ac9918437a89",
+    "semantic_hash": "29b66c5eca08b8fd4b49ac9918437a89"
+  },
+  "menu-screen-1.jpeg": {
+    "mtime": 1782219419.5443728,
+    "ast_hash": "d42ad87c2987dc5a588433293d73abc3",
+    "semantic_hash": "d42ad87c2987dc5a588433293d73abc3"
+  },
+  "menu-screen-2.jpeg": {
+    "mtime": 1782219419.5463727,
+    "ast_hash": "e3155e156d6649b366aca7731f7fabea",
+    "semantic_hash": "e3155e156d6649b366aca7731f7fabea"
+  },
+  "public/deliveroo-logo.webp": {
+    "mtime": 1782222300.1728504,
+    "ast_hash": "8e54364e0f52d7d9fb4d3fefd430645b",
+    "semantic_hash": "8e54364e0f52d7d9fb4d3fefd430645b"
+  },
+  "public/just-eat-logo.png": {
+    "mtime": 1782222281.9618087,
+    "ast_hash": "027b3131a5c4e5c68de0fe5c2d8396c0",
+    "semantic_hash": "027b3131a5c4e5c68de0fe5c2d8396c0"
+  },
+  "public/logo-macelleria-test.png": {
+    "mtime": 1782227980.348,
+    "ast_hash": "a163927e9b2172042bc178e90c7e626f",
+    "semantic_hash": "a163927e9b2172042bc178e90c7e626f"
+  },
+  "public/logo-macelleria.png": {
+    "mtime": 1782228024.188,
+    "ast_hash": "c7d494458e1b09e8948e246f5fca3894",
+    "semantic_hash": "c7d494458e1b09e8948e246f5fca3894"
+  },
+  "public/logo-non-solo-pane.jpg": {
+    "mtime": 1782226808.8187084,
+    "ast_hash": "29b66c5eca08b8fd4b49ac9918437a89",
+    "semantic_hash": "29b66c5eca08b8fd4b49ac9918437a89"
+  },
+  "public/logo-public-512.png": {
+    "mtime": 1782219419.5493762,
+    "ast_hash": "e6f63c9569842af501d0777eec5fefcc",
+    "semantic_hash": "e6f63c9569842af501d0777eec5fefcc"
+  },
+  "public/logo-public-burger.png": {
+    "mtime": 1782219419.5493762,
+    "ast_hash": "5c27c3d079dcd05443f345eb61b09408",
+    "semantic_hash": "5c27c3d079dcd05443f345eb61b09408"
+  },
+  "public/logo-public-favicon.png": {
+    "mtime": 1782219419.5493762,
+    "ast_hash": "09293f69943a08eb810c44a19fa38b2c",
+    "semantic_hash": "09293f69943a08eb810c44a19fa38b2c"
+  }
+}

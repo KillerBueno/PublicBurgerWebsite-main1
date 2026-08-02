@@ -10,6 +10,13 @@ interface Props {
   onUpdateQty?: (id: string, delta: number) => void;
   onClose: () => void;
   onOrderSent?: (items: CartItem[]) => void;
+  disabledProducts?: string[];
+}
+
+function productName(item: CartItem): string | null {
+  if (item.type === 'burger') return item.burger.name;
+  if (item.type === 'fry') return item.fry.name;
+  return null;
 }
 
 type OrderType = 'asporto' | 'consegna';
@@ -207,7 +214,7 @@ function ItemCard({
   );
 }
 
-export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrderSent }: Props) {
+export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrderSent, disabledProducts = [] }: Props) {
   const [step, setStep] = useState<Step>('cart');
   const [orderType, setOrderType] = useState<OrderType>('asporto');
   const [name, setName] = useState('');
@@ -252,6 +259,14 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   }
 
   function handleWhatsApp() {
+    const disabledInCart = items.find(i => {
+      const name = productName(i);
+      return name && disabledProducts.includes(name);
+    });
+    if (disabledInCart) {
+      setValidationError(`${productName(disabledInCart)} non è più disponibile — rimuovilo dal carrello per continuare.`);
+      return;
+    }
     if (!canSubmit) {
       if (orderType === 'asporto') {
         setValidationError(!name.trim() && !time.trim() ? 'Inserisci nome e orario per procedere.' : !name.trim() ? 'Inserisci il tuo nome per il ritiro.' : 'Inserisci l\'orario preferito.');

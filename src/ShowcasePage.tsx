@@ -46,7 +46,9 @@ function Ticker({ bg, text, items }: { bg: string; text: string; items: string[]
   }, []);
 
   // Scroll left at 60px/s — when one full copy has passed, reset to 0 (seamless)
+  // Skip while tab is hidden: avoids pointless re-renders/paint draining battery in background
   useAnimationFrame((_, delta) => {
+    if (document.hidden) return;
     const next = x.get() - (60 * delta) / 1000;
     if (halfWidth.current > 0 && next <= -halfWidth.current) {
       x.set(next + halfWidth.current);
@@ -92,14 +94,14 @@ function OrderCounter({ hidden }: { hidden: boolean }) {
   // Sync counter from Supabase on mount (admin may have confirmed orders)
   useEffect(() => {
     if (!user?.access_token) return;
-    import('./lib/profiles').then(({ fetchProfileByEmail }) =>
-      fetchProfileByEmail(user.access_token, user.email)
-    ).then(profile => {
-      if (!profile) return;
-      const serverCount = profile.order_count_override ?? 0;
+    Promise.all([
+      import('./lib/profiles').then(({ fetchProfileByEmail }) => fetchProfileByEmail(user.access_token, user.email)),
+      import('./lib/orders').then(({ fetchUserOrderCount }) => fetchUserOrderCount(user.access_token, user.email)),
+    ]).then(([profile, realCount]) => {
+      const serverCount = profile?.order_count_override ?? realCount;
       import('./lib/gamification').then(({ setOrderCount }) => setOrderCount(serverCount));
       setCount(serverCount);
-    }).catch(() => {});
+    }).catch(err => console.error('OrderCounter sync failed', err));
   }, [user?.email]);
 
   if (!user) return null;
@@ -783,8 +785,8 @@ function isOpen(): boolean {
   return mins >= open;
 }
 
-function OpeningHours() {
-  const open = isOpen();
+function OpeningHours({ config }: { config: OpeningHours | null }) {
+  const open = config ? isCurrentlyOpen(config) : isOpen();
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -1257,10 +1259,10 @@ export default function ShowcasePage() {
       <AnimatePresence>
         {openingHours && !isCurrentlyOpen(openingHours) && !closedBannerDismissed && (
           <motion.div
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm"
-            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-[90] w-[92%] max-w-sm"
+            initial={{ opacity: 0, y: -12, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+            exit={{ opacity: 0, y: -12, scale: 0.97 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="bg-[#1a0a10] text-white rounded-2xl px-5 py-4 shadow-2xl flex items-center gap-4">
@@ -1552,7 +1554,7 @@ export default function ShowcasePage() {
           {/* Bottom — orari + Burger Lovers, sempre visibile */}
           <div className="shrink-0 px-6 md:px-12 pb-10 md:pb-14 flex items-end justify-between">
             <div>
-              <OpeningHours />
+              <OpeningHours config={openingHours} />
               <h1 className="pb-display text-[13vw] md:text-[8.5vw] text-white leading-[0.85] tracking-wide uppercase overflow-hidden mt-2">
                 {'Burger\nLovers'.split('\n').map((line, li) => (
                   <span key={li} className="block" style={{ overflow: li === 1 ? 'visible' : 'hidden' }}>
@@ -1973,6 +1975,7 @@ export default function ShowcasePage() {
               onRemove={removeItem}
               onUpdateQty={updateQty}
               onClose={() => setCartOpen(false)}
+              disabledProducts={disabledProducts}
               onOrderSent={(sentItems) => {
                 try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
                 setLastOrder(sentItems);

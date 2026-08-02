@@ -2,6 +2,9 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ShowcasePage from './ShowcasePage';
 import { handleAuthCallback } from './lib/supabase';
+import CookieBanner, { initGSI } from './CookieBanner';
+
+initGSI();
 
 const MenuDisplay = lazy(() => import('./MenuDisplay'));
 const LegalPage   = lazy(() => import('./LegalPage'));
@@ -9,6 +12,7 @@ const LoginPage   = lazy(() => import('./LoginPage'));
 const AdminPage   = lazy(() => import('./AdminPage'));
 
 const AUTH_KEY = 'pb_auth';
+const SITE_PASSWORD = (import.meta.env.VITE_SITE_PASSWORD as string | undefined) || 'Public1010';
 
 const LOADING_MESSAGES = [
   'ACCENDENDO\nLA GRIGLIA',
@@ -101,13 +105,6 @@ function SplashScreen({ onDone }: { onDone: () => void }) {
 export default function App() {
   const path = window.location.pathname;
 
-  if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
-  if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
-  if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
-  if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
-  if (path === '/terms')   return <Suspense fallback={null}><LegalPage page="terms" /></Suspense>;
-  if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
-
   const [splash, setSplash] = useState(() => sessionStorage.getItem('pb_splash_done') !== '1');
   const [authed, setAuthed] = useState(() => localStorage.getItem(AUTH_KEY) === '1' || sessionStorage.getItem(AUTH_KEY) === '1');
   const [pass, setPass] = useState('');
@@ -138,7 +135,7 @@ export default function App() {
   if (!authed) {
     function handleLogin(e: React.FormEvent) {
       e.preventDefault();
-      if (pass === 'Public1010') {
+      if (pass === SITE_PASSWORD) {
         localStorage.setItem(AUTH_KEY, '1');
         setAuthed(true);
       } else {
@@ -177,6 +174,13 @@ export default function App() {
     );
   }
 
+  if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
+  if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
+  if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
+  if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
+  if (path === '/terms')   return <Suspense fallback={null}><LegalPage page="terms" /></Suspense>;
+  if (path === '/login')   return <Suspense fallback={null}><LoginPage /></Suspense>;
+
   return (
     <>
       {splash && <SplashScreen onDone={handleSplashDone} />}
@@ -206,6 +210,7 @@ export default function App() {
         )}
       </AnimatePresence>
       <ShowcasePage />
+      <CookieBanner />
     </>
   );
 }
