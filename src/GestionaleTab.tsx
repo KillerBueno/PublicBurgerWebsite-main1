@@ -40,8 +40,10 @@ function Field({ label, children, wide }: { label: string; children: ReactNode; 
   );
 }
 
-const inputCls =
-  'w-full border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-white';
+// Base senza larghezza: da usare quando il campo sta in una riga flex
+const inputBase =
+  'border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-white';
+const inputCls = `w-full ${inputBase}`;
 
 function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
@@ -725,22 +727,24 @@ function AcquistiSection({ adminToken, month, months, setMonth, purchases, setPu
                     const c = calcLines[i];
                     return (
                       <div key={i} className="flex items-center gap-2">
-                        <input
-                          type="number" step="0.01" inputMode="decimal" value={line.amount}
-                          onChange={e => setLine(i, { amount: e.target.value })}
-                          className={`${inputCls} flex-1`} placeholder="0,00"
-                        />
+                        <div className="relative flex-1 min-w-0">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-black/30 text-sm pointer-events-none">€</span>
+                          <input
+                            type="number" step="0.01" inputMode="decimal" value={line.amount}
+                            onChange={e => setLine(i, { amount: e.target.value })}
+                            className={`${inputBase} w-full pl-7 no-spinner`} placeholder="0,00"
+                          />
+                        </div>
                         <select value={line.rate} onChange={e => setLine(i, { rate: e.target.value })}
-                          className={`${inputCls} w-24 shrink-0`}>
+                          className={`${inputBase} w-[86px] shrink-0`}>
                           {VAT_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
                         </select>
-                        <span className="w-20 shrink-0 text-right text-[11px] text-black/40 tabular-nums">
+                        <span className="w-16 shrink-0 text-right text-[11px] text-black/40 tabular-nums">
                           {c.vat > 0 ? `+${eur(c.vat)}` : '—'}
                         </span>
-                        {form.lines.length > 1 && (
-                          <button type="button" onClick={() => removeLine(i)}
-                            className="w-6 shrink-0 text-black/20 hover:text-red-400 text-base leading-none">×</button>
-                        )}
+                        <button type="button" onClick={() => removeLine(i)}
+                          disabled={form.lines.length === 1}
+                          className="w-5 shrink-0 text-black/20 hover:text-red-400 disabled:opacity-0 disabled:cursor-default text-base leading-none">×</button>
                       </div>
                     );
                   })}

@@ -5,6 +5,17 @@ html {
   text-size-adjust: 100%;
 }
 
+/* Campi importo del gestionale: le frecce rubano spazio nelle colonne strette */
+.no-spinner {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 @keyframes ticker-enter {
   from { transform: translateX(100vw); }
   to   { transform: translateX(-100%); }
