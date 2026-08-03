@@ -338,7 +338,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
         setLocationStatus('denied');
         setLocationError(
           err.code === 1
-            ? 'iPhone/Safari ha bloccato la posizione per questo sito. Tocca “aA” nella barra indirizzi › Impostazioni sito web › Posizione › Consenti — oppure scrivi l\'indirizzo qui sotto.'
+            ? 'Safari ha bloccato la posizione. Su iPhone: Impostazioni › Safari › (sezione Privacy e sicurezza) › Posizione › “Chiedi”, poi riprova. Oppure scrivi l\'indirizzo qui sotto.'
             : err.code === 3
               ? 'Il GPS ci ha messo troppo. Riprova, oppure scrivi l\'indirizzo qui sotto.'
               : 'Posizione non disponibile. Riprova, oppure scrivi l\'indirizzo qui sotto.',
