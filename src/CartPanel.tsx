@@ -329,31 +329,22 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     setLocationStatus('loading');
     setQuote(null);
 
-    function fail(err: GeolocationPositionError) {
-      setLocationStatus('denied');
-      const detail =
-        err.code === 1 ? 'permesso negato' :
-        err.code === 2 ? 'posizione non disponibile' :
-        err.code === 3 ? 'tempo scaduto' : 'errore';
-      setLocationError(
-        err.code === 1
-          ? `Permesso negato (${detail}). Su iPhone: Impostazioni > Privacy > Localizzazione > Safari = "Chiedi/Consenti". Oppure scrivi l'indirizzo qui sotto.`
-          : `GPS non riuscito (${detail}). Riprova, o scrivi l'indirizzo qui sotto.`,
-      );
-    }
-
-    // Prima prova rapida a bassa accuratezza (più affidabile su iOS Safari),
-    // poi se fallisce ritenta con l'alta accuratezza e più tempo.
+    // Una sola chiamata, dentro il tap: un secondo tentativo lanciato dal
+    // callback di errore perde il "gesto utente" e iOS Safari lo rifiuta
+    // restituendo un falso "permesso negato".
     navigator.geolocation.getCurrentPosition(
       onLocationOk,
-      () => {
-        navigator.geolocation.getCurrentPosition(
-          onLocationOk,
-          fail,
-          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+      (err) => {
+        setLocationStatus('denied');
+        setLocationError(
+          err.code === 1
+            ? 'iPhone/Safari ha bloccato la posizione per questo sito. Tocca “aA” nella barra indirizzi › Impostazioni sito web › Posizione › Consenti — oppure scrivi l\'indirizzo qui sotto.'
+            : err.code === 3
+              ? 'Il GPS ci ha messo troppo. Riprova, oppure scrivi l\'indirizzo qui sotto.'
+              : 'Posizione non disponibile. Riprova, oppure scrivi l\'indirizzo qui sotto.',
         );
       },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
     );
   }
 
