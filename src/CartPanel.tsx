@@ -24,6 +24,9 @@ type Step = 'cart' | 'checkout';
 
 const WHATSAPP_NUMBER = '393420006928';
 
+// Prezzo mostrato senza zeri finali (coerente con il sito): 11 → 11, 0.5 → 0,5, 16.5 → 16,5.
+const eur = (n: number) => n.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
+
 function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string, locationLink?: string | null, manualAddress?: string): string {
   const SIZE: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
   const total = items.reduce((s, i) => s + i.totalPrice, 0);
@@ -185,7 +188,7 @@ function ItemCard({
 
         {/* Qty + price */}
         <div className="flex flex-col items-end gap-1.5 shrink-0">
-          <span className="text-[16px] font-bold text-[#A8456B] tabular-nums">€{item.totalPrice.toFixed(2)}</span>
+          <span className="text-[16px] font-bold text-[#A8456B] tabular-nums">€{eur(item.totalPrice)}</span>
           {canQty ? (
             <QtyControl
               qty={item.qty as number}
@@ -453,7 +456,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
               <div className="shrink-0 bg-white border-t border-black/6 px-5 pt-4 pb-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-[14px] font-bold uppercase tracking-wide text-black/40">Totale</span>
-                  <span className="text-[28px] font-bold text-[#A8456B] tabular-nums leading-none">€{total.toFixed(2)}</span>
+                  <span className="text-[28px] font-bold text-[#A8456B] tabular-nums leading-none">€{eur(total)}</span>
                 </div>
                 <button
                   onClick={() => setStep('checkout')}
@@ -587,12 +590,12 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                       <span className="text-[12px] text-black/60 font-medium truncate">
                         {item.type === 'burger' ? item.burger.name : item.type === 'fry' ? `${item.fry.name} ×${item.qty}` : `${(item as CartExtra).name} ×${item.qty}`}
                       </span>
-                      <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">€{item.totalPrice.toFixed(2)}</span>
+                      <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">€{eur(item.totalPrice)}</span>
                     </div>
                   ))}
                   <div className="border-t border-black/6 pt-2 mt-2 flex items-center justify-between">
                     <span className="text-[13px] font-bold text-black/50 uppercase tracking-wide">Totale</span>
-                    <span className="text-[20px] font-bold text-[#A8456B] tabular-nums leading-none">€{total.toFixed(2)}</span>
+                    <span className="text-[20px] font-bold text-[#A8456B] tabular-nums leading-none">€{eur(total)}</span>
                   </div>
                 </div>
               </div>

@@ -29,7 +29,8 @@ function Reveal({ children, delay = 0, className = '' }: { children: React.React
   return <div ref={ref} className={`pb-reveal ${className}`}>{children}</div>;
 }
 
-const fmt = (price: number) => price % 1 === 0 ? `€${price}` : `€${price.toFixed(2).replace('.', ',')}`;
+// Prezzo senza zeri finali: 9 → €9, 0.5 → €0,5, 16.5 → €16,5, 4 → €4.
+const fmt = (price: number) => `€${price.toFixed(2).replace(/\.?0+$/, '').replace('.', ',')}`;
 
 function Ticker({ bg, text, items }: { bg: string; text: string; items: string[] }) {
   const halfRef = useRef<HTMLDivElement>(null);
