@@ -159,16 +159,22 @@ function FryCard({ fry, onChange, onDelete }: { fry: FryDef; onChange: (f: FryDe
 
 function DrinkCard({ drink, onChange, onDelete }: { drink: DrinkItem; onChange: (d: DrinkItem) => void; onDelete: () => void }) {
   return (
-    <div className="bg-white rounded-2xl border border-black/6 shadow-sm p-4 flex items-end gap-3">
-      <div className="flex-1">
-        <label className={labelCls}>Nome</label>
+    <div className="bg-white rounded-2xl border border-black/6 shadow-sm p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
         <input value={drink.name} onChange={e => onChange({ ...drink, name: e.target.value })} placeholder="Nome bibita" className={inputCls} />
+        <button onClick={onDelete} className="shrink-0 text-[9px] uppercase tracking-widest text-red-400 hover:text-red-600 mt-2">Elimina</button>
       </div>
-      <div className="w-24">
-        <label className={labelCls}>Prezzo (€)</label>
-        <input type="number" step="0.5" min="0" value={drink.price} onChange={e => onChange({ ...drink, price: parseFloat(e.target.value) || 0 })} className={inputCls} />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={labelCls}>Prezzo singolo (€)</label>
+          <input type="number" step="0.5" min="0" value={drink.price} onChange={e => onChange({ ...drink, price: parseFloat(e.target.value) || 0 })} className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>Suppl. nel combo (€)</label>
+          <input type="number" step="0.5" min="0" value={drink.comboExtra ?? 0} onChange={e => onChange({ ...drink, comboExtra: parseFloat(e.target.value) || 0 })} className={inputCls} />
+        </div>
       </div>
-      <button onClick={onDelete} className="shrink-0 text-[9px] uppercase tracking-widest text-red-400 hover:text-red-600 pb-3">Elimina</button>
+      <p className="text-[10px] text-black/30">0 = inclusa nel combo. Es. birre: +€1. Tutte le bibite compaiono nella scelta del combo.</p>
     </div>
   );
 }

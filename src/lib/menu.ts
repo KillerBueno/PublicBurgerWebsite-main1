@@ -17,10 +17,12 @@ import {
 
 export type { BurgerDef, FryDef };
 
-/** Bibita venduta singolarmente nella sezione Drinks del sito. */
+/** Bibita: venduta singolarmente (price) e scegliibile nel combo (comboExtra). */
 export interface DrinkItem {
   name: string;
   price: number;
+  /** Supplemento se scelta come bibita del combo. 0/assente = inclusa. */
+  comboExtra?: number;
 }
 
 export interface CustomMenu {
@@ -69,7 +71,7 @@ export const DEFAULT_DRINKS: DrinkItem[] = [
   { name: 'Fuze Tea Pesca', price: 2.5 },
   { name: 'Acqua Liscia', price: 1 },
   { name: 'Acqua Frizzante', price: 1 },
-  { name: 'Forst 0,33', price: 3.5 },
+  { name: 'Forst 0,33', price: 3.5, comboExtra: 1 },
 ];
 
 // Salse vendute a parte: storicamente hardcoded (SALSE_LIST) in ShowcasePage.

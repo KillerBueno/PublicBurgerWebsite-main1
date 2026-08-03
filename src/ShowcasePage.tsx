@@ -1968,6 +1968,7 @@ export default function ShowcasePage() {
               disabledIngredients={disabledIngredients}
               priceOverrides={priceOverrides}
               extras={menu.extras}
+              drinks={menu.drinks}
             />
           </Suspense>
         )}

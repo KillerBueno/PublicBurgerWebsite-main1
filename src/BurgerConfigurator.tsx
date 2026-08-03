@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ALL_EXTRAS, DRINKS } from './menuData';
+import { ALL_EXTRAS } from './menuData';
 import type { BurgerDef, BurgerSize } from './menuData';
 import type { CartBurger } from './cartTypes';
 import type { PriceOverrides } from './lib/settings';
+import { DEFAULT_DRINKS, type DrinkItem } from './lib/menu';
 
 interface Props {
   burger: BurgerDef;
@@ -14,6 +15,8 @@ interface Props {
   priceOverrides?: PriceOverrides;
   /** Aggiunte extra offerte; default alla lista base di menuData. */
   extras?: string[];
+  /** Bibite scegliibili nel combo; default alla lista base. */
+  drinks?: DrinkItem[];
 }
 
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
@@ -43,7 +46,8 @@ function buildSteps(burger: BurgerDef, isCombo: boolean, hasPresize: boolean): S
   return [...s, 'combo', 'remove', 'extras', ...(isCombo ? ['drink' as Step] : [])];
 }
 
-export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [], priceOverrides = {}, extras: extraOptions = ALL_EXTRAS }: Props) {
+export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [], priceOverrides = {}, extras: extraOptions = ALL_EXTRAS, drinks: drinkOptions = DEFAULT_DRINKS }: Props) {
+  const comboExtraOf = (name: string | null) => (name ? drinkOptions.find(d => d.name === name)?.comboExtra ?? 0 : 0);
   const [size, setSize] = useState<BurgerSize>(preselectedSize ?? 'single');
   const [combo, setCombo] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -75,19 +79,18 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
   function calcPrice() {
     let base = getBasePrice(size);
     if (combo) base += burger.combo;
-    if (drink) base += DRINKS.find((d) => d.name === drink)?.extra ?? 0;
+    if (drink) base += comboExtraOf(drink);
     base += extras.length;
     return base;
   }
 
   function handleConfirm() {
-    const d = drink ? DRINKS.find((x) => x.name === drink) : null;
     onConfirm({
       id: crypto.randomUUID(), type: 'burger', burger,
       size: burger.prices ? size : null,
       combo, removed, extras,
       drink: combo ? drink : null,
-      drinkExtra: d?.extra ?? 0,
+      drinkExtra: combo ? comboExtraOf(drink) : 0,
       totalPrice: calcPrice(),
     });
     onClose();
@@ -301,22 +304,22 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                 <div>
                   <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-4">Scegli la bibita</p>
                   <div className="space-y-2">
-                    {DRINKS.map((d) => (
+                    {drinkOptions.map((d) => {
+                      const extra = d.comboExtra ?? 0;
+                      return (
                       <button
                         key={d.name}
                         onClick={() => {
-                          const selectedDrink = d.name;
-                          const drinkExtra = d.extra ?? 0;
                           let base = getBasePrice(size);
                           base += burger.combo;
-                          base += drinkExtra;
+                          base += extra;
                           base += extras.length;
                           onConfirm({
                             id: crypto.randomUUID(), type: 'burger', burger,
                             size: burger.prices ? size : null,
                             combo: true, removed, extras,
-                            drink: selectedDrink,
-                            drinkExtra,
+                            drink: d.name,
+                            drinkExtra: extra,
                             totalPrice: base,
                           });
                           onClose();
@@ -324,11 +327,12 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                         className="w-full flex items-center justify-between px-5 py-4 rounded-2xl border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group"
                       >
                         <span className="text-sm uppercase tracking-widest font-medium text-black/70 group-hover:text-[#1a0a10]">{d.name}</span>
-                        {d.extra > 0
-                          ? <span className="text-sm text-black/30 group-hover:text-[#CF6990] transition-colors">+€{d.extra}</span>
+                        {extra > 0
+                          ? <span className="text-sm text-black/30 group-hover:text-[#CF6990] transition-colors">+€{extra}</span>
                           : <span className="text-[10px] text-black/20 uppercase tracking-wider">inclusa</span>}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
