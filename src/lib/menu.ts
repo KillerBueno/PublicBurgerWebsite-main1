@@ -37,9 +37,8 @@ export interface CustomMenu {
 
 // Doppio e triplo sono incrementi standard sul prezzo del singolo: l'editor
 // admin fa modificare solo il singolo, questi ricreano gli altri due.
-// Verificato: +4 / +7,50 riproduce esattamente tutti i prezzi taglia attuali
-// (es. 9 → 13 / 16,50, 8 → 12 / 15,50).
-export const SIZE_ADD = { double: 4, triple: 7.5 } as const;
+// Costo fisso taglia: +3,50 per il doppio, +6 per il triplo.
+export const SIZE_ADD = { double: 3.5, triple: 6 } as const;
 
 /** Espande un prezzo singolo nella terna taglia con gli incrementi standard. */
 export function sizesFromSingle(single: number) {
