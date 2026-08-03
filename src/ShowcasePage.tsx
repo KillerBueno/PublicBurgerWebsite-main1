@@ -1185,14 +1185,22 @@ export default function ShowcasePage() {
     if (item.type === 'burger') showToast(item.burger.name);
   }
 
+  // Prezzo effettivo di un contorno: l'admin può sovrascriverlo dal tab Menu.
+  // Va usato ovunque (lista, aggiunta, rimozione) o il prezzo mostrato e quello
+  // addebitato divergono.
+  function fryPrice(fry: typeof FRIES[0]) {
+    return priceOverrides[fry.name]?.fixed ?? fry.price;
+  }
+
   function addFry(fry: typeof FRIES[0], sauces: string[]) {
+    const unit = fryPrice(fry);
     setCart((prev) => {
       const existing = prev.find((i) => i.type === 'fry' && i.fry.name === fry.name) as CartFry | undefined;
       const next = existing
         ? prev.map((i) => i.id === existing.id
-            ? { ...existing, qty: existing.qty + 1, totalPrice: (existing.qty + 1) * fry.price }
+            ? { ...existing, qty: existing.qty + 1, totalPrice: (existing.qty + 1) * unit }
             : i)
-        : [...prev, { id: crypto.randomUUID(), type: 'fry', fry, qty: 1, totalPrice: fry.price } as CartFry];
+        : [...prev, { id: crypto.randomUUID(), type: 'fry', fry, qty: 1, totalPrice: unit } as CartFry];
       // add selected sauces as extras
       const sauceItems: CartExtra[] = sauces.map((name) => ({
         id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0.5,
@@ -1248,7 +1256,7 @@ export default function ShowcasePage() {
       const existing = prev.find((i) => i.type === 'fry' && (i as CartFry).fry.name === fry.name) as CartFry | undefined;
       if (!existing) return prev;
       if (existing.qty <= 1) return prev.filter((i) => i.id !== existing.id);
-      return prev.map((i) => i.id === existing.id ? { ...existing, qty: existing.qty - 1, totalPrice: (existing.qty - 1) * fry.price } : i);
+      return prev.map((i) => i.id === existing.id ? { ...existing, qty: existing.qty - 1, totalPrice: (existing.qty - 1) * fryPrice(fry) } : i);
     });
   }
 
@@ -1667,7 +1675,7 @@ export default function ShowcasePage() {
                       <AllergenTag allergens={f.allergens} />
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(f.price)}</span>
+                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(fryPrice(f))}</span>
                       {fryQty > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeFry(f); }}
@@ -2006,7 +2014,10 @@ export default function ShowcasePage() {
           <NuggetsModal
             onConfirm={(label, price, sauces) => {
               setCart((prev) => {
-                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price, allergens: [1, 3, 6, 10] }, qty: 1, totalPrice: price };
+                // Allergeni presi da menuData: erano hardcoded e fermi ai valori
+                // pre-correzione del commit 21517be (mancavano latte/sedano/sesamo).
+                const nuggetAllergens = FRIES.find(f => f.name === 'Nuggets')?.allergens ?? [];
+                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price, allergens: nuggetAllergens }, qty: 1, totalPrice: price };
                 const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0.5 }));
                 return [...prev, item, ...sauceItems];
               });
