@@ -3,6 +3,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform, animate } from '
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
+import { getDeliveryQuote, type DeliveryQuote } from './lib/delivery';
 
 interface Props {
   items: CartItem[];
@@ -27,9 +28,10 @@ const WHATSAPP_NUMBER = '393420006928';
 // Prezzo mostrato senza zeri finali (coerente con il sito): 11 → 11, 0.5 → 0,5, 16.5 → 16,5.
 const eur = (n: number) => n.toFixed(2).replace(/\.?0+$/, '').replace('.', ',');
 
-function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string, locationLink?: string | null, manualAddress?: string): string {
+function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: string, time: string, locationLink?: string | null, manualAddress?: string, deliveryFee = 0): string {
   const SIZE: Record<string, string> = { single: 'Singolo', double: 'Doppio', triple: 'Triplo' };
-  const total = items.reduce((s, i) => s + i.totalPrice, 0);
+  const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
+  const total = subtotal + deliveryFee;
 
   const lines: string[] = [];
   lines.push('Ciao! Ordine Public Burger:');
@@ -52,6 +54,10 @@ function buildWhatsAppMessage(items: CartItem[], orderType: OrderType, name: str
   }
 
   lines.push('');
+  if (deliveryFee > 0) {
+    lines.push(`Subtotale: EUR ${subtotal.toFixed(2)}`);
+    lines.push(`Consegna: EUR ${deliveryFee.toFixed(2)}`);
+  }
   lines.push(`Totale: EUR ${total.toFixed(2)}`);
   lines.push('');
 
@@ -225,14 +231,23 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   const [locationLink, setLocationLink] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ok' | 'denied'>('idle');
   const [manualAddress, setManualAddress] = useState('');
+  const [quote, setQuote] = useState<DeliveryQuote | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
-  const total = items.reduce((s, i) => s + i.totalPrice, 0);
+  const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
   const user = getStoredUser();
 
+  // Tariffa di consegna: solo su consegna con GPS dentro la zona servita
+  const deliveryFee = orderType === 'consegna' && quote?.deliverable ? (quote.fee ?? 0) : 0;
+  const total = subtotal + deliveryFee;
+
   const hasLocation = locationStatus === 'ok' || manualAddress.trim().length > 0;
+  // Fuori zona (>19 min): non si può ordinare in consegna
+  const outOfZone = orderType === 'consegna' && quote !== null && !quote.deliverable;
   const canSubmit =
     time.trim().length > 0 &&
+    !outOfZone &&
     (orderType === 'asporto' ? name.trim().length > 0 : hasLocation);
 
   // Blocca lo scroll della pagina sotto mentre il pannello è aperto. Senza
@@ -279,11 +294,16 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
 
   function requestLocation() {
     setLocationStatus('loading');
+    setQuote(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        const link = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-        setLocationLink(link);
+        const { latitude, longitude } = pos.coords;
+        setLocationLink(`https://maps.google.com/?q=${latitude},${longitude}`);
         setLocationStatus('ok');
+        setQuoteLoading(true);
+        getDeliveryQuote(latitude, longitude)
+          .then(setQuote)
+          .finally(() => setQuoteLoading(false));
       },
       () => setLocationStatus('denied'),
       { timeout: 10000 },
@@ -302,13 +322,15 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     if (!canSubmit) {
       if (orderType === 'asporto') {
         setValidationError(!name.trim() && !time.trim() ? 'Inserisci nome e orario per procedere.' : !name.trim() ? 'Inserisci il tuo nome per il ritiro.' : 'Inserisci l\'orario preferito.');
+      } else if (outOfZone) {
+        setValidationError('Zona non servita: la consegna richiede più di 19 minuti. Prova con l\'asporto.');
       } else {
         setValidationError(!hasLocation && !time.trim() ? 'Inserisci posizione e orario per procedere.' : !hasLocation ? 'Condividi la posizione o inserisci l\'indirizzo.' : 'Inserisci l\'orario preferito.');
       }
       return;
     }
     setValidationError(null);
-    const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim());
+    const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim(), deliveryFee);
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     const waWindow = window.open(url, '_blank');
     if (waWindow) setTimeout(() => waWindow.close(), 2000);
@@ -513,9 +535,41 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                     >
                       <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">La tua posizione</p>
                       {locationStatus === 'ok' ? (
-                        <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-                          <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                          <span className="text-[12px] font-semibold text-green-700">Posizione acquisita — verrà inviata su WhatsApp</span>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2.5 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+                            <svg className="w-4 h-4 text-green-500 shrink-0" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                            <span className="text-[12px] font-semibold text-green-700">Posizione acquisita — verrà inviata su WhatsApp</span>
+                          </div>
+
+                          {quoteLoading && (
+                            <div className="flex items-center gap-2.5 bg-black/3 rounded-xl px-4 py-3">
+                              <span className="w-4 h-4 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin shrink-0" />
+                              <span className="text-[12px] text-black/45">Calcolo della tariffa di consegna…</span>
+                            </div>
+                          )}
+
+                          {quote && quote.deliverable && (
+                            <div className="flex items-center justify-between bg-[#FBE8EF]/60 border border-[#CF6990]/25 rounded-xl px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[16px]">🛵</span>
+                                <span className="text-[12px] text-black/55">
+                                  ~{quote.minutes} min di consegna
+                                </span>
+                              </div>
+                              <span className="text-[13px] font-bold text-[#A8456B]">
+                                {quote.fee === 0 ? 'Gratis' : `€${eur(quote.fee ?? 0)}`}
+                              </span>
+                            </div>
+                          )}
+
+                          {quote && !quote.deliverable && (
+                            <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                              <span className="text-[16px]">🚫</span>
+                              <span className="text-[12px] font-semibold text-red-600">
+                                Zona non servita (~{quote.minutes} min, oltre il limite di 19). Scegli l'asporto.
+                              </span>
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <>
@@ -593,7 +647,19 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                       <span className="text-[12px] font-bold text-[#1a0a10] tabular-nums shrink-0">€{eur(item.totalPrice)}</span>
                     </div>
                   ))}
-                  <div className="border-t border-black/6 pt-2 mt-2 flex items-center justify-between">
+                  {deliveryFee > 0 && (
+                    <div className="border-t border-black/6 pt-2 mt-2 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] text-black/45">Subtotale</span>
+                        <span className="text-[12px] font-semibold text-black/60 tabular-nums">€{eur(subtotal)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[12px] text-black/45">Consegna{quote ? ` (~${quote.minutes} min)` : ''}</span>
+                        <span className="text-[12px] font-semibold text-black/60 tabular-nums">€{eur(deliveryFee)}</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className={`flex items-center justify-between ${deliveryFee > 0 ? 'pt-1' : 'border-t border-black/6 pt-2 mt-2'}`}>
                     <span className="text-[13px] font-bold text-black/50 uppercase tracking-wide">Totale</span>
                     <span className="text-[20px] font-bold text-[#A8456B] tabular-nums leading-none">€{eur(total)}</span>
                   </div>
