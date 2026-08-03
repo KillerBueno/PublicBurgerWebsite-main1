@@ -108,13 +108,14 @@ export function isCurrentlyOpen(config: OpeningHours): boolean {
  */
 export function nextOrderSlots(
   config: OpeningHours | null,
-  leadMin = 20,
+  leadMin = 25,
   stepMin = 15,
   horizonMin = 12 * 60,
 ): string[] {
+  // Primo slot = adesso + preparazione, arrotondato ai 5 min (es. 21:00 -> 21:25).
   const start = new Date(Date.now() + leadMin * 60000);
-  const rem = start.getMinutes() % stepMin;
-  if (rem) start.setMinutes(start.getMinutes() + (stepMin - rem));
+  const rem5 = start.getMinutes() % 5;
+  if (rem5) start.setMinutes(start.getMinutes() + (5 - rem5));
   start.setSeconds(0, 0);
 
   const noHours = !config || !config.enabled || config.manual_close;

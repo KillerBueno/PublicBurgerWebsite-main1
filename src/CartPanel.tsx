@@ -302,6 +302,16 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     }
   }, []);
 
+  function onLocationOk(pos: GeolocationPosition) {
+    const { latitude, longitude } = pos.coords;
+    setLocationLink(`https://maps.google.com/?q=${latitude},${longitude}`);
+    setLocationStatus('ok');
+    setQuoteLoading(true);
+    getDeliveryQuote(latitude, longitude)
+      .then(setQuote)
+      .finally(() => setQuoteLoading(false));
+  }
+
   function requestLocation() {
     setLocationError(null);
     if (!('geolocation' in navigator)) {
@@ -309,29 +319,41 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
       setLocationError('Il tuo browser non supporta il GPS. Inserisci l\'indirizzo qui sotto.');
       return;
     }
+    // Il GPS funziona solo su origine sicura (https): se sei su http è bloccato
+    if (window.isSecureContext === false) {
+      setLocationStatus('denied');
+      setLocationError('Connessione non sicura (http). Apri il sito su https://publicburger.it, oppure scrivi l\'indirizzo.');
+      return;
+    }
+
     setLocationStatus('loading');
     setQuote(null);
+
+    function fail(err: GeolocationPositionError) {
+      setLocationStatus('denied');
+      const detail =
+        err.code === 1 ? 'permesso negato' :
+        err.code === 2 ? 'posizione non disponibile' :
+        err.code === 3 ? 'tempo scaduto' : 'errore';
+      setLocationError(
+        err.code === 1
+          ? `Permesso negato (${detail}). Su iPhone: Impostazioni > Privacy > Localizzazione > Safari = "Chiedi/Consenti". Oppure scrivi l'indirizzo qui sotto.`
+          : `GPS non riuscito (${detail}). Riprova, o scrivi l'indirizzo qui sotto.`,
+      );
+    }
+
+    // Prima prova rapida a bassa accuratezza (più affidabile su iOS Safari),
+    // poi se fallisce ritenta con l'alta accuratezza e più tempo.
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        setLocationLink(`https://maps.google.com/?q=${latitude},${longitude}`);
-        setLocationStatus('ok');
-        setQuoteLoading(true);
-        getDeliveryQuote(latitude, longitude)
-          .then(setQuote)
-          .finally(() => setQuoteLoading(false));
-      },
-      (err) => {
-        setLocationStatus('denied');
-        // 1 = permesso negato, 2 = posizione non disponibile, 3 = timeout
-        setLocationError(
-          err.code === 1
-            ? 'Permesso negato. Su iPhone: Impostazioni > Safari > Posizione, oppure inserisci l\'indirizzo qui sotto.'
-            : 'Non riusciamo a leggere il GPS. Riprova o inserisci l\'indirizzo qui sotto.',
+      onLocationOk,
+      () => {
+        navigator.geolocation.getCurrentPosition(
+          onLocationOk,
+          fail,
+          { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
         );
       },
-      // iOS Safari va in timeout facilmente col default: più tempo + cache breve
-      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
     );
   }
 
