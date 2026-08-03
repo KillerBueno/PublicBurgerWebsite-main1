@@ -1142,6 +1142,24 @@ export default function ShowcasePage() {
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
   const [menuReady, setMenuReady] = useState(false);
 
+  // Entrambi i banner spariscono da soli dopo 4s di permanenza a schermo.
+  // Il delay d'ingresso va sommato, altrimenti restano visibili meno di 4s.
+  const closedBannerVisible =
+    !!openingHours && !isCurrentlyOpen(openingHours) && !closedBannerDismissed;
+  useEffect(() => {
+    if (!closedBannerVisible) return;
+    const t = setTimeout(() => setClosedBannerDismissed(true), 4000);
+    return () => clearTimeout(t);
+  }, [closedBannerVisible]);
+
+  const reorderBubbleVisible =
+    lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && !!pageUser;
+  useEffect(() => {
+    if (!reorderBubbleVisible) return;
+    const t = setTimeout(() => setReorderDismissed(true), 4400); // 400ms di delay d'ingresso + 4s
+    return () => clearTimeout(t);
+  }, [reorderBubbleVisible]);
+
   // Persist cart to localStorage on every change (with timestamp for 24h expiry)
   useEffect(() => {
     try {
@@ -1575,16 +1593,6 @@ export default function ShowcasePage() {
                         {ch}
                       </motion.span>
                     ))}
-                    {li === 1 && (
-                      <motion.span
-                        className="inline-block ml-3"
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.6, delay: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                      >
-                        🧡🍔
-                      </motion.span>
-                    )}
                   </span>
                 ))}
               </h1>
@@ -2029,19 +2037,21 @@ export default function ShowcasePage() {
         {toast && <Toast key={toast + Date.now()} message={`${toast} aggiunto`} />}
       </AnimatePresence>
 
-      {/* Fast reorder bubble — speech bubble pointing to profile avatar (top-right) */}
+      {/* Fast reorder bubble — fumetto che esce dal carrello (in basso a destra).
+          Il CartFAB sta a bottom-20 ed è alto 56px: bottom-40 lo lascia appena sopra. */}
       <AnimatePresence>
-        {lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && pageUser && (
+        {reorderBubbleVisible && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: -8 }}
+            initial={{ opacity: 0, scale: 0.85, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -8 }}
+            exit={{ opacity: 0, scale: 0.85, y: 12 }}
             transition={{ type: 'spring', stiffness: 300, damping: 26, delay: 0.4 }}
-            className="fixed top-24 right-4 z-50 w-[220px]"
+            style={{ transformOrigin: 'bottom right' }}
+            className="fixed bottom-40 right-6 z-50 w-[220px]"
           >
-            {/* Tail pointing up-right toward avatar */}
-            <div className="absolute -top-2 right-5 w-0 h-0"
-              style={{ borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderBottom: '10px solid #1a0a10' }} />
+            {/* Coda rivolta in basso, verso il carrello */}
+            <div className="absolute -bottom-2 right-5 w-0 h-0"
+              style={{ borderLeft: '8px solid transparent', borderRight: '8px solid transparent', borderTop: '10px solid #1a0a10' }} />
             <div className="bg-[#1a0a10] text-white rounded-2xl shadow-2xl px-4 py-3">
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <p className="text-[12px] font-semibold text-white leading-snug">Cosa hai mangiato l'ultima volta...?</p>
