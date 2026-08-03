@@ -12,6 +12,8 @@ interface Props {
   onClose: () => void;
   disabledIngredients?: string[];
   priceOverrides?: PriceOverrides;
+  /** Aggiunte extra offerte; default alla lista base di menuData. */
+  extras?: string[];
 }
 
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
@@ -41,7 +43,7 @@ function buildSteps(burger: BurgerDef, isCombo: boolean, hasPresize: boolean): S
   return [...s, 'combo', 'remove', 'extras', ...(isCombo ? ['drink' as Step] : [])];
 }
 
-export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [], priceOverrides = {} }: Props) {
+export default function BurgerConfigurator({ burger, preselectedSize, onConfirm, onClose, disabledIngredients = [], priceOverrides = {}, extras: extraOptions = ALL_EXTRAS }: Props) {
   const [size, setSize] = useState<BurgerSize>(preselectedSize ?? 'single');
   const [combo, setCombo] = useState(false);
   const [removed, setRemoved] = useState<string[]>([]);
@@ -270,7 +272,7 @@ export default function BurgerConfigurator({ burger, preselectedSize, onConfirm,
                     </>
                   )}
                   <div className="space-y-1.5">
-                    {ALL_EXTRAS.filter((e) => !burger.ingredients.includes(e) && !NON_REMOVABLE.includes(e)).map((ing) => {
+                    {extraOptions.filter((e) => !burger.ingredients.includes(e) && !NON_REMOVABLE.includes(e)).map((ing) => {
                       const active = extras.includes(ing);
                       const isUnavailable = disabledIngredients.includes(ing);
                       return (

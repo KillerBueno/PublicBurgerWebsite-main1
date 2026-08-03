@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, lazy, Suspense } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence, useMotionValue, useAnimationFrame } from 'framer-motion';
 import { BURGERS, FRIES, ALLERGEN_LABELS, SALSE_ALLERGENS, type BurgerDef } from './menuData';
+import { normalizeMenu, type CustomMenu } from './lib/menu';
 import type { CartItem, CartFry, CartExtra } from './cartTypes';
 const BurgerConfigurator = lazy(() => import('./BurgerConfigurator'));
 const CartPanel = lazy(() => import('./CartPanel'));
@@ -379,9 +380,8 @@ function BurgerRow({ burger, index, onAdd, priceOverrides = {} }: {
 
 // ─── Fry Modal ────────────────────────────────────────────────────────────────
 
-const SALSE_LIST = ['Ketchup', 'Maionese', 'BBQ', 'Salsa Burger', 'Salsa Smokey', 'Salsa Public', 'Senape', 'Salsa Piccante'];
 
-function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm: (sauces: string[]) => void; onClose: () => void }) {
+function FryModal({ fry, salse, onConfirm, onClose }: { fry: typeof FRIES[0]; salse: string[]; onConfirm: (sauces: string[]) => void; onClose: () => void }) {
   const [selected, setSelected] = useState<string[]>([]);
   function toggle(s: string) { setSelected((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s]); }
   return (
@@ -408,7 +408,7 @@ function FryModal({ fry, onConfirm, onClose }: { fry: typeof FRIES[0]; onConfirm
             <span className="text-sm text-black/40">Nessuna salsa</span>
           </button>
           <div className="space-y-1.5">
-            {SALSE_LIST.map((s) => {
+            {salse.map((s) => {
               const active = selected.includes(s);
               return (
                 <button key={s} onClick={() => toggle(s)}
@@ -445,7 +445,7 @@ const NUGGETS_SIZES = [
   { label: '20 pezzi', qty: 20, price: 15 },
 ];
 
-function NuggetsModal({ onConfirm, onClose }: { onConfirm: (label: string, price: number, sauces: string[]) => void; onClose: () => void }) {
+function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfirm: (label: string, price: number, sauces: string[]) => void; onClose: () => void }) {
   const [step, setStep] = useState<'size' | 'salse'>('size');
   const [chosenSize, setChosenSize] = useState<{ label: string; price: number } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -493,7 +493,7 @@ function NuggetsModal({ onConfirm, onClose }: { onConfirm: (label: string, price
                 <span className="text-sm text-black/40">Nessuna salsa</span>
               </button>
               <div className="space-y-1.5">
-                {SALSE_LIST.map((s) => {
+                {salse.map((s) => {
                   const active = selected.includes(s);
                   return (
                     <button key={s} onClick={() => toggle(s)}
@@ -1086,11 +1086,11 @@ export default function ShowcasePage() {
       return saved.map(item => {
         if (item.type === 'burger') {
           const burger = BURGERS.find(b => b.name === item.burger.name);
-          return burger ? { ...item, burger } : null;
+          return burger ? { ...item, burger } : item; // tieni l'item se è un burger custom non nel menu base
         }
         if (item.type === 'fry') {
           const fry = FRIES.find(f => f.name === item.fry.name);
-          return fry ? { ...item, fry } : null;
+          return fry ? { ...item, fry } : item;
         }
         return item;
       }).filter(Boolean) as CartItem[];
@@ -1106,11 +1106,11 @@ export default function ShowcasePage() {
       return saved.map(item => {
         if (item.type === 'burger') {
           const burger = BURGERS.find(b => b.name === item.burger.name);
-          return burger ? { ...item, burger } : null;
+          return burger ? { ...item, burger } : item; // tieni l'item se è un burger custom non nel menu base
         }
         if (item.type === 'fry') {
           const fry = FRIES.find(f => f.name === item.fry.name);
-          return fry ? { ...item, fry } : null;
+          return fry ? { ...item, fry } : item;
         }
         return item;
       }).filter(Boolean) as CartItem[];
@@ -1140,6 +1140,7 @@ export default function ShowcasePage() {
   const [priceOverrides, setPriceOverrides] = useState<PriceOverrides>({});
   const [openingHours, setOpeningHours] = useState<OpeningHours | null>(null);
   const [smashConfig, setSmashConfig] = useState<MondaySmashConfig | null>(null);
+  const [menu, setMenu] = useState<CustomMenu>(() => normalizeMenu(null));
   const [menuReady, setMenuReady] = useState(false);
 
   // Entrambi i banner spariscono da soli dopo 4s di permanenza a schermo.
@@ -1173,6 +1174,7 @@ export default function ShowcasePage() {
       fetchSetting<string[]>('disabled_products').then(v => setDisabledProducts(v ?? [])),
       fetchSetting<string[]>('disabled_ingredients').then(v => setDisabledIngredients(v ?? [])),
       fetchSetting<PriceOverrides>('price_overrides').then(v => setPriceOverrides(v ?? {})),
+      fetchSetting<Partial<CustomMenu>>('custom_menu').then(v => setMenu(normalizeMenu(v))),
       fetchSetting<OpeningHours>('opening_hours').then(v => setOpeningHours(v)),
       fetchSetting<MondaySmashConfig>('monday_smash').then(v => {
         if (v) {
@@ -1636,7 +1638,7 @@ export default function ShowcasePage() {
                 <div key={i} className="h-20 rounded-2xl bg-black/5 animate-pulse" style={{ animationDelay: `${i * 0.08}s` }} />
               ))}
             </div>
-          ) : BURGERS.filter((b) => {
+          ) : menu.burgers.filter((b) => {
             if (disabledProducts.includes(b.name)) return false;
             if (burgerFilter === 'veggie') return b.tag === 'Veggie';
             if (burgerFilter === 'spicy') return b.spicy;
@@ -1658,7 +1660,7 @@ export default function ShowcasePage() {
                 </div>
               </div>
             </Reveal>
-            {FRIES.filter(f => !disabledProducts.includes(f.name)).map((f) => {
+            {menu.fries.filter(f => !disabledProducts.includes(f.name)).map((f) => {
               const fryQty = (cart.find((ci) => ci.type === 'fry' && (ci as CartFry).fry.name === f.name) as CartFry | undefined)?.qty ?? 0;
               return (
                 <motion.button
@@ -1709,7 +1711,7 @@ export default function ShowcasePage() {
                 </div>
               </div>
             </Reveal>
-            {SALSE_LIST.map((s) => {
+            {menu.salse.map((s) => {
               const qty = (cart.filter((ci) => ci.type === 'extra' && (ci as CartExtra).name === s) as CartExtra[]).reduce((acc, ci) => acc + ci.qty, 0);
               return (
                 <motion.button
@@ -1756,17 +1758,7 @@ export default function ShowcasePage() {
                 </div>
               </div>
             </Reveal>
-            {[
-              { name: 'Coca-Cola', price: 2.5 },
-              { name: 'Coca-Cola Zero', price: 2.5 },
-              { name: 'Fanta', price: 2.5 },
-              { name: 'Sprite', price: 2.5 },
-              { name: 'Fuze Tea Limone', price: 2.5 },
-              { name: 'Fuze Tea Pesca', price: 2.5 },
-              { name: 'Acqua Liscia', price: 1 },
-              { name: 'Acqua Frizzante', price: 1 },
-              { name: 'Forst 0,33', price: 3.5 },
-            ].map(({ name: b, price: drinkPrice }) => {
+            {menu.drinks.map(({ name: b, price: drinkPrice }) => {
               const qty = (cart.filter((i) => i.type === 'extra' && (i as CartExtra).name === b) as CartExtra[]).reduce((s, i) => s + i.qty, 0);
               return (
                 <motion.button
@@ -1975,6 +1967,7 @@ export default function ShowcasePage() {
               onClose={() => setConfiguringBurger(null)}
               disabledIngredients={disabledIngredients}
               priceOverrides={priceOverrides}
+              extras={menu.extras}
             />
           </Suspense>
         )}
@@ -2008,6 +2001,7 @@ export default function ShowcasePage() {
         {fryModal && (
           <FryModal
             fry={fryModal}
+            salse={menu.salse}
             onConfirm={(sauces) => addFry(fryModal, sauces)}
             onClose={() => setFryModal(null)}
           />
@@ -2017,6 +2011,7 @@ export default function ShowcasePage() {
       <AnimatePresence>
         {nuggetsModal && (
           <NuggetsModal
+            salse={menu.salse}
             onConfirm={(label, price, sauces) => {
               setCart((prev) => {
                 // Allergeni presi da menuData: erano hardcoded e fermi ai valori

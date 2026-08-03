@@ -7,23 +7,25 @@ import {
   fetchSetting, updateSetting, isCurrentlyOpen,
   type MondaySmashConfig, type PriceOverrides, type OpeningHours, type DayKey,
 } from './lib/settings';
-import { BURGERS, FRIES, ALL_EXTRAS } from './menuData';
+import { BURGERS, FRIES } from './menuData';
+import { normalizeMenu, type CustomMenu } from './lib/menu';
 import FoodCostTab from './FoodCostTab';
 import ClientiTab from './ClientiTab';
 import GestionaleTab from './GestionaleTab';
+import MenuEditorTab from './MenuEditorTab';
 
 const PRIMARY_ADMIN = 'prrsmn91@gmail.com';
 type Tab =
   | 'ordini' | 'clienti' | 'statistiche'
   | 'gestionale' | 'foodcost'
-  | 'menu' | 'smash' | 'orari' | 'impostazioni';
+  | 'menueditor' | 'menu' | 'smash' | 'orari' | 'impostazioni';
 
 type Group = 'operativo' | 'gestionale' | 'sito';
 
 const GROUPS: { key: Group; label: string; tabs: Tab[] }[] = [
   { key: 'operativo',  label: 'Operativo',  tabs: ['ordini', 'clienti', 'statistiche'] },
   { key: 'gestionale', label: 'Gestionale', tabs: ['gestionale', 'foodcost'] },
-  { key: 'sito',       label: 'Sito',       tabs: ['menu', 'smash', 'orari', 'impostazioni'] },
+  { key: 'sito',       label: 'Sito',       tabs: ['menueditor', 'menu', 'smash', 'orari', 'impostazioni'] },
 ];
 
 const TAB_LABELS: Record<Tab, string> = {
@@ -32,7 +34,8 @@ const TAB_LABELS: Record<Tab, string> = {
   statistiche: 'Stats',
   gestionale: 'Contabilità',
   foodcost: 'Food Cost',
-  menu: 'Menu',
+  menueditor: 'Menu',
+  menu: 'Disponibilità',
   smash: 'Popup',
   orari: 'Orari',
   impostazioni: 'Impostazioni',
@@ -50,9 +53,6 @@ const NON_DISABLEABLE = [
   'Hamburger vegetale', 'Spalla di maiale sfilacciata',
   'Pollo panato e fritto',
 ];
-const ALL_INGREDIENTS = Array.from(new Set([
-  ...BURGERS.flatMap(b => b.ingredients), ...ALL_EXTRAS,
-])).filter(i => !NON_DISABLEABLE.includes(i));
 
 const ORDER_STATUSES = [
   { value: 'nuovo',        label: 'Nuovo',      color: 'bg-blue-50 text-blue-600 border-blue-200' },
@@ -411,7 +411,7 @@ function StatisticheTab({ orders, adminToken }: { orders: Order[]; adminToken: s
   );
 }
 
-// ─── Menu Tab ─────────────────────────────────────────────────────────────────
+// ─── Menu Tab (Disponibilità + prezzi rapidi) ─────────────────────────────────
 function MenuTab({ adminToken }: { adminToken: string }) {
   const [disabledProducts,    setDisabledProducts]    = useState<string[]>([]);
   const [disabledIngredients, setDisabledIngredients] = useState<string[]>([]);
@@ -421,19 +421,29 @@ function MenuTab({ adminToken }: { adminToken: string }) {
   const [savingPrice, setSavingPrice] = useState<string | null>(null);
   const [editPrices, setEditPrices] = useState<Record<string, Record<string, string>>>({});
   const [loaded, setLoaded] = useState(false);
+  // Menu effettivo: così i burger/ingredienti aggiunti dall'editor compaiono qui.
+  const [menu, setMenu] = useState(() => normalizeMenu(null));
+  const effBurgers = menu.burgers;
+  const effFries = menu.fries;
+  const effIngredients = Array.from(new Set([
+    ...effBurgers.flatMap(b => b.ingredients), ...menu.extras,
+  ])).filter(i => !NON_DISABLEABLE.includes(i));
 
   useEffect(() => {
     Promise.all([
       fetchSetting<string[]>('disabled_products'),
       fetchSetting<string[]>('disabled_ingredients'),
       fetchSetting<PriceOverrides>('price_overrides'),
-    ]).then(([prods, ings, prices]) => {
+      fetchSetting<Partial<CustomMenu>>('custom_menu'),
+    ]).then(([prods, ings, prices, custom]) => {
       setDisabledProducts(prods ?? []);
       setDisabledIngredients(ings ?? []);
       const po = prices ?? {};
       setPriceOverrides(po);
+      const m = normalizeMenu(custom);
+      setMenu(m);
       const ep: Record<string, Record<string, string>> = {};
-      for (const b of BURGERS) {
+      for (const b of m.burgers) {
         if (b.prices) {
           ep[b.name] = {
             single: String(po[b.name]?.single ?? b.prices.single),
@@ -444,7 +454,7 @@ function MenuTab({ adminToken }: { adminToken: string }) {
           ep[b.name] = { fixed: String(po[b.name]?.fixed ?? b.fixedPrice ?? 0) };
         }
       }
-      for (const f of FRIES) {
+      for (const f of m.fries) {
         ep[f.name] = { fixed: String(po[f.name]?.fixed ?? f.price) };
       }
       setEditPrices(ep);
@@ -483,8 +493,8 @@ function MenuTab({ adminToken }: { adminToken: string }) {
   }
 
   async function resetPrice(itemName: string) {
-    const b = BURGERS.find(x => x.name === itemName);
-    const f = FRIES.find(x => x.name === itemName);
+    const b = effBurgers.find(x => x.name === itemName);
+    const f = effFries.find(x => x.name === itemName);
     if (!b && !f) return;
     const next = { ...priceOverrides };
     delete next[itemName];
@@ -512,7 +522,7 @@ function MenuTab({ adminToken }: { adminToken: string }) {
 
       {/* Prodotti */}
       <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1">Prodotti</p>
-      {[{ label: 'Burger', items: BURGERS.map(b => b.name) }, { label: 'Fries / Appetizer', items: FRIES.map(f => f.name) }].map(({ label, items }) => (
+      {[{ label: 'Burger', items: effBurgers.map(b => b.name) }, { label: 'Fries / Appetizer', items: effFries.map(f => f.name) }].map(({ label, items }) => (
         <div key={label} className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
           <p className="px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-[#CF6990] font-bold border-b border-black/6">{label}</p>
           {items.map(name => {
@@ -530,7 +540,7 @@ function MenuTab({ adminToken }: { adminToken: string }) {
       {/* Prezzi */}
       <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1 pt-2">Prezzi</p>
       <div className="space-y-3">
-        {BURGERS.map(b => {
+        {effBurgers.map(b => {
           const ep = editPrices[b.name] ?? {};
           const hasOverride = !!priceOverrides[b.name];
           const isSaving = savingPrice === b.name;
@@ -581,7 +591,7 @@ function MenuTab({ adminToken }: { adminToken: string }) {
       {/* Prezzi Fries */}
       <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1 pt-2">Prezzi Fries / Appetizer</p>
       <div className="space-y-3">
-        {FRIES.map(f => {
+        {effFries.map(f => {
           const ep = editPrices[f.name] ?? {};
           const hasOverride = !!priceOverrides[f.name];
           const isSaving = savingPrice === f.name;
@@ -616,7 +626,7 @@ function MenuTab({ adminToken }: { adminToken: string }) {
       <p className="text-[10px] uppercase tracking-[0.25em] text-black/30 px-1 pt-2">Ingredienti / Topping</p>
       <div className="bg-white rounded-2xl border border-black/6 shadow-sm overflow-hidden">
         <p className="px-4 py-3 text-[10px] uppercase tracking-[0.25em] text-[#CF6990] font-bold border-b border-black/6">Disponibilità ingredienti</p>
-        {ALL_INGREDIENTS.map(name => {
+        {effIngredients.map(name => {
           const isOff = disabledIngredients.includes(name);
           return (
             <div key={name} className="flex items-center justify-between px-4 py-3 border-b border-black/4 last:border-0">
@@ -1303,6 +1313,7 @@ export default function AdminPage() {
       )}
 
       {tab === 'statistiche' && <StatisticheTab orders={orders} adminToken={loggedUser.access_token} />}
+      {tab === 'menueditor'  && <MenuEditorTab adminToken={loggedUser.access_token} />}
       {tab === 'menu'        && <MenuTab adminToken={loggedUser.access_token} />}
       {tab === 'smash'       && <SmashTab adminToken={loggedUser.access_token} />}
       {tab === 'orari'       && <OrariTab adminToken={loggedUser.access_token} />}
