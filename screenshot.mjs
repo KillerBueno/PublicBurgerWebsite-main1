@@ -9,6 +9,14 @@ const browser = await puppeteer.launch({
 const page = await browser.newPage();
 await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
 
+// Bypassa il gate "sito in costruzione": marca la sessione come autenticata e
+// salta lo splash, così /display mostra subito il menu invece della password.
+await page.evaluateOnNewDocument(() => {
+  localStorage.setItem('pb_auth', '1');
+  sessionStorage.setItem('pb_auth', '1');
+  sessionStorage.setItem('pb_splash_done', '1');
+});
+
 // Screen 1
 await page.goto('http://localhost:5173/display?screen=1', { waitUntil: 'networkidle0' });
 await page.screenshot({ path: 'menu-screen-1.jpeg', type: 'jpeg', quality: 95, clip: { x: 0, y: 0, width: 1920, height: 1080 } });
