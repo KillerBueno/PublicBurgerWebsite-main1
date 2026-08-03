@@ -27,7 +27,7 @@ const ALLERGENS: Record<string, number[]> = {
   'Pulled Pork':      [1, 3, 7, 10, 12],     // brioche(1,3,7) + coleslaw panna+mayo(3,7,10) + BBQ develey(10,12)
   'American Burger':  [1, 3, 7, 10, 12],     // bun(1,3,7) + cheddar(7) + uovo fritto(3) + BBQ(10,12)
   'Hot Chicken Sandwich': [1, 3, 6, 10, 12], // bun(1,3,7) + cotoletta(1,tracce6) + salsa piccante(12)
-  'Chicken Lime':     [1, 3, 6, 10],         // bun(1,3,7) + cotoletta(1,tracce6) + mayo(3,10)
+  'Lime Chicken Sandwich': [1, 3, 6, 10],    // bun(1,3,7) + cotoletta(1,tracce6) + mayo(3,10)
   'Ingordo':          [1, 3, 7, 10, 12],     // bun(1,3,7) + scamorza(7) + anelli fritti(1,3) + mayo(3,10) + BBQ(10,12)
   'Fake Burger':      [1, 3, 7, 10, 12],     // brioche(1,3,7) + cheddar(7) + mayo(3,10) + ketchup(12)
 };
