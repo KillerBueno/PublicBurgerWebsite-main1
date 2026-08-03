@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchSetting, updateSetting } from './lib/settings';
+import { fetchSetting, updateSetting, type PriceOverrides } from './lib/settings';
 import {
   normalizeMenu, defaultMenu, sizesFromSingle, emptyBurger, emptyFry,
   ALLERGEN_OPTIONS, SIZE_ADD,
@@ -209,6 +209,17 @@ export default function MenuEditorTab({ adminToken }: { adminToken: string }) {
     setSaving(true);
     try {
       await updateSetting(adminToken, 'custom_menu', clean);
+      // L'editor è la fonte autorevole dei prezzi: azzera eventuali override
+      // rapidi (tab Disponibilità) sui prodotti del menu, altrimenti un vecchio
+      // override continuerebbe a mascherare il prezzo appena impostato qui.
+      const names = new Set<string>([...clean.burgers.map(b => b.name), ...clean.fries.map(f => f.name)]);
+      const po = (await fetchSetting<PriceOverrides>('price_overrides')) ?? {};
+      const cleanedPo: PriceOverrides = {};
+      let removed = false;
+      for (const [k, v] of Object.entries(po)) {
+        if (names.has(k)) removed = true; else cleanedPo[k] = v;
+      }
+      if (removed) await updateSetting(adminToken, 'price_overrides', cleanedPo);
       setMenu(clean);
       setDirty(false);
       setSaved(true);
@@ -229,9 +240,9 @@ export default function MenuEditorTab({ adminToken }: { adminToken: string }) {
 
   return (
     <div className="p-4 max-w-2xl mx-auto pb-32 space-y-4">
-      <div className="bg-[#FBE8EF]/60 rounded-2xl px-4 py-3 text-[11px] text-[#a8456b]">
-        Modifica il menu vero e proprio (nomi, ingredienti, prezzi, aggiunte). Le modifiche si applicano al sito
-        d'ordinazione dopo il salvataggio. Il cartellone in sala (/display) non è ancora collegato.
+      <div className="bg-[#FBE8EF]/60 rounded-2xl px-4 py-3 text-[11px] text-[#a8456b] space-y-1">
+        <p>Modifica il menu vero e proprio (nomi, ingredienti, prezzi, aggiunte). Le modifiche si applicano al sito d'ordinazione dopo il salvataggio. Il cartellone in sala (/display) non è ancora collegato.</p>
+        <p className="text-[#a8456b]/80">Il prezzo impostato qui è quello ufficiale: salvando, eventuali ritocchi rapidi fatti nel tab <strong>Disponibilità</strong> vengono azzerati.</p>
       </div>
 
       {/* Sotto-nav gruppi */}
