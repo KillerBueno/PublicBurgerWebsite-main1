@@ -66,37 +66,73 @@ export interface OpeningHours {
 
 const DAY_MAP: Record<number, DayKey> = { 0: 'sun', 1: 'mon', 2: 'tue', 3: 'wed', 4: 'thu', 5: 'fri', 6: 'sat' };
 
-export function isCurrentlyOpen(config: OpeningHours): boolean {
+/** Il locale è aperto nel preciso istante `date`? Gestisce le sessioni oltre mezzanotte. */
+export function isOpenAt(config: OpeningHours, date: Date): boolean {
   if (!config.enabled) return true;
   if (config.manual_close) return false;
-  const now = new Date();
-  const mins = now.getHours() * 60 + now.getMinutes();
+  const mins = date.getHours() * 60 + date.getMinutes();
 
-  // Check current day; if past midnight also check previous day for sessions that cross midnight
-  const daysToCheck = [now.getDay()];
-  if (now.getHours() < 6) daysToCheck.push((now.getDay() + 6) % 7); // also check yesterday
+  // Giorno corrente; se siamo a notte fonda controlla anche la sessione di ieri
+  const daysToCheck = [date.getDay()];
+  if (date.getHours() < 6) daysToCheck.push((date.getDay() + 6) % 7);
 
   for (const jsDay of daysToCheck) {
-    const dayKey = DAY_MAP[jsDay];
-    const day = config.hours[dayKey];
+    const day = config.hours[DAY_MAP[jsDay]];
     if (!day || day.closed) continue;
     const [oh, om] = day.open.split(':').map(Number);
     const [ch, cm] = day.close.split(':').map(Number);
     const openMins = oh * 60 + om;
     const closeMins = ch * 60 + cm;
 
-    if (jsDay === now.getDay()) {
-      // Same day: handle close-after-midnight (closeMins < openMins means crosses midnight)
+    if (jsDay === date.getDay()) {
       if (closeMins <= openMins) {
-        // Crosses midnight (e.g. 18:30–02:00 or 18:30–00:00)
-        if (mins >= openMins) return true;
-      } else {
-        if (mins >= openMins && mins < closeMins) return true;
+        if (mins >= openMins) return true; // sessione che scavalca mezzanotte
+      } else if (mins >= openMins && mins < closeMins) {
+        return true;
       }
-    } else {
-      // Yesterday's session that extends into today (past midnight)
-      if (closeMins <= openMins && mins < closeMins) return true;
+    } else if (closeMins <= openMins && mins < closeMins) {
+      return true; // coda della sessione di ieri
     }
   }
   return false;
+}
+
+export function isCurrentlyOpen(config: OpeningHours): boolean {
+  return isOpenAt(config, new Date());
+}
+
+/**
+ * Orari selezionabili per ritiro/consegna: solo futuri e dentro l'apertura.
+ * Parte da adesso + `leadMin` (tempo minimo di preparazione), a passi di
+ * `stepMin`, e si ferma a fine della sessione aperta corrente/prossima.
+ */
+export function nextOrderSlots(
+  config: OpeningHours | null,
+  leadMin = 20,
+  stepMin = 15,
+  horizonMin = 12 * 60,
+): string[] {
+  const start = new Date(Date.now() + leadMin * 60000);
+  const rem = start.getMinutes() % stepMin;
+  if (rem) start.setMinutes(start.getMinutes() + (stepMin - rem));
+  start.setSeconds(0, 0);
+
+  const noHours = !config || !config.enabled || config.manual_close;
+  const slots: string[] = [];
+  let sessionStarted = false;
+
+  for (let t = 0; t <= horizonMin; t += stepMin) {
+    const cand = new Date(start.getTime() + t * 60000);
+    const open = noHours ? true : isOpenAt(config, cand);
+    if (open) {
+      sessionStarted = true;
+      const hh = String(cand.getHours()).padStart(2, '0');
+      const mm = String(cand.getMinutes()).padStart(2, '0');
+      slots.push(`${hh}:${mm}`);
+      if (slots.length >= 48) break;
+    } else if (sessionStarted) {
+      break; // fine della sessione aperta: non offrire orari dopo la chiusura
+    }
+  }
+  return slots;
 }

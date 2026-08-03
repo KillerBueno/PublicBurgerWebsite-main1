@@ -182,7 +182,10 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(curl -s 'https://anmhgssxzovzvykhyhkj.supabase.co/rest/v1/settings?key=eq.custom_menu&select=value' -H 'apikey: sb_publishable_jhIOZqucHx6catujHAN2jQ_NeOF-YQJ' -o /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/1f9f17be-a27e-4767-af14-1d9e5c19d958/scratchpad/menu.json)",
       "Bash(node /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/1f9f17be-a27e-4767-af14-1d9e5c19d958/scratchpad/gen.js)",
-      "Bash(node -e 'const s=require\\(\"fs\"\\).readFileSync\\(process.argv[1],\"utf8\"\\); const m=s.match\\(/value = '\\\\''\\([\\\\s\\\\S]*\\)'\\\\''::jsonb/\\); JSON.parse\\(m[1].split\\(\"\\\\x27\\\\x27\"\\).join\\(\"\\\\x27\"\\)\\); console.log\\(\"JSON valido\"\\)' /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/1f9f17be-a27e-4767-af14-1d9e5c19d958/scratchpad/update_menu.sql)"
+      "Bash(node -e 'const s=require\\(\"fs\"\\).readFileSync\\(process.argv[1],\"utf8\"\\); const m=s.match\\(/value = '\\\\''\\([\\\\s\\\\S]*\\)'\\\\''::jsonb/\\); JSON.parse\\(m[1].split\\(\"\\\\x27\\\\x27\"\\).join\\(\"\\\\x27\"\\)\\); console.log\\(\"JSON valido\"\\)' /private/tmp/claude-501/-Users-simone-Desktop-PublicBurgerWebsite-main/1f9f17be-a27e-4767-af14-1d9e5c19d958/scratchpad/update_menu.sql)",
+      "Read(//Applications/Google Chrome.app/Contents/MacOS/**)",
+      "Bash(node -e \"require.resolve\\('puppeteer'\\)\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"http://localhost:5173/display?screen=1\")"
     ]
   }
 }

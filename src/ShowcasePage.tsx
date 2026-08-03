@@ -1984,6 +1984,7 @@ export default function ShowcasePage() {
               onUpdateQty={updateQty}
               onClose={() => setCartOpen(false)}
               disabledProducts={disabledProducts}
+              openingHours={openingHours}
               onOrderSent={(sentItems) => {
                 try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
                 setLastOrder(sentItems);

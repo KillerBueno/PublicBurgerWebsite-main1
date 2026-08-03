@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion';
 import type { CartItem, CartExtra } from './cartTypes';
 import { saveOrder } from './lib/orders';
 import { getStoredUser } from './lib/supabase';
 import { getDeliveryQuote, type DeliveryQuote } from './lib/delivery';
+import { nextOrderSlots, type OpeningHours } from './lib/settings';
 
 interface Props {
   items: CartItem[];
@@ -12,6 +13,7 @@ interface Props {
   onClose: () => void;
   onOrderSent?: (items: CartItem[]) => void;
   disabledProducts?: string[];
+  openingHours?: OpeningHours | null;
 }
 
 function productName(item: CartItem): string | null {
@@ -223,13 +225,15 @@ function ItemCard({
   );
 }
 
-export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrderSent, disabledProducts = [] }: Props) {
+export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrderSent, disabledProducts = [], openingHours = null }: Props) {
   const [step, setStep] = useState<Step>('cart');
   const [orderType, setOrderType] = useState<OrderType>('asporto');
   const [name, setName] = useState('');
-  const [time, setTime] = useState('');
+  // '' = nessuna scelta, 'asap' = prima possibile, altrimenti 'HH:MM'
+  const [time, setTime] = useState<string>('asap');
   const [locationLink, setLocationLink] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'ok' | 'denied'>('idle');
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [manualAddress, setManualAddress] = useState('');
   const [quote, setQuote] = useState<DeliveryQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
@@ -237,6 +241,12 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   const [validationError, setValidationError] = useState<string | null>(null);
   const subtotal = items.reduce((s, i) => s + i.totalPrice, 0);
   const user = getStoredUser();
+
+  // Orari selezionabili: futuri e dentro l'apertura. Ricalcolati aprendo il checkout.
+  const slots = useMemo(() => nextOrderSlots(openingHours), [openingHours, step]);
+  const timeLabel = time === 'asap' ? 'Prima possibile' : time;
+  // Uno slot scelto in precedenza può non essere più valido (tempo passato)
+  const slotInvalid = time !== '' && time !== 'asap' && !slots.includes(time);
 
   // Tariffa di consegna: solo su consegna con GPS dentro la zona servita
   const deliveryFee = orderType === 'consegna' && quote?.deliverable ? (quote.fee ?? 0) : 0;
@@ -246,7 +256,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   // Fuori zona (>19 min): non si può ordinare in consegna
   const outOfZone = orderType === 'consegna' && quote !== null && !quote.deliverable;
   const canSubmit =
-    time.trim().length > 0 &&
+    time.length > 0 && !slotInvalid &&
     !outOfZone &&
     (orderType === 'asporto' ? name.trim().length > 0 : hasLocation);
 
@@ -293,6 +303,12 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
   }, []);
 
   function requestLocation() {
+    setLocationError(null);
+    if (!('geolocation' in navigator)) {
+      setLocationStatus('denied');
+      setLocationError('Il tuo browser non supporta il GPS. Inserisci l\'indirizzo qui sotto.');
+      return;
+    }
     setLocationStatus('loading');
     setQuote(null);
     navigator.geolocation.getCurrentPosition(
@@ -305,8 +321,17 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
           .then(setQuote)
           .finally(() => setQuoteLoading(false));
       },
-      () => setLocationStatus('denied'),
-      { timeout: 10000 },
+      (err) => {
+        setLocationStatus('denied');
+        // 1 = permesso negato, 2 = posizione non disponibile, 3 = timeout
+        setLocationError(
+          err.code === 1
+            ? 'Permesso negato. Su iPhone: Impostazioni > Safari > Posizione, oppure inserisci l\'indirizzo qui sotto.'
+            : 'Non riusciamo a leggere il GPS. Riprova o inserisci l\'indirizzo qui sotto.',
+        );
+      },
+      // iOS Safari va in timeout facilmente col default: più tempo + cache breve
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 60000 },
     );
   }
 
@@ -320,17 +345,19 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
       return;
     }
     if (!canSubmit) {
-      if (orderType === 'asporto') {
-        setValidationError(!name.trim() && !time.trim() ? 'Inserisci nome e orario per procedere.' : !name.trim() ? 'Inserisci il tuo nome per il ritiro.' : 'Inserisci l\'orario preferito.');
+      if (slotInvalid) {
+        setValidationError('L\'orario scelto non è più valido — selezionane un altro.');
+      } else if (orderType === 'asporto') {
+        setValidationError(!name.trim() ? 'Inserisci il tuo nome per il ritiro.' : 'Scegli un orario.');
       } else if (outOfZone) {
         setValidationError('Zona non servita: la consegna richiede più di 19 minuti. Prova con l\'asporto.');
       } else {
-        setValidationError(!hasLocation && !time.trim() ? 'Inserisci posizione e orario per procedere.' : !hasLocation ? 'Condividi la posizione o inserisci l\'indirizzo.' : 'Inserisci l\'orario preferito.');
+        setValidationError(!hasLocation ? 'Condividi la posizione o inserisci l\'indirizzo.' : 'Scegli un orario.');
       }
       return;
     }
     setValidationError(null);
-    const msg = buildWhatsAppMessage(items, orderType, name.trim(), time.trim(), locationLink, manualAddress.trim(), deliveryFee);
+    const msg = buildWhatsAppMessage(items, orderType, name.trim(), timeLabel, locationLink, manualAddress.trim(), deliveryFee);
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     const waWindow = window.open(url, '_blank');
     if (waWindow) setTimeout(() => waWindow.close(), 2000);
@@ -352,7 +379,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
       total,
       user_email: user?.email ?? null,
       user_name: user?.name ?? null,
-      notes: time.trim() || null,
+      notes: timeLabel || null,
     });
   }
 
@@ -587,7 +614,9 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                           </button>
                           {locationStatus === 'denied' && (
                             <div className="mt-2">
-                              <p className="text-[10px] text-black/35 mb-1.5">GPS non disponibile — inserisci l'indirizzo:</p>
+                              <p className="text-[11px] text-black/45 mb-1.5">
+                                {locationError ?? 'GPS non disponibile. Inserisci l\'indirizzo:'}
+                              </p>
                               <input
                                 type="text"
                                 value={manualAddress}
@@ -595,6 +624,15 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                                 placeholder="Via, numero civico, città…"
                                 className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
                               />
+                              <button
+                                onClick={requestLocation}
+                                className="mt-2 text-[11px] font-semibold text-[#CF6990] hover:underline"
+                              >
+                                ↻ Riprova col GPS
+                              </button>
+                              <p className="text-[10px] text-black/30 mt-1">
+                                Con l'indirizzo scritto a mano la tariffa di consegna te la confermiamo su WhatsApp.
+                              </p>
                             </div>
                           )}
                         </>
@@ -627,13 +665,39 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
 
                 {/* Orario */}
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">Orario preferito <span className="text-red-400">*</span></p>
-                  <input
-                    type="time"
-                    value={time}
-                    onChange={(e) => { setTime(e.target.value); setValidationError(null); }}
-                    className={`w-full rounded-xl border bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:bg-white text-black/55 transition-all ${validationError && !time.trim() ? 'border-red-400 bg-red-50' : 'border-black/10 focus:border-[#CF6990]'}`}
-                  />
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2">
+                    {orderType === 'consegna' ? 'Orario di consegna' : 'Orario di ritiro'} <span className="text-red-400">*</span>
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setTime('asap'); setValidationError(null); }}
+                      className={`py-3 rounded-xl border text-[13px] font-bold transition-all ${
+                        time === 'asap'
+                          ? 'border-[#CF6990] bg-[#FBE8EF] text-[#A8456B]'
+                          : 'border-black/10 bg-[#F2F2F7] text-black/45 hover:border-[#CF6990]/40'
+                      }`}
+                    >
+                      ⚡ Prima possibile
+                    </button>
+                    <select
+                      value={time === 'asap' ? '' : time}
+                      onChange={(e) => { setTime(e.target.value || 'asap'); setValidationError(null); }}
+                      className={`w-full rounded-xl border px-3 py-3 text-[13px] font-medium focus:outline-none transition-all ${
+                        time !== 'asap' && time !== ''
+                          ? 'border-[#CF6990] bg-[#FBE8EF] text-[#A8456B]'
+                          : 'border-black/10 bg-[#F2F2F7] text-black/45'
+                      } ${validationError && (slotInvalid || time === '') ? 'border-red-400 bg-red-50' : 'focus:border-[#CF6990]'}`}
+                    >
+                      <option value="">Orario preciso…</option>
+                      {slots.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  {slots.length === 0 && (
+                    <p className="text-[10px] text-black/35 mt-1.5">
+                      Nessun orario disponibile a breve: scegli “Prima possibile”, ti ricontattiamo su WhatsApp.
+                    </p>
+                  )}
                 </div>
 
                 {/* Riepilogo ordine */}
