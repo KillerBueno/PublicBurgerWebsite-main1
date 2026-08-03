@@ -97,7 +97,7 @@ export const BURGERS: BurgerDef[] = [
     allergens: [1, 3, 7, 10, 12],
   },
   {
-    name: 'Spicy Chicken',
+    name: 'Hot Chicken Sandwich',
     tag: 'Chicken',
     spicy: true,
     ingredients: ['Bun classico', 'Pollo panato e fritto', 'Coleslaw', 'Spicy secret sauce', 'Pickles'],
