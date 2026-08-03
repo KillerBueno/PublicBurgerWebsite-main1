@@ -232,6 +232,35 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
     time.trim().length > 0 &&
     (orderType === 'asporto' ? name.trim().length > 0 : hasLocation);
 
+  // Blocca lo scroll della pagina sotto mentre il pannello è aperto. Senza
+  // questo, un gesto anche solo leggermente laterale scorre/rimbalza la pagina
+  // di fondo e su iOS il pannello, pur essendo fixed, si sposta con essa.
+  // Si salva e ripristina la posizione perché position:fixed sul body la azzera.
+  useEffect(() => {
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      overflow: body.style.overflow,
+    };
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = '0';
+    body.style.right = '0';
+    body.style.overflow = 'hidden';
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.left = prev.left;
+      body.style.right = prev.right;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, []);
+
   useEffect(() => {
     if (items.length > 0 && !localStorage.getItem('pb_swipe_hint_seen')) {
       const t = setTimeout(() => {
@@ -314,7 +343,10 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
       {/* Panel */}
       <motion.div
         className="relative w-full max-w-sm flex flex-col shadow-2xl rounded-l-3xl overflow-hidden"
-        style={{ background: '#F2F2F7' }}
+        // touchAction pan-y: il browser gestisce solo i gesti verticali, quelli
+        // laterali non trascinano più il pannello. overscrollBehavior contain:
+        // arrivati a fine lista lo scroll non si propaga alla pagina di fondo.
+        style={{ background: '#F2F2F7', touchAction: 'pan-y', overscrollBehavior: 'contain' }}
         initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       >
@@ -393,7 +425,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
               </AnimatePresence>
 
               {/* Items list */}
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 min-h-0">
+              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2 min-h-0" style={{ overscrollBehavior: 'contain' }}>
                 <AnimatePresence>
                   {items.length === 0 ? (
                     <motion.div
@@ -444,7 +476,7 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
               transition={{ duration: 0.2 }}
               className="flex-1 flex flex-col min-h-0"
             >
-              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4 min-h-0">
+              <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4 min-h-0" style={{ overscrollBehavior: 'contain' }}>
                 {/* Order type */}
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-black/30 mb-2.5">Modalità ordine</p>
