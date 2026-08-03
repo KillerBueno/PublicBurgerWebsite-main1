@@ -1126,7 +1126,6 @@ export default function ShowcasePage() {
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [smashPopup, setSmashPopup] = useState(false);
-  const [loginModal, setLoginModal] = useState(false);
   const [closedBannerDismissed, setClosedBannerDismissed] = useState(false);
   const [pageUser, setPageUser] = useState(() => getStoredUser());
   useEffect(() => {
@@ -1134,10 +1133,8 @@ export default function ShowcasePage() {
     window.addEventListener('pb-user-changed', refresh);
     return () => window.removeEventListener('pb-user-changed', refresh);
   }, []);
-  function requireLogin(action: () => void) {
-    if (!pageUser) { setLoginModal(true); return; }
-    action();
-  }
+  // L'ordine è aperto anche senza login: chi non è loggato ordina normalmente e
+  // vede nel carrello l'invito ad accedere per accumulare punti fedeltà.
   const [disabledProducts, setDisabledProducts] = useState<string[]>([]);
   const [disabledIngredients, setDisabledIngredients] = useState<string[]>([]);
   const [priceOverrides, setPriceOverrides] = useState<PriceOverrides>({});
@@ -1638,7 +1635,7 @@ export default function ShowcasePage() {
             if (burgerFilter === 'chicken') return b.tag === 'Chicken' || b.tag === 'Wrap';
             return true;
           }).map((b, i) => (
-            <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => requireLogin(() => setConfiguringBurger({ burger, size }))} priceOverrides={priceOverrides} />
+            <BurgerRow key={b.name} burger={b} index={i} onAdd={(burger, size) => setConfiguringBurger({ burger, size })} priceOverrides={priceOverrides} />
           ))}
 
         </section>
@@ -1658,7 +1655,7 @@ export default function ShowcasePage() {
               return (
                 <motion.button
                   key={f.name}
-                  onClick={() => requireLogin(() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f))}
+                  onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full text-left rounded-2xl border transition-all duration-200 mb-3 px-5 py-5 flex items-center justify-between ${
                     fryQty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/5 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
@@ -1709,7 +1706,7 @@ export default function ShowcasePage() {
               return (
                 <motion.button
                   key={s}
-                  onClick={() => requireLogin(() => addExtra(s, 'salsa', 0.5))}
+                  onClick={() => addExtra(s, 'salsa', 0.5)}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
                     qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
@@ -1766,7 +1763,7 @@ export default function ShowcasePage() {
               return (
                 <motion.button
                   key={b}
-                  onClick={() => requireLogin(() => addExtra(b, 'bibita', drinkPrice))}
+                  onClick={() => addExtra(b, 'bibita', drinkPrice)}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-200 mb-2 text-left ${
                     qty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/8 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
@@ -1958,7 +1955,7 @@ export default function ShowcasePage() {
 
 
       {/* ── Cart FAB ── */}
-      <CartFAB count={cart.length} total={cart.reduce((s, i) => s + i.totalPrice, 0)} onClick={() => requireLogin(() => setCartOpen(true))} />
+      <CartFAB count={cart.length} total={cart.reduce((s, i) => s + i.totalPrice, 0)} onClick={() => setCartOpen(true)} />
 
       <AnimatePresence>
         {configuringBurger && (
@@ -2070,42 +2067,6 @@ export default function ShowcasePage() {
               </button>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Login required modal */}
-      <AnimatePresence>
-        {loginModal && (
-          <>
-            <motion.div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9990]"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setLoginModal(false)}
-            />
-            <motion.div
-              className="fixed inset-0 z-[9991] flex items-center justify-center px-6 pointer-events-none"
-              initial={{ opacity: 0, scale: 0.92, y: 16 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 16 }}
-              transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            >
-              <div className="bg-white w-full max-w-xs rounded-3xl shadow-2xl p-8 text-center pointer-events-auto">
-                <div className="text-4xl mb-4">🔒</div>
-                <h2 className="text-[17px] font-bold text-[#1a0a10] mb-2">Accedi per ordinare</h2>
-                <p className="text-[12px] text-black/40 mb-6 leading-relaxed">
-                  Crea un account gratuito per aggiungere prodotti al carrello e inviare il tuo ordine.
-                </p>
-                <a href="/login"
-                  className="block w-full py-3 bg-[#1a0a10] text-white text-[11px] uppercase tracking-[0.25em] font-semibold hover:bg-[#CF6990] transition-colors duration-300 rounded-2xl mb-3">
-                  Accedi / Registrati
-                </a>
-                <button onClick={() => setLoginModal(false)}
-                  className="text-[11px] text-black/30 hover:text-black/60 transition-colors uppercase tracking-wider">
-                  Continua a guardare
-                </button>
-              </div>
-            </motion.div>
-          </>
         )}
       </AnimatePresence>
 
