@@ -32,18 +32,22 @@ const ALLERGENS: Record<string, number[]> = {
   'Fake Burger':      [1, 3, 7, 10, 12],     // brioche(1,3,7) + cheddar(7) + mayo(3,10) + ketchup(12)
 };
 
+// Sottoinsieme della lista EU effettivamente usato in questo menu: la legenda a
+// fondo pagina si genera da qui, quindi ogni numero usato sopra deve comparire.
 const ALLERGEN_LABELS: Record<number, string> = {
-  1: 'Glutine', 2: 'Crostacei', 3: 'Uova', 4: 'Pesce', 6: 'Soia',
-  7: 'Latte', 10: 'Senape', 12: 'Solfiti', 14: 'Molluschi',
+  1: 'Glutine', 3: 'Uova', 6: 'Soia', 7: 'Latte',
+  9: 'Sedano', 10: 'Senape', 11: 'Semi di sesamo', 12: 'Solfiti',
 };
 
+// Fonte autorevole: FRIES in src/menuData.ts. Tenere allineati: il commit 21517be
+// aveva corretto gli allergeni solo lì, lasciando questa mappa ai valori sbagliati.
 const FRIES_ALLERGENS: Record<string, number[]> = {
-  'Patatine':       [],
-  'Onion Rings':    [1, 2, 4, 6, 7, 10, 14], // glutine(farina+birra orzo) + tracce crostacei/pesce/soia/latte/senape/molluschi
-  'Cheese Bacon':   [7],            // cheddar = latte
-  'Sweet Potatoes': [],
-  'Nuggets':          [1, 3, 6, 10],
-  'Chicken Tenders':  [1, 3, 6, 10],
+  'Patatine':           [],
+  'Onion Rings':        [1],                       // solo glutine (pastella)
+  'Cheese Bacon Fries': [7],                       // cheddar = latte
+  'Sweet Potatoes':     [],
+  'Nuggets':            [1, 3, 6, 7, 9, 10, 11],   // da scheda tecnica: + latte(7), sedano(9), sesamo(11)
+  'Chicken Tenders':    [1, 3, 6, 10],
 };
 
 // ── BurgerItem ────────────────────────────────────────────────────────────────

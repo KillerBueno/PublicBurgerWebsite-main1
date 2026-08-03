@@ -44,10 +44,11 @@ const DAY_LABELS: Record<DayKey, string> = {
 };
 const DAY_ORDER: DayKey[] = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
+// Tenere allineata a NON_REMOVABLE in BurgerConfigurator.tsx.
 const NON_DISABLEABLE = [
-  'Brioche bun', 'Bun classico', 'Piadina', 'Hamburger di manzo',
-  'Hamburger vegetale', 'Spalla di maiale sfilacciata', 'Petto di pollo',
-  'Hamburger di pollo', 'Cotoletta di pollo croccante',
+  'Brioche bun', 'Bun classico', 'Hamburger di manzo',
+  'Hamburger vegetale', 'Spalla di maiale sfilacciata',
+  'Pollo panato e fritto',
 ];
 const ALL_INGREDIENTS = Array.from(new Set([
   ...BURGERS.flatMap(b => b.ingredients), ...ALL_EXTRAS,

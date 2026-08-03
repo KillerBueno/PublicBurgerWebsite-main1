@@ -17,16 +17,15 @@ interface Props {
 type Step = 'size' | 'combo' | 'remove' | 'extras' | 'drink';
 
 // Ingredienti non removibili (bun e carne)
+// Pane e proteina principale: togliendoli il burger non è più quel burger.
+// Devono coprire ogni ingrediente-base presente in BURGERS (src/menuData.ts).
 const NON_REMOVABLE = [
   'Brioche bun',
   'Bun classico',
-  'Piadina',
   'Hamburger di manzo',
   'Hamburger vegetale',
   'Spalla di maiale sfilacciata',
-  'Petto di pollo',
-  'Hamburger di pollo',
-  'Cotoletta di pollo croccante',
+  'Pollo panato e fritto',
 ];
 
 const STEP_LABELS: Record<Step, string> = {
