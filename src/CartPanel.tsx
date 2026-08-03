@@ -632,31 +632,31 @@ export default function CartPanel({ items, onRemove, onUpdateQty, onClose, onOrd
                             ) : (
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
                             )}
-                            {locationStatus === 'loading' ? 'Rilevamento…' : 'Condividi posizione GPS'}
+                            {locationStatus === 'loading' ? 'Rilevamento…' : locationStatus === 'denied' ? 'Riprova col GPS' : 'Condividi posizione GPS'}
                           </button>
-                          {locationStatus === 'denied' && (
-                            <div className="mt-2">
-                              <p className="text-[11px] text-black/45 mb-1.5">
-                                {locationError ?? 'GPS non disponibile. Inserisci l\'indirizzo:'}
-                              </p>
-                              <input
-                                type="text"
-                                value={manualAddress}
-                                onChange={(e) => { setManualAddress(e.target.value); setValidationError(null); }}
-                                placeholder="Via, numero civico, città…"
-                                className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
-                              />
-                              <button
-                                onClick={requestLocation}
-                                className="mt-2 text-[11px] font-semibold text-[#CF6990] hover:underline"
-                              >
-                                ↻ Riprova col GPS
-                              </button>
-                              <p className="text-[10px] text-black/30 mt-1">
-                                Con l'indirizzo scritto a mano la tariffa di consegna te la confermiamo su WhatsApp.
-                              </p>
-                            </div>
+
+                          {locationStatus === 'denied' && locationError && (
+                            <p className="text-[11px] text-black/45 mt-2">{locationError}</p>
                           )}
+
+                          {/* Indirizzo sempre disponibile: l'ordine non dipende mai dal GPS */}
+                          <div className="mt-3">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <div className="h-px bg-black/8 flex-1" />
+                              <span className="text-[10px] uppercase tracking-wider text-black/30">oppure scrivi l'indirizzo</span>
+                              <div className="h-px bg-black/8 flex-1" />
+                            </div>
+                            <input
+                              type="text"
+                              value={manualAddress}
+                              onChange={(e) => { setManualAddress(e.target.value); setValidationError(null); }}
+                              placeholder="Via, numero civico, città…"
+                              className="w-full rounded-xl border border-black/10 bg-[#F2F2F7] px-4 py-3 text-[14px] font-medium focus:outline-none focus:border-[#CF6990] focus:bg-white placeholder-black/20 transition-all"
+                            />
+                            <p className="text-[10px] text-black/30 mt-1">
+                              Con l'indirizzo scritto a mano la tariffa di consegna te la confermiamo su WhatsApp.
+                            </p>
+                          </div>
                         </>
                       )}
                     </motion.div>
