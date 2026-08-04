@@ -123,8 +123,8 @@ export const FRIES: FryDef[] = [
   { name: 'Onion Rings',      desc: 'Anelli di cipolla in pastella',           price: 4.5, allergens: [1] },
   { name: 'Cheese Bacon Fries', desc: 'Patatine con cheddar e bacon croccante', price: 5,   allergens: [7] },
   { name: 'Sweet Potatoes',   desc: 'Patatine di patata dolce',                price: 4,   allergens: [] },
-  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 5,   allergens: [1, 3, 6, 7, 9, 10, 11] },
   { name: 'Chicken Tenders',  desc: '2 pezzi di pollo croccante',              price: 5,   allergens: [1, 3, 6, 10] },
+  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 5,   allergens: [1, 3, 6, 7, 9, 10, 11] },
 ];
 
 export const ALL_EXTRAS: string[] = [
