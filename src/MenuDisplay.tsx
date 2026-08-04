@@ -87,7 +87,7 @@ function BurgerItem({ burger }: { burger: typeof BURGERS[0] }) {
         {/* Name row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 }}>
           <span style={{
-            fontSize: 30, fontWeight: 700, color: PINK,
+            fontSize: 35, fontWeight: 700, color: PINK,
             textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1,
           }}>
             {burger.name}
@@ -104,7 +104,7 @@ function BurgerItem({ burger }: { burger: typeof BURGERS[0] }) {
           {burger.spicy && <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>🌶️</span>}
         </div>
         {/* Ingredients */}
-        <div style={{ fontSize: 15, color: MUTED, lineHeight: 1.5, fontWeight: 400 }}>
+        <div style={{ fontSize: 20, color: MUTED, lineHeight: 1.5, fontWeight: 400 }}>
           {burger.ingredients.join(', ')}
         </div>
         {/* Allergens below ingredients */}
@@ -366,11 +366,11 @@ function Screen2() {
                 {f.name === 'Nuggets' ? (
                   <div style={{ flex: 1 }}>
                     <div style={{
-                      fontSize: 30, fontWeight: 700, color: PINK,
+                      fontSize: 35, fontWeight: 700, color: PINK,
                       textTransform: 'uppercase', letterSpacing: '-0.01em',
                       lineHeight: 1, marginBottom: 4,
                     }}>{f.name}</div>
-                    <div style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
+                    <div style={{ fontSize: 20, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
                     <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
                     {[
                       { label: '6 pz', price: '5' },
@@ -379,7 +379,7 @@ function Screen2() {
                     ].map(({ label, price }) => (
                       <div key={label} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        borderTop: '1px solid rgba(26,10,16,0.06)', padding: '5px 0',
+                        borderTop: '1px solid rgba(26,10,16,0.06)', padding: '3px 0',
                       }}>
                         <span style={{
                           fontSize: 13, color: MUTED, fontWeight: 500,
@@ -393,11 +393,11 @@ function Screen2() {
                   <>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontSize: 30, fontWeight: 700, color: PINK,
+                        fontSize: 35, fontWeight: 700, color: PINK,
                         textTransform: 'uppercase', letterSpacing: '-0.01em',
                         lineHeight: 1, marginBottom: 4,
                       }}>{f.name}</div>
-                      <div style={{ fontSize: 14, color: MUTED }}>{f.desc}</div>
+                      <div style={{ fontSize: 20, color: MUTED }}>{f.desc}</div>
                       <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
                     </div>
                     <span style={{
@@ -428,7 +428,7 @@ function Screen2() {
               }}>
                 <div>
                   <span style={{
-                    fontSize: 30, fontWeight: 700, color: PINK,
+                    fontSize: 35, fontWeight: 700, color: PINK,
                     textTransform: 'uppercase', letterSpacing: '-0.01em', display: 'block', lineHeight: 1,
                     marginBottom: 4,
                   }}>{s}</span>
@@ -456,7 +456,7 @@ function Screen2() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <span style={{
-                    fontSize: 30, fontWeight: 700, color: PINK,
+                    fontSize: 35, fontWeight: 700, color: PINK,
                     textTransform: 'uppercase', letterSpacing: '-0.01em',
                   }}>{d}</span>
                   <span style={{ fontSize: 30, fontWeight: 700, color: DARK }}>
