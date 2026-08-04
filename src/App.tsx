@@ -132,6 +132,8 @@ export default function App() {
     }
   }, []);
 
+  if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
+
   if (!authed) {
     function handleLogin(e: React.FormEvent) {
       e.preventDefault();
@@ -175,7 +177,6 @@ export default function App() {
   }
 
   if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
-  if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
   if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
   if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
   if (path === '/terms')   return <Suspense fallback={null}><LegalPage page="terms" /></Suspense>;

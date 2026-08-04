@@ -67,7 +67,7 @@ function BurgerItem({ burger, last }: { burger: typeof BURGERS[0]; last?: boolea
       {/* Left: name + ingredients */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 7 }}>
-          <span style={{ fontSize: 34, fontWeight: 700, color: PINK, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>
+          <span style={{ fontSize: burger.name.length > 14 ? 26 : 34, fontWeight: 700, color: PINK, textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1 }}>
             {burger.name}
           </span>
           {burger.popular && (
@@ -243,7 +243,7 @@ function Screen2() {
                     <span style={{ display: 'flex', gap: 4 }}>{(FRIES_ALLERGENS[f.name] ?? []).map(n => <span key={n} style={{ fontSize: 11, color: 'rgba(26,10,16,0.4)', fontWeight: 500 }}>{n}.</span>)}</span>
                   </div>
                   <div style={{ fontSize: 14, color: 'rgba(26,10,16,0.62)', fontWeight: 450, marginBottom: 12 }}>{f.desc}</div>
-                  {[{ label: '6 pz', price: '6' }, { label: '12 pz', price: '8.5' }, { label: '20 pz', price: '15' }].map(({ label, price }) => (
+                  {[{ label: '6 pz', price: '5' }, { label: '12 pz', price: '8.5' }, { label: '20 pz', price: '15' }].map(({ label, price }) => (
                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid rgba(26,10,16,0.06)', padding: '7px 0' }}>
                       <span style={{ fontSize: 14, color: 'rgba(26,10,16,0.55)', fontWeight: 500, letterSpacing: '0.05em', textTransform: 'uppercase' }}>{label}</span>
                       <span style={{ fontSize: 30, fontWeight: 700, color: DARK, lineHeight: 1 }}>{price}</span>
