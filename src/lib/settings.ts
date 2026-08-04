@@ -24,12 +24,21 @@ export async function fetchSetting<T>(key: string): Promise<T | null> {
 }
 
 export async function updateSetting(adminToken: string, key: string, value: unknown): Promise<void> {
+  // L'access_token dura un'ora: usato quello catturato al login, dopo 60 min le
+  // scritture rispondono 401. getAccessToken lo rinnova col refresh_token; qui
+  // usiamo sempre quello fresco, col token del chiamante come fallback.
+  let token = adminToken;
+  try {
+    const { getAccessToken } = await import('./supabase');
+    token = (await getAccessToken()) ?? adminToken;
+  } catch { /* fallback al token passato */ }
+
   const res = await fetch(`${SUPABASE_URL}/rest/v1/settings`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${adminToken}`,
+      Authorization: `Bearer ${token}`,
       Prefer: 'resolution=merge-duplicates',
     },
     body: JSON.stringify({ key, value, updated_at: new Date().toISOString() }),
