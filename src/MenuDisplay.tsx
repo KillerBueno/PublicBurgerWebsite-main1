@@ -87,7 +87,7 @@ function BurgerItem({ burger }: { burger: typeof BURGERS[0] }) {
         {/* Name row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 5 }}>
           <span style={{
-            fontSize: 26, fontWeight: 700, color: PINK,
+            fontSize: 30, fontWeight: 700, color: PINK,
             textTransform: 'uppercase', letterSpacing: '-0.02em', lineHeight: 1,
           }}>
             {burger.name}
@@ -104,7 +104,7 @@ function BurgerItem({ burger }: { burger: typeof BURGERS[0] }) {
           {burger.spicy && <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>🌶️</span>}
         </div>
         {/* Ingredients */}
-        <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.5, fontWeight: 400 }}>
+        <div style={{ fontSize: 15, color: MUTED, lineHeight: 1.5, fontWeight: 400 }}>
           {burger.ingredients.join(', ')}
         </div>
         {/* Allergens below ingredients */}
@@ -130,7 +130,7 @@ function BurgerItem({ burger }: { burger: typeof BURGERS[0] }) {
                 {label}
               </div>
               <div style={{
-                fontSize: 32, fontWeight: 700,
+                fontSize: 36, fontWeight: 700,
                 color: value == null ? 'rgba(26,10,16,0.18)' : DARK,
                 letterSpacing: '-0.02em', lineHeight: 1,
               }}>
@@ -366,11 +366,11 @@ function Screen2() {
                 {f.name === 'Nuggets' ? (
                   <div style={{ flex: 1 }}>
                     <div style={{
-                      fontSize: 26, fontWeight: 700, color: PINK,
+                      fontSize: 30, fontWeight: 700, color: PINK,
                       textTransform: 'uppercase', letterSpacing: '-0.01em',
                       lineHeight: 1, marginBottom: 4,
                     }}>{f.name}</div>
-                    <div style={{ fontSize: 13, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
+                    <div style={{ fontSize: 14, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
                     <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
                     {[
                       { label: '6 pz', price: '5' },
@@ -385,7 +385,7 @@ function Screen2() {
                           fontSize: 13, color: MUTED, fontWeight: 500,
                           letterSpacing: '0.05em', textTransform: 'uppercase',
                         }}>{label}</span>
-                        <span style={{ fontSize: 26, fontWeight: 700, color: DARK, lineHeight: 1 }}>{price}</span>
+                        <span style={{ fontSize: 30, fontWeight: 700, color: DARK, lineHeight: 1 }}>{price}</span>
                       </div>
                     ))}
                   </div>
@@ -393,15 +393,15 @@ function Screen2() {
                   <>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{
-                        fontSize: 26, fontWeight: 700, color: PINK,
+                        fontSize: 30, fontWeight: 700, color: PINK,
                         textTransform: 'uppercase', letterSpacing: '-0.01em',
                         lineHeight: 1, marginBottom: 4,
                       }}>{f.name}</div>
-                      <div style={{ fontSize: 13, color: MUTED }}>{f.desc}</div>
+                      <div style={{ fontSize: 14, color: MUTED }}>{f.desc}</div>
                       <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
                     </div>
                     <span style={{
-                      fontSize: 32, fontWeight: 700, color: DARK,
+                      fontSize: 36, fontWeight: 700, color: DARK,
                       flexShrink: 0, lineHeight: 1, paddingTop: 2,
                     }}>
                       {f.price % 1 === 0 ? f.price : f.price.toFixed(1)}
@@ -428,13 +428,13 @@ function Screen2() {
               }}>
                 <div>
                   <span style={{
-                    fontSize: 26, fontWeight: 700, color: PINK,
+                    fontSize: 30, fontWeight: 700, color: PINK,
                     textTransform: 'uppercase', letterSpacing: '-0.01em', display: 'block', lineHeight: 1,
                     marginBottom: 4,
                   }}>{s}</span>
                   <AllergenNums nums={SALSE_ALLERGENS[s] ?? []} />
                 </div>
-                <span style={{ fontSize: 26, fontWeight: 700, color: DARK, lineHeight: 1, paddingTop: 2 }}>0.5</span>
+                <span style={{ fontSize: 30, fontWeight: 700, color: DARK, lineHeight: 1, paddingTop: 2 }}>0.5</span>
               </div>
             ))}
           </div>
@@ -456,10 +456,10 @@ function Screen2() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <span style={{
-                    fontSize: 26, fontWeight: 700, color: PINK,
+                    fontSize: 30, fontWeight: 700, color: PINK,
                     textTransform: 'uppercase', letterSpacing: '-0.01em',
                   }}>{d}</span>
-                  <span style={{ fontSize: 26, fontWeight: 700, color: DARK }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: DARK }}>
                     {price % 1 === 0 ? price : price.toFixed(1)}
                   </span>
                 </div>
