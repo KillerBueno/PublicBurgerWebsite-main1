@@ -30,7 +30,7 @@ const ALLERGENS: Record<string, number[]> = {
   'Pulled Pork':           [1, 3, 7, 10, 12],
   'American Burger':       [1, 3, 7, 10, 12],
   'Hot Chicken Sandwich':  [1, 3, 6, 10, 12],
-  'Lime Chicken Sandwich': [1, 3, 6, 10],
+  '1991': [1, 3, 6, 10],
   'Ingordo':               [1, 3, 7, 10, 12],
   'Fake Burger':           [1, 3, 7, 10, 12],
 };
