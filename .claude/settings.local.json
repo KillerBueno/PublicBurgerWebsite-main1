@@ -189,7 +189,9 @@
       "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu1.html\" \"/Users/simone/Desktop/Menu Public Burger/menu1-tv.html\")",
       "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu2.html\" \"/Users/simone/Desktop/Menu Public Burger/menu2-tv.html\")",
       "Bash(cp menu-screen-1.jpeg \"/Users/simone/Desktop/Menu Public Burger/menu-screen-1.jpeg\")",
-      "Bash(cp menu-screen-2.jpeg \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\")"
+      "Bash(cp menu-screen-2.jpeg \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\")",
+      "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu-screen-1.jpeg\" /Users/simone/Desktop/PublicBurgerWebsite-main/menu-screen-1.jpeg)",
+      "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\" /Users/simone/Desktop/PublicBurgerWebsite-main/menu-screen-2.jpeg)"
     ]
   }
 }

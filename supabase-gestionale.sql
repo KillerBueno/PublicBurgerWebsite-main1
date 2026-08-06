@@ -132,6 +132,25 @@ create table if not exists staff_payments (
 );
 create index if not exists staff_payments_date_idx on staff_payments (date desc);
 
+-- ── Storico prezzi prodotti (dalle righe delle fatture) ────────────────────
+create table if not exists product_prices (
+  id            uuid primary key default gen_random_uuid(),
+  date          date not null,
+  supplier_id   uuid references suppliers(id) on delete set null,
+  supplier_name text not null,
+  product       text not null,
+  product_key   text not null,          -- descrizione normalizzata per raggruppare
+  quantity      numeric(12,3),
+  unit          text,
+  unit_price    numeric(12,4) not null,  -- prezzo unitario netto
+  doc_number    text not null default '',
+  created_at    timestamptz not null default now()
+);
+create index if not exists product_prices_key_idx on product_prices (product_key, date desc);
+-- Evita doppioni reimportando la stessa fattura
+create unique index if not exists product_prices_dedup
+  on product_prices (supplier_name, doc_number, date, product_key, unit_price);
+
 -- ── RLS: solo admin ────────────────────────────────────────────────────────
 alter table suppliers      enable row level security;
 alter table purchases      enable row level security;
@@ -140,13 +159,14 @@ alter table fixed_costs    enable row level security;
 alter table utilities      enable row level security;
 alter table employees      enable row level security;
 alter table staff_payments enable row level security;
+alter table product_prices enable row level security;
 
 do $$
 declare t text;
 begin
   foreach t in array array[
     'suppliers','purchases','daily_sales','fixed_costs',
-    'utilities','employees','staff_payments'
+    'utilities','employees','staff_payments','product_prices'
   ]
   loop
     execute format('drop policy if exists admin_all on %I', t);

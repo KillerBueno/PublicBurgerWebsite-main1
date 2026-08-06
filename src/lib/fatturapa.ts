@@ -1,5 +1,14 @@
 import type { VatLine } from './gestionale';
 
+/** Riga prodotto della fattura (DettaglioLinee). */
+export interface InvoiceLine {
+  description: string;
+  quantity: number | null;
+  unit: string | null;
+  unit_price: number;   // prezzo unitario netto
+  line_total: number;   // totale riga netto
+}
+
 /** Fattura estratta da un file XML FatturaPA. */
 export interface ParsedInvoice {
   fileName: string;
@@ -14,6 +23,7 @@ export interface ParsedInvoice {
   vat_amount: number;
   total: number;
   vat_lines: VatLine[];
+  lines: InvoiceLine[];
   due_date: string | null;
   payment_method: string | null;
 }
@@ -113,6 +123,19 @@ function parseDocument(xml: string, fileName: string): ParsedInvoice[] {
     const taxable = round2(vat_lines.reduce((s, l) => s + l.taxable, 0));
     const vat_amount = round2(vat_lines.reduce((s, l) => s + l.vat, 0));
 
+    // Righe prodotto: descrizione, quantità, prezzo unitario netto
+    const lines: InvoiceLine[] = tags(body, 'DettaglioLinee').map(l => {
+      const qtyRaw = text(l, 'Quantita');
+      const quantity = qtyRaw !== null ? decimal(l, 'Quantita') : null;
+      return {
+        description: (text(l, 'Descrizione') ?? '').replace(/\s+/g, ' ').trim(),
+        quantity: quantity !== null ? quantity * sign : null,
+        unit: text(l, 'UnitaMisura'),
+        unit_price: round2(decimal(l, 'PrezzoUnitario')),
+        line_total: round2(decimal(l, 'PrezzoTotale') * sign),
+      };
+    }).filter(l => l.description !== '');
+
     const pagamento = tags(body, 'DatiPagamento')[0] ?? null;
     const dettaglio = pagamento ? tags(pagamento, 'DettaglioPagamento')[0] ?? null : null;
     const code = text(dettaglio, 'ModalitaPagamento');
@@ -129,6 +152,7 @@ function parseDocument(xml: string, fileName: string): ParsedInvoice[] {
       vat_amount,
       total: round2(taxable + vat_amount),
       vat_lines,
+      lines,
       due_date: text(dettaglio, 'DataScadenzaPagamento'),
       payment_method: code ? PAYMENT_CODES[code] ?? 'Altro' : null,
     };
