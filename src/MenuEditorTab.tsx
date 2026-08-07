@@ -145,16 +145,54 @@ function FryCard({ fry, onChange, onDelete }: { fry: FryDef; onChange: (f: FryDe
         <label className={labelCls}>Descrizione</label>
         <input value={fry.desc} onChange={e => onChange({ ...fry, desc: e.target.value })} placeholder="Descrizione" className={inputCls} />
       </div>
-      <div>
-        <label className={labelCls}>Prezzo (€)</label>
-        <input type="number" step="0.5" min="0" value={fry.price} onChange={e => onChange({ ...fry, price: parseFloat(e.target.value) || 0 })} className={`${inputCls} max-w-[120px]`} />
-      </div>
+      {fry.variants?.length ? (
+        <div>
+          <label className={labelCls}>Formati e prezzi</label>
+          <div className="space-y-2">
+            {fry.variants.map((v, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <input value={v.label} placeholder="Es. 6 pezzi"
+                  onChange={e => setFryVariants(fry, onChange, fry.variants!.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
+                  className={inputCls} />
+                <div className="flex items-center border border-black/12 rounded-xl overflow-hidden bg-[#fdf5f8] max-w-[110px] shrink-0">
+                  <span className="px-2 text-black/30 text-sm">€</span>
+                  <input type="number" step="0.5" min="0" value={v.price}
+                    onChange={e => setFryVariants(fry, onChange, fry.variants!.map((x, j) => j === i ? { ...x, price: parseFloat(e.target.value) || 0 } : x))}
+                    className="flex-1 py-2 pr-1 text-sm focus:outline-none bg-transparent w-0 min-w-0" />
+                </div>
+                <button onClick={() => setFryVariants(fry, onChange, fry.variants!.filter((_, j) => j !== i))}
+                  className="shrink-0 w-6 h-6 rounded-full bg-red-50 text-red-400 hover:bg-red-100 text-sm leading-none">×</button>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => setFryVariants(fry, onChange, [...fry.variants!, { label: '', price: 0 }])}
+            className="mt-2 text-[11px] text-[#a8456b] font-semibold hover:underline">+ Aggiungi formato</button>
+          <p className="text-[10px] text-black/30 mt-1">Il cliente sceglie il formato; in lista compare "da {prezzo minimo}".</p>
+        </div>
+      ) : (
+        <div>
+          <label className={labelCls}>Prezzo (€)</label>
+          <input type="number" step="0.5" min="0" value={fry.price} onChange={e => onChange({ ...fry, price: parseFloat(e.target.value) || 0 })} className={`${inputCls} max-w-[120px]`} />
+          <button onClick={() => setFryVariants(fry, onChange, [{ label: '', price: fry.price }])}
+            className="block mt-2 text-[11px] text-[#a8456b] font-semibold hover:underline">+ Aggiungi formati (es. 6/12/20 pz)</button>
+        </div>
+      )}
       <div>
         <label className={labelCls}>Allergeni</label>
         <AllergenPicker value={fry.allergens} onChange={v => onChange({ ...fry, allergens: v })} />
       </div>
     </div>
   );
+}
+
+// Aggiorna i formati di un contorno e tiene `price` = prezzo minimo (per il "da …").
+function setFryVariants(fry: FryDef, onChange: (f: FryDef) => void, variants: { label: string; price: number }[]) {
+  if (!variants.length) {
+    onChange({ ...fry, variants: undefined });
+    return;
+  }
+  const min = Math.min(...variants.map(v => v.price));
+  onChange({ ...fry, variants, price: min });
 }
 
 function DrinkCard({ drink, onChange, onDelete }: { drink: DrinkItem; onChange: (d: DrinkItem) => void; onDelete: () => void }) {
@@ -201,7 +239,11 @@ export default function MenuEditorTab({ adminToken }: { adminToken: string }) {
     // Scarta burger/voci senza nome per non sporcare il menu.
     const clean: CustomMenu = {
       burgers: menu.burgers.filter(b => b.name.trim()),
-      fries: menu.fries.filter(f => f.name.trim()),
+      fries: menu.fries.filter(f => f.name.trim()).map(f => {
+        // Scarta i formati senza nome; se ne resta 0, il contorno torna a prezzo singolo.
+        const variants = f.variants?.filter(v => v.label.trim());
+        return variants?.length ? { ...f, variants } : { ...f, variants: undefined };
+      }),
       drinks: menu.drinks.filter(d => d.name.trim()),
       extras: menu.extras.map(s => s.trim()).filter(Boolean),
       salse: menu.salse.map(s => s.trim()).filter(Boolean),

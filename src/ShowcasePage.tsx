@@ -440,13 +440,9 @@ function FryModal({ fry, salse, onConfirm, onClose }: { fry: typeof FRIES[0]; sa
 
 // ─── Nuggets Modal ────────────────────────────────────────────────────────────
 
-const NUGGETS_SIZES = [
-  { label: '6 pezzi', qty: 6, price: 6 },
-  { label: '12 pezzi', qty: 12, price: 8.5 },
-  { label: '20 pezzi', qty: 20, price: 15 },
-];
-
-function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfirm: (label: string, price: number, sauces: string[]) => void; onClose: () => void }) {
+// Modale per contorni con formati multipli (es. Nuggets 6/12/20 pz). I formati
+// arrivano dal menu (fry.variants), quindi si modificano dall'editor admin.
+function VariantModal({ name, sizes, salse, onConfirm, onClose }: { name: string; sizes: { label: string; price: number }[]; salse: string[]; onConfirm: (label: string, price: number, sauces: string[]) => void; onClose: () => void }) {
   const [step, setStep] = useState<'size' | 'salse'>('size');
   const [chosenSize, setChosenSize] = useState<{ label: string; price: number } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -463,11 +459,11 @@ function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfir
         <div className="px-6 pt-6 pb-4 border-b border-black/8 flex items-start justify-between shrink-0">
           <div>
             <p className="text-[9px] tracking-[0.35em] uppercase text-[#CF6990] font-medium mb-1">
-              {step === 'size' ? 'Quanti nuggets?' : 'Aggiungi una salsa'}
+              {step === 'size' ? 'Scegli il formato' : 'Aggiungi una salsa'}
             </p>
-            <h3 className="text-xl tracking-tight uppercase font-semibold">Nuggets</h3>
+            <h3 className="text-xl tracking-tight uppercase font-semibold">{name}</h3>
             {step === 'salse' && chosenSize && (
-              <p className="text-xs text-black/40 mt-0.5">{chosenSize.label} — €{chosenSize.price}</p>
+              <p className="text-xs text-black/40 mt-0.5">{chosenSize.label} — {fmt(chosenSize.price)}</p>
             )}
           </div>
           <button onClick={onClose} className="text-black/20 hover:text-black/60 text-2xl leading-none mt-1">×</button>
@@ -475,12 +471,12 @@ function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfir
 
         {step === 'size' ? (
           <div className="px-6 py-5 space-y-2">
-            {NUGGETS_SIZES.map(({ label, qty, price }) => (
-              <button key={qty}
+            {sizes.map(({ label, price }) => (
+              <button key={label}
                 onClick={() => { setChosenSize({ label, price }); setStep('salse'); }}
                 className="w-full flex items-center justify-between px-5 py-4 border border-black/8 hover:border-[#CF6990] hover:bg-[#FBE8EF]/40 transition-all duration-200 group">
                 <span className="text-sm uppercase tracking-widest font-semibold text-black/70 group-hover:text-[#1a0a10]">{label}</span>
-                <span className="text-lg text-[#CF6990] font-semibold">€{price}</span>
+                <span className="text-lg text-[#CF6990] font-semibold">{fmt(price)}</span>
               </button>
             ))}
           </div>
@@ -488,7 +484,7 @@ function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfir
           <>
             <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
               <p className="text-[9px] tracking-[0.3em] uppercase text-black/30 mb-3">Vuoi aggiungere una salsa?</p>
-              <button onClick={() => { onConfirm(`Nuggets ${chosenSize!.label}`, chosenSize!.price, []); onClose(); }}
+              <button onClick={() => { onConfirm(`${name} ${chosenSize!.label}`, chosenSize!.price, []); onClose(); }}
                 className="w-full flex items-center gap-3 px-4 py-3 mb-3 rounded-xl border border-black/8 hover:border-black/25 text-left transition-all duration-150">
                 <span className="w-3.5 h-3.5 border border-black/20 rounded-full flex-shrink-0" />
                 <span className="text-sm text-black/40">Nessuna salsa</span>
@@ -510,9 +506,9 @@ function NuggetsModal({ salse, onConfirm, onClose }: { salse: string[]; onConfir
               <button onClick={() => setStep('size')} className="text-black/30 hover:text-black/60 text-lg">←</button>
               <div className="text-center">
                 <div className="text-[9px] tracking-[0.3em] uppercase text-black/25 mb-0.5">Totale</div>
-                <div className="text-lg font-semibold text-[#CF6990]">€{chosenSize!.price}</div>
+                <div className="text-lg font-semibold text-[#CF6990]">{fmt(chosenSize!.price)}</div>
               </div>
-              <button onClick={() => { onConfirm(`Nuggets ${chosenSize!.label}`, chosenSize!.price, selected); onClose(); }}
+              <button onClick={() => { onConfirm(`${name} ${chosenSize!.label}`, chosenSize!.price, selected); onClose(); }}
                 className="text-[10px] tracking-[0.2em] uppercase font-bold bg-[#1a0a10] text-white px-5 py-2.5 hover:bg-[#CF6990] transition-colors duration-300">
                 Aggiungi
               </button>
@@ -1135,7 +1131,7 @@ export default function ShowcasePage() {
   const [configuringBurger, setConfiguringBurger] = useState<{ burger: BurgerDef; size?: import('./menuData').BurgerSize } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [fryModal, setFryModal] = useState<typeof FRIES[0] | null>(null);
-  const [nuggetsModal, setNuggetsModal] = useState(false);
+  const [variantFry, setVariantFry] = useState<typeof FRIES[0] | null>(null);
   const [burgerFilter, setBurgerFilter] = useState<'all' | 'veggie' | 'spicy' | 'chicken'>('all');
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1679,7 +1675,7 @@ export default function ShowcasePage() {
               return (
                 <motion.button
                   key={f.name}
-                  onClick={() => f.name === 'Nuggets' ? setNuggetsModal(true) : setFryModal(f)}
+                  onClick={() => f.variants?.length ? setVariantFry(f) : setFryModal(f)}
                   whileTap={{ scale: 0.98 }}
                   className={`w-full text-left rounded-2xl border transition-all duration-200 mb-3 px-5 py-5 flex items-center justify-between ${
                     fryQty > 0 ? 'border-[#CF6990]/40 bg-[#FBE8EF]/40' : 'border-black/5 bg-white hover:border-[#CF6990]/30 hover:bg-[#FBE8EF]/20'
@@ -1696,7 +1692,7 @@ export default function ShowcasePage() {
                       <AllergenTag allergens={f.allergens} />
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm text-[#CF6990] tracking-widest">{fmt(fryPrice(f))}</span>
+                      <span className="text-sm text-[#CF6990] tracking-widest">{f.variants?.length ? `da ${fmt(Math.min(...f.variants.map(v => v.price)))}` : fmt(fryPrice(f))}</span>
                       {fryQty > 0 && (
                         <button
                           onClick={(e) => { e.stopPropagation(); removeFry(f); }}
@@ -2025,20 +2021,21 @@ export default function ShowcasePage() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {nuggetsModal && (
-          <NuggetsModal
+        {variantFry && (
+          <VariantModal
+            name={variantFry.name}
+            sizes={variantFry.variants ?? []}
             salse={menu.salse}
             onConfirm={(label, price, sauces) => {
+              const fryAllergens = variantFry.allergens;
+              const fryName = variantFry.name;
               setCart((prev) => {
-                // Allergeni presi da menuData: erano hardcoded e fermi ai valori
-                // pre-correzione del commit 21517be (mancavano latte/sedano/sesamo).
-                const nuggetAllergens = FRIES.find(f => f.name === 'Nuggets')?.allergens ?? [];
-                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: 'Nuggets', price, allergens: nuggetAllergens }, qty: 1, totalPrice: price };
+                const item: CartFry = { id: crypto.randomUUID(), type: 'fry', fry: { name: label, desc: fryName, price, allergens: fryAllergens }, qty: 1, totalPrice: price };
                 const sauceItems: CartExtra[] = sauces.map((name) => ({ id: crypto.randomUUID(), type: 'extra', name, category: 'salsa', qty: 1, totalPrice: 0.5 }));
                 return [...prev, item, ...sauceItems];
               });
             }}
-            onClose={() => setNuggetsModal(false)}
+            onClose={() => setVariantFry(null)}
           />
         )}
       </AnimatePresence>

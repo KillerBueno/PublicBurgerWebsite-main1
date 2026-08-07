@@ -17,6 +17,9 @@ export interface FryDef {
   desc: string;
   price: number;
   allergens: number[];
+  /** Formati multipli (es. Nuggets 6/12/20 pz). Se presenti, il prezzo si
+   *  sceglie dal formato; `price` resta come minimo mostrato in lista. */
+  variants?: { label: string; price: number }[];
 }
 
 export const BURGERS: BurgerDef[] = [
@@ -124,7 +127,8 @@ export const FRIES: FryDef[] = [
   { name: 'Cheese Bacon Fries', desc: 'Patatine con cheddar e bacon croccante', price: 5,   allergens: [7] },
   { name: 'Sweet Potatoes',   desc: 'Patatine di patata dolce',                price: 4,   allergens: [] },
   { name: 'Chicken Tenders',  desc: '2 pezzi di pollo croccante',              price: 5,   allergens: [1, 3, 6, 10] },
-  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 5,   allergens: [1, 3, 6, 7, 9, 10, 11] },
+  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 6,   allergens: [1, 3, 6, 7, 9, 10, 11],
+    variants: [{ label: '6 pezzi', price: 6 }, { label: '12 pezzi', price: 8.5 }, { label: '20 pezzi', price: 15 }] },
 ];
 
 export const ALL_EXTRAS: string[] = [
