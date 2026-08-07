@@ -105,9 +105,22 @@ export interface CustomerStat {
   last_order: string;
 }
 
+export interface ProductPrice {
+  id: string;
+  date: string;
+  supplier_id: string | null;
+  supplier_name: string;
+  product: string;
+  product_key: string;
+  quantity: number | null;
+  unit: string | null;
+  unit_price: number;
+  doc_number: string;
+}
+
 export type TableName =
   | 'suppliers' | 'purchases' | 'daily_sales' | 'fixed_costs'
-  | 'utilities' | 'employees' | 'staff_payments';
+  | 'utilities' | 'employees' | 'staff_payments' | 'product_prices';
 
 // ─── CRUD generico ────────────────────────────────────────────────────────────
 
@@ -216,6 +229,30 @@ export async function deleteRow(token: string, table: TableName, id: string): Pr
     headers: authHeaders(await freshToken(token), { Prefer: 'return=minimal' }),
   });
   if (!res.ok) throw new Error(`Eliminazione fallita (${res.status})`);
+}
+
+/** Chiave di raggruppamento di un prodotto: minuscolo, spazi normalizzati. */
+export function productKey(description: string): string {
+  return description.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Inserisce righe di prezzo ignorando i doppioni (stessa fattura reimportata). */
+export async function insertProductPrices(
+  token: string,
+  rows: Record<string, unknown>[],
+): Promise<void> {
+  if (rows.length === 0) return;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/product_prices?on_conflict=supplier_name,doc_number,date,product_key,unit_price`,
+    {
+      method: 'POST',
+      headers: authHeaders(await freshToken(token), {
+        Prefer: 'resolution=ignore-duplicates,return=minimal',
+      }),
+      body: JSON.stringify(rows),
+    },
+  );
+  if (!res.ok) throw new Error(await res.text());
 }
 
 export async function fetchCustomerStats(token: string): Promise<CustomerStat[]> {

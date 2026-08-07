@@ -2,21 +2,23 @@ import { useState, useEffect, useMemo, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   fetchTable, insertRow, updateRow, upsertRow, deleteRow, renameSupplierOnPurchases,
+  insertProductPrices, productKey,
   PURCHASE_CATEGORIES, PAYMENT_METHODS, UTILITY_TYPES, VAT_RATES,
   eur, monthKey, monthLabel, todayISO, saleTotal, avgTicket,
   type Supplier, type Purchase, type DailySale, type FixedCost,
-  type Utility, type Employee, type StaffPayment,
+  type Utility, type Employee, type StaffPayment, type ProductPrice,
 } from './lib/gestionale';
 import { fetchSetting, updateSetting } from './lib/settings';
 import { parseInvoiceFiles, type ParsedInvoice, type ParseError } from './lib/fatturapa';
 
-type Section = 'dashboard' | 'vendite' | 'acquisti' | 'fornitori' | 'costi' | 'primanota' | 'iva';
+type Section = 'dashboard' | 'vendite' | 'acquisti' | 'fornitori' | 'prezzi' | 'costi' | 'primanota' | 'iva';
 
 const SECTIONS: { key: Section; label: string; icon: string }[] = [
   { key: 'dashboard', label: 'Dashboard',  icon: '📊' },
   { key: 'vendite',   label: 'Vendite',    icon: '💶' },
   { key: 'acquisti',  label: 'Acquisti',   icon: '🧾' },
   { key: 'fornitori', label: 'Fornitori',  icon: '🚚' },
+  { key: 'prezzi',    label: 'Prezzi',     icon: '📈' },
   { key: 'costi',     label: 'Costi',      icon: '🏠' },
   { key: 'primanota', label: 'Prima Nota', icon: '📒' },
   { key: 'iva',       label: 'IVA',        icon: '🏛' },
@@ -228,6 +230,7 @@ export default function GestionaleTab({ adminToken }: { adminToken: string }) {
         {section === 'vendite'   && <VenditeSection {...shared} />}
         {section === 'acquisti'  && <AcquistiSection {...shared} />}
         {section === 'fornitori' && <FornitoriSection {...shared} />}
+        {section === 'prezzi'    && <PrezziSection adminToken={adminToken} />}
         {section === 'costi'     && <CostiSection {...shared} />}
         {section === 'primanota' && <PrimaNotaSection {...shared} />}
         {section === 'iva'       && <IvaSection {...shared} />}
@@ -982,6 +985,22 @@ function ImportXmlPanel({
           notes: inv.is_credit_note ? `Nota di credito ${inv.doc_type}` : null,
         });
         newPurchases.push(row);
+
+        // Storico prezzi: una riga per prodotto della fattura
+        const priceRows = inv.lines
+          .filter(l => l.unit_price > 0)
+          .map(l => ({
+            date: inv.date,
+            supplier_id: supplier!.id,
+            supplier_name: supplier!.name,
+            product: l.description,
+            product_key: productKey(l.description),
+            quantity: l.quantity,
+            unit: l.unit,
+            unit_price: l.unit_price,
+            doc_number: inv.doc_number || '',
+          }));
+        if (priceRows.length) await insertProductPrices(adminToken, priceRows);
       }
 
       if (newSuppliers.length) {
@@ -1852,6 +1871,192 @@ function IvaSection({ adminToken, sales, purchases, ivaRate, setIvaRate }: Share
             </tfoot>
           )}
         </table>
+      </Card>
+    </>
+  );
+}
+
+// ─── Prezzi prodotti ──────────────────────────────────────────────────────────
+
+// Prezzo unitario: fino a 3 decimali, senza zeri finali
+const priceFmt = (n: number) =>
+  `€${n.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 3 })}`;
+
+interface ProductTrend {
+  key: string;
+  product: string;
+  supplier: string;
+  history: ProductPrice[];   // dal più recente
+  latest: number;
+  previous: number | null;
+  deltaPct: number | null;   // null = nessuno storico precedente
+}
+
+function buildTrends(rows: ProductPrice[]): ProductTrend[] {
+  const groups = new Map<string, ProductPrice[]>();
+  for (const r of rows) {
+    const g = groups.get(r.product_key) ?? [];
+    g.push(r);
+    groups.set(r.product_key, g);
+  }
+  const trends: ProductTrend[] = [];
+  for (const [key, list] of groups) {
+    // dal più recente: per data, poi per inserimento
+    list.sort((a, b) => (b.date.localeCompare(a.date)) || 0);
+    const latest = Number(list[0].unit_price);
+    const previous = list.length > 1 ? Number(list[1].unit_price) : null;
+    const deltaPct = previous && previous !== 0 ? ((latest - previous) / previous) * 100 : null;
+    trends.push({
+      key,
+      product: list[0].product,
+      supplier: list[0].supplier_name,
+      history: list,
+      latest,
+      previous,
+      deltaPct,
+    });
+  }
+  return trends;
+}
+
+function PrezziSection({ adminToken }: { adminToken: string }) {
+  const [rows, setRows] = useState<ProductPrice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'variazione' | 'nome' | 'recenti'>('variazione');
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchTable<ProductPrice>(adminToken, 'product_prices', 'order=date.desc&limit=5000')
+      .then(d => { if (!cancelled) setRows(d); })
+      .catch(() => { if (!cancelled) setErr('Tabella non trovata: esegui l\'aggiornamento SQL del gestionale.'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [adminToken]);
+
+  const trends = useMemo(() => buildTrends(rows), [rows]);
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = q ? trends.filter(t => t.product.toLowerCase().includes(q) || t.supplier.toLowerCase().includes(q)) : trends;
+    const out = [...list];
+    out.sort((a, b) => {
+      if (sort === 'nome') return a.product.localeCompare(b.product);
+      if (sort === 'recenti') return b.history[0].date.localeCompare(a.history[0].date);
+      // variazione: prima i movimenti più grandi in valore assoluto
+      return Math.abs(b.deltaPct ?? 0) - Math.abs(a.deltaPct ?? 0);
+    });
+    return out;
+  }, [trends, search, sort]);
+
+  const kpi = useMemo(() => ({
+    prodotti: trends.length,
+    aumentati: trends.filter(t => (t.deltaPct ?? 0) > 0.01).length,
+    diminuiti: trends.filter(t => (t.deltaPct ?? 0) < -0.01).length,
+  }), [trends]);
+
+  if (loading) {
+    return <div className="text-center py-16"><div className="w-8 h-8 border-2 border-[#CF6990] border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+  }
+  if (err) {
+    return <div className="text-center py-16 px-4"><div className="text-4xl mb-3">📈</div><p className="text-[12px] text-black/45 leading-relaxed">{err}</p></div>;
+  }
+  if (trends.length === 0) {
+    return (
+      <div className="text-center py-16 px-6">
+        <div className="text-4xl mb-3">📈</div>
+        <p className="text-[13px] font-semibold text-[#1a0a10] mb-1">Ancora nessun prezzo</p>
+        <p className="text-[12px] text-black/40 leading-relaxed">
+          Importa le fatture XML in <strong>Acquisti</strong>: i prodotti e i loro prezzi vengono raccolti qui in automatico.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <KpiGrid
+        items={[
+          { label: 'Prodotti', value: String(kpi.prodotti) },
+          { label: 'In aumento', value: String(kpi.aumentati), tone: kpi.aumentati ? 'bad' : undefined },
+          { label: 'In calo', value: String(kpi.diminuiti), tone: kpi.diminuiti ? 'good' : undefined },
+          { label: 'Stabili', value: String(kpi.prodotti - kpi.aumentati - kpi.diminuiti) },
+        ]}
+      />
+
+      <div className="flex gap-2">
+        <input
+          type="text" value={search} placeholder="🔍  Cerca prodotto o fornitore…"
+          onChange={e => setSearch(e.target.value)}
+          className="flex-1 min-w-0 border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]"
+        />
+        <select value={sort} onChange={e => setSort(e.target.value as typeof sort)}
+          className={`${inputCls} w-auto py-2 text-[11px]`}>
+          <option value="variazione">Più variazione</option>
+          <option value="recenti">Più recenti</option>
+          <option value="nome">Nome A-Z</option>
+        </select>
+      </div>
+
+      <Card className="divide-y divide-black/6">
+        {visible.map(t => {
+          const up = (t.deltaPct ?? 0) > 0.01;
+          const down = (t.deltaPct ?? 0) < -0.01;
+          // Nero stabile, verde in calo, rosso in aumento
+          const color = up ? 'text-red-500' : down ? 'text-green-600' : 'text-[#1a0a10]';
+          const isOpen = expanded === t.key;
+          return (
+            <div key={t.key}>
+              <button className="w-full flex items-center gap-3 px-4 py-3 text-left" onClick={() => setExpanded(isOpen ? null : t.key)}>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-[#1a0a10] truncate">{t.product}</p>
+                  <p className="text-[10px] text-black/35 truncate">
+                    {t.supplier} · {t.history.length} rilev. · ultimo {fmtDay(t.history[0].date)}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className={`text-[13px] font-bold tabular-nums ${color}`}>{priceFmt(t.latest)}</p>
+                  {t.deltaPct !== null && (up || down) ? (
+                    <p className={`text-[10px] font-semibold tabular-nums ${color}`}>
+                      {up ? '▲' : '▼'} {Math.abs(t.deltaPct).toFixed(1)}%
+                      <span className="text-black/30 font-normal"> da {priceFmt(t.previous!)}</span>
+                    </p>
+                  ) : (
+                    <p className="text-[10px] text-black/30">{t.previous === null ? 'primo prezzo' : 'stabile'}</p>
+                  )}
+                </div>
+                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }} className="text-black/25 text-sm shrink-0">▾</motion.span>
+              </button>
+
+              <AnimatePresence>
+                {isOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="px-4 pb-3 bg-[#fdf5f8]/50">
+                      <div className="space-y-1 pt-1">
+                        {t.history.map((h, i) => {
+                          const prev = t.history[i + 1];
+                          const d = prev ? Number(h.unit_price) - Number(prev.unit_price) : 0;
+                          const c = d > 0.001 ? 'text-red-500' : d < -0.001 ? 'text-green-600' : 'text-black/50';
+                          return (
+                            <div key={h.id} className="flex items-center gap-2 text-[11px]">
+                              <span className="text-black/40 w-16 shrink-0">{fmtDay(h.date)}</span>
+                              <span className="text-black/30 flex-1 truncate">
+                                {h.quantity !== null ? `${h.quantity}${h.unit ? ' ' + h.unit : ''}` : ''}
+                              </span>
+                              <span className={`font-semibold tabular-nums ${c}`}>{priceFmt(Number(h.unit_price))}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })}
       </Card>
     </>
   );

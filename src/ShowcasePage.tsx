@@ -1118,6 +1118,19 @@ export default function ShowcasePage() {
     } catch { return []; }
   });
   const [reorderDismissed, setReorderDismissed] = useState(false);
+  // Il fumetto "riordina" deve apparire a schermo libero: al primo ingresso
+  // aspetta la fine dello splash, altrimenti il suo timer scorre coperto.
+  const [reorderReady, setReorderReady] = useState(false);
+  useEffect(() => {
+    if (sessionStorage.getItem('pb_splash_done') === '1') {
+      const t = setTimeout(() => setReorderReady(true), 800);
+      return () => clearTimeout(t);
+    }
+    let t: ReturnType<typeof setTimeout>;
+    const onDone = () => { t = setTimeout(() => setReorderReady(true), 400); };
+    window.addEventListener('pb-splash-done', onDone);
+    return () => { window.removeEventListener('pb-splash-done', onDone); clearTimeout(t); };
+  }, []);
 
   const [configuringBurger, setConfiguringBurger] = useState<{ burger: BurgerDef; size?: import('./menuData').BurgerSize } | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
@@ -1155,7 +1168,7 @@ export default function ShowcasePage() {
   }, [closedBannerVisible]);
 
   const reorderBubbleVisible =
-    lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && !!pageUser;
+    reorderReady && lastOrder.length > 0 && !reorderDismissed && cart.length === 0 && !!pageUser;
   useEffect(() => {
     if (!reorderBubbleVisible) return;
     const t = setTimeout(() => setReorderDismissed(true), 4400); // 400ms di delay d'ingresso + 4s
@@ -1984,6 +1997,7 @@ export default function ShowcasePage() {
               onUpdateQty={updateQty}
               onClose={() => setCartOpen(false)}
               disabledProducts={disabledProducts}
+              openingHours={openingHours}
               onOrderSent={(sentItems) => {
                 try { localStorage.setItem('pb_last_order', JSON.stringify(sentItems)); } catch {}
                 setLastOrder(sentItems);

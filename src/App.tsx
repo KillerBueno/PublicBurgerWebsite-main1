@@ -110,6 +110,9 @@ export default function App() {
     setSplash(false);
     setLogoTransition(true);
     setTimeout(() => setLogoTransition(false), 1000);
+    // Segnala alla pagina che lo splash è finito (per i banner che devono
+    // apparire solo a schermo libero, es. il fumetto "riordina")
+    window.dispatchEvent(new Event('pb-splash-done'));
   }
 
   useEffect(() => {
@@ -125,8 +128,8 @@ export default function App() {
     }
   }, []);
 
-  if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
   if (path === '/display') return <Suspense fallback={null}><MenuDisplay /></Suspense>;
+  if (path === '/admin')   return <Suspense fallback={null}><AdminPage /></Suspense>;
   if (path === '/privacy') return <Suspense fallback={null}><LegalPage page="privacy" /></Suspense>;
   if (path === '/cookie')  return <Suspense fallback={null}><LegalPage page="cookie" /></Suspense>;
   if (path === '/terms')   return <Suspense fallback={null}><LegalPage page="terms" /></Suspense>;
