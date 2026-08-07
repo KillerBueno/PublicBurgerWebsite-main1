@@ -363,7 +363,7 @@ function Screen2() {
                 display: 'flex', justifyContent: 'space-between',
                 alignItems: 'flex-start', gap: 12,
               }}>
-                {f.name === 'Nuggets' ? (
+                {f.variants?.length ? (
                   <div style={{ flex: 1 }}>
                     <div style={{
                       fontSize: 35, fontWeight: 700, color: PINK,
@@ -372,11 +372,7 @@ function Screen2() {
                     }}>{f.name}</div>
                     <div style={{ fontSize: 20, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
                     <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
-                    {[
-                      { label: '6 pz', price: '5' },
-                      { label: '12 pz', price: '8.5' },
-                      { label: '20 pz', price: '15' },
-                    ].map(({ label, price }) => (
+                    {f.variants.map(({ label, price: p }) => ({ label, price: p % 1 === 0 ? String(p) : String(p).replace('.', ',') })).map(({ label, price }) => (
                       <div key={label} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         borderTop: '1px solid rgba(26,10,16,0.06)', padding: '3px 0',

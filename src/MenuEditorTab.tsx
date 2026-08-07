@@ -186,9 +186,11 @@ function FryCard({ fry, onChange, onDelete }: { fry: FryDef; onChange: (f: FryDe
 }
 
 // Aggiorna i formati di un contorno e tiene `price` = prezzo minimo (per il "da …").
+// Rimuovendo tutti i formati si salva `[]` (scelta esplicita): così il ripristino
+// automatico dei default non li riaggiunge.
 function setFryVariants(fry: FryDef, onChange: (f: FryDef) => void, variants: { label: string; price: number }[]) {
   if (!variants.length) {
-    onChange({ ...fry, variants: undefined });
+    onChange({ ...fry, variants: [] });
     return;
   }
   const min = Math.min(...variants.map(v => v.price));
@@ -240,9 +242,10 @@ export default function MenuEditorTab({ adminToken }: { adminToken: string }) {
     const clean: CustomMenu = {
       burgers: menu.burgers.filter(b => b.name.trim()),
       fries: menu.fries.filter(f => f.name.trim()).map(f => {
-        // Scarta i formati senza nome; se ne resta 0, il contorno torna a prezzo singolo.
-        const variants = f.variants?.filter(v => v.label.trim());
-        return variants?.length ? { ...f, variants } : { ...f, variants: undefined };
+        // Scarta i formati senza nome. Distinzione importante: `undefined` = mai
+        // avuti (il ripristino può riaggiungerli), `[]` = rimossi apposta (rispettato).
+        if (f.variants === undefined) return f;
+        return { ...f, variants: f.variants.filter(v => v.label.trim()) };
       }),
       drinks: menu.drinks.filter(d => d.name.trim()),
       extras: menu.extras.map(s => s.trim()).filter(Boolean),

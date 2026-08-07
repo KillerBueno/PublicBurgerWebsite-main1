@@ -98,11 +98,26 @@ export function normalizeMenu(custom: Partial<CustomMenu> | null | undefined): C
   if (!custom) return d;
   return {
     burgers: custom.burgers?.length ? custom.burgers : d.burgers,
-    fries: custom.fries?.length ? custom.fries : d.fries,
+    fries: backfillFryVariants(custom.fries?.length ? custom.fries : d.fries, d.fries),
     drinks: custom.drinks?.length ? custom.drinks : d.drinks,
     extras: custom.extras?.length ? custom.extras : d.extras,
     salse: custom.salse?.length ? custom.salse : d.salse,
   };
+}
+
+/**
+ * I menu salvati prima dei "formati" hanno i contorni senza `variants`.
+ * Se un contorno non ha MAI avuto formati (`variants === undefined`) ma nel menu
+ * base quel nome ne ha, li recupera dal default — così Nuggets riprende i suoi
+ * 6/12/20 pz senza doverli riaggiungere a mano. Un array `[]` esplicito
+ * (formati rimossi apposta dall'admin) invece viene rispettato e resta senza.
+ */
+function backfillFryVariants(fries: FryDef[], defaults: FryDef[]): FryDef[] {
+  return fries.map(f => {
+    if (f.variants !== undefined) return f;
+    const def = defaults.find(x => x.name === f.name);
+    return def?.variants?.length ? { ...f, variants: def.variants } : f;
+  });
 }
 
 export const ALLERGEN_OPTIONS: { n: number; label: string }[] = [
