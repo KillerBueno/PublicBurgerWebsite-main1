@@ -167,7 +167,7 @@ function FryCard({ fry, onChange, onDelete }: { fry: FryDef; onChange: (f: FryDe
           </div>
           <button onClick={() => setFryVariants(fry, onChange, [...fry.variants!, { label: '', price: 0 }])}
             className="mt-2 text-[11px] text-[#a8456b] font-semibold hover:underline">+ Aggiungi formato</button>
-          <p className="text-[10px] text-black/30 mt-1">Il cliente sceglie il formato; in lista compare "da {prezzo minimo}".</p>
+          <p className="text-[10px] text-black/30 mt-1">Il cliente sceglie il formato; in lista compare "da …" col prezzo più basso.</p>
         </div>
       ) : (
         <div>

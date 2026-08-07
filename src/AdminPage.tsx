@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { fetchOrders, updateOrderStatus, updateOrderNotes, deleteOrder, exportOrdersCSV, type Order } from './lib/orders';
 import { getStoredUser, signOut } from './lib/supabase';
-import { fetchProfiles, type UserProfile } from './lib/profiles';
+import { fetchProfiles, setProfileOverride, type UserProfile } from './lib/profiles';
 import {
   fetchSetting, updateSetting, isCurrentlyOpen,
   type MondaySmashConfig, type PriceOverrides, type OpeningHours, type DayKey,
@@ -87,9 +87,6 @@ function fmtDate(dateStr: string) {
     + ' ' + d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 }
 
-function fmtTime(dateStr: string) {
-  return new Date(dateStr).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
-}
 
 function esc(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
