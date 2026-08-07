@@ -191,7 +191,16 @@
       "Bash(cp menu-screen-1.jpeg \"/Users/simone/Desktop/Menu Public Burger/menu-screen-1.jpeg\")",
       "Bash(cp menu-screen-2.jpeg \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\")",
       "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu-screen-1.jpeg\" /Users/simone/Desktop/PublicBurgerWebsite-main/menu-screen-1.jpeg)",
-      "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\" /Users/simone/Desktop/PublicBurgerWebsite-main/menu-screen-2.jpeg)"
+      "Bash(cp \"/Users/simone/Desktop/Menu Public Burger/menu-screen-2.jpeg\" /Users/simone/Desktop/PublicBurgerWebsite-main/menu-screen-2.jpeg)",
+      "Bash(grep -oP \"\\(?<=name: '\\)[^']+\\(?=',\\\\s*$\\)\" src/FoodCostTab.tsx)",
+      "Bash(node \"C:/Users/prrsm/AppData/Local/Temp/claude/C--Users-prrsm-PublicBurgerWebsite-main1/8e546682-9a58-4e0f-b6db-407fb38f8824/scratchpad/crosscheck.mjs\")",
+      "Bash(git log *)",
+      "Bash(echo \"TSC=$?\")",
+      "Bash(echo \"TSC_OK=$?\")",
+      "Bash(echo \"EXIT_TSC_REALE=$?\")",
+      "Bash(sed -n '/function addFry/,/^  }/p' src/ShowcasePage.tsx)",
+      "Bash(sed -n '/function addExtra/,/^  }/p' src/ShowcasePage.tsx)",
+      "Bash(node \"C:/Users/prrsm/AppData/Local/Temp/claude/C--Users-prrsm-PublicBurgerWebsite-main1/8e546682-9a58-4e0f-b6db-407fb38f8824/scratchpad/pricecheck.mjs\")"
     ]
   }
 }
