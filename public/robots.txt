@@ -3,4 +3,4 @@ Allow: /
 Disallow: /admin
 Disallow: /display
 
-Sitemap: https://publicburger.it/sitemap.xml
+Sitemap: https://www.publicburger.it/sitemap.xml
