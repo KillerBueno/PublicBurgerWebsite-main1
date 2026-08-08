@@ -48,7 +48,7 @@ export const BURGERS: BurgerDef[] = [
     name: 'Jalapeño Popper',
     tag: 'Spicy',
     spicy: true,
-    ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cheddar', 'Jalapeño', 'Insalata', 'Creamy spicy sauce'],
+    ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cheddar', 'Jalapeño', 'Insalata iceberg', 'Creamy spicy sauce'],
     prices: { single: 11, double: 14.5, triple: 17 },
     combo: 3,
     allergens: [1, 3, 7],
@@ -85,7 +85,7 @@ export const BURGERS: BurgerDef[] = [
     name: 'Ingordo',
     tag: 'Extra',
     spicy: false,
-    ingredients: ['Bun classico', 'Hamburger di manzo', 'Scamorza', 'Cipolle caramellate', 'Anelli di cipolla fritti', 'Maionese', 'Salsa BBQ'],
+    ingredients: ['Brioche bun', 'Hamburger di manzo', 'Scamorza', 'Cipolle caramellate', 'Anelli di cipolla fritti', 'Maionese', 'Salsa BBQ'],
     prices: { single: 10.5, double: 14, triple: 16.5 },
     combo: 3,
     allergens: [1, 3, 7, 10, 12],
@@ -94,7 +94,7 @@ export const BURGERS: BurgerDef[] = [
     name: 'American Burger',
     tag: 'American',
     spicy: false,
-    ingredients: ['Bun classico', 'Hamburger di manzo', 'Cheddar', 'Bacon', 'Patatine dolci', 'Uovo fritto', 'Salsa BBQ'],
+    ingredients: ['Brioche bun', 'Hamburger di manzo', 'Cheddar', 'Bacon', 'Patatine dolci', 'Uovo fritto', 'Salsa BBQ'],
     prices: { single: 12.5, double: 16, triple: 18.5 },
     combo: 3,
     allergens: [1, 3, 7, 10, 12],
@@ -126,9 +126,8 @@ export const FRIES: FryDef[] = [
   { name: 'Onion Rings',      desc: 'Anelli di cipolla in pastella',           price: 4.5, allergens: [1] },
   { name: 'Cheese Bacon Fries', desc: 'Patatine con cheddar e bacon croccante', price: 5,   allergens: [7] },
   { name: 'Sweet Potatoes',   desc: 'Patatine di patata dolce',                price: 4,   allergens: [] },
-  { name: 'Chicken Tenders',  desc: '2 pezzi di pollo croccante',              price: 5,   allergens: [1, 3, 6, 10] },
-  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 5.5, allergens: [1, 3, 6, 7, 9, 10, 11],
-    variants: [{ label: '6 pezzi', price: 5.5 }, { label: '12 pezzi', price: 10 }, { label: '20 pezzi', price: 16 }] },
+  { name: 'Chicken Tenders',  desc: '2 pezzi di pollo croccante',              price: 6,   allergens: [1, 3, 6, 10] },
+  { name: 'Nuggets',          desc: 'Croccanti e dorati',                      price: 5.5, allergens: [1, 3, 6, 7, 9, 10, 11] },
 ];
 
 export const ALL_EXTRAS: string[] = [
