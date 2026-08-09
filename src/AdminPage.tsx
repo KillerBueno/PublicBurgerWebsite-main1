@@ -829,6 +829,7 @@ export default function AdminPage() {
   const [err, setErr] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('tutti');
+  const [statusFilter, setStatusFilter] = useState('da_confermare');
   const [dateFilter, setDateFilter] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -943,9 +944,11 @@ export default function AdminPage() {
   const filtered = useMemo(() => orders.filter(o => {
     const matchSearch = !search || o.customer_name.toLowerCase().includes(search.toLowerCase()) || (o.user_email ?? '').toLowerCase().includes(search.toLowerCase());
     const matchType = typeFilter === 'tutti' || o.order_type === typeFilter;
+    const isConfirmed = o.status === 'confermato';
+    const matchStatus = statusFilter === 'tutti' || (statusFilter === 'confermati' ? isConfirmed : !isConfirmed);
     const matchDate = !dateFilter || o.created_at.startsWith(dateFilter);
-    return matchSearch && matchType && matchDate;
-  }), [orders, search, typeFilter, dateFilter]);
+    return matchSearch && matchType && matchStatus && matchDate;
+  }), [orders, search, typeFilter, statusFilter, dateFilter]);
 
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
 
@@ -1098,12 +1101,18 @@ export default function AdminPage() {
               className="border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]">
               {['tutti', 'asporto', 'domicilio', 'tavolo'].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
             </select>
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
+              className="border border-black/12 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#CF6990] bg-[#fdf5f8]">
+              <option value="da_confermare">Da confermare</option>
+              <option value="confermati">Confermati</option>
+              <option value="tutti">Tutti gli stati</option>
+            </select>
             <button onClick={() => exportOrdersCSV(filtered)}
               className="px-3 py-2 border border-black/12 rounded-xl text-[10px] uppercase tracking-wider text-black/50 hover:border-[#CF6990] hover:text-[#CF6990] transition-colors">
               ↓ CSV
             </button>
-            {(search || dateFilter || typeFilter !== 'tutti') && (
-              <button onClick={() => { setSearch(''); setDateFilter(''); setTypeFilter('tutti'); }}
+            {(search || dateFilter || typeFilter !== 'tutti' || statusFilter !== 'da_confermare') && (
+              <button onClick={() => { setSearch(''); setDateFilter(''); setTypeFilter('tutti'); setStatusFilter('da_confermare'); }}
                 className="text-[11px] uppercase tracking-wider text-[#CF6990] px-2 hover:text-[#a8456b]">✕</button>
             )}
           </div>
