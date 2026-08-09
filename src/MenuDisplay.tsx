@@ -372,7 +372,11 @@ function Screen2() {
                     }}>{f.name}</div>
                     <div style={{ fontSize: 20, color: MUTED, marginBottom: 6 }}>{f.desc}</div>
                     <AllergenNums nums={FRIES_ALLERGENS[f.name] ?? []} />
-                    {f.variants.map(({ label, price: p }) => ({ label, price: p % 1 === 0 ? String(p) : String(p).replace('.', ',') })).map(({ label, price }) => (
+                    {[
+                      { label: '6 pz', price: '5.5' },
+                      { label: '12 pz', price: '10' },
+                      { label: '20 pz', price: '16' },
+                    ].map(({ label, price }) => (
                       <div key={label} style={{
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         borderTop: '1px solid rgba(26,10,16,0.06)', padding: '3px 0',
