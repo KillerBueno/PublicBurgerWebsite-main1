@@ -200,7 +200,8 @@
       "Bash(echo \"EXIT_TSC_REALE=$?\")",
       "Bash(sed -n '/function addFry/,/^  }/p' src/ShowcasePage.tsx)",
       "Bash(sed -n '/function addExtra/,/^  }/p' src/ShowcasePage.tsx)",
-      "Bash(node \"C:/Users/prrsm/AppData/Local/Temp/claude/C--Users-prrsm-PublicBurgerWebsite-main1/8e546682-9a58-4e0f-b6db-407fb38f8824/scratchpad/pricecheck.mjs\")"
+      "Bash(node \"C:/Users/prrsm/AppData/Local/Temp/claude/C--Users-prrsm-PublicBurgerWebsite-main1/8e546682-9a58-4e0f-b6db-407fb38f8824/scratchpad/pricecheck.mjs\")",
+      "Bash(curl -s 'https://anmhgssxzovzvykhyhkj.supabase.co/rest/v1/orders?select=id,status,user_email&limit=20' -H 'apikey: sb_publishable_jhIOZqucHx6catujHAN2jQ_NeOF-YQJ')"
     ]
   }
 }

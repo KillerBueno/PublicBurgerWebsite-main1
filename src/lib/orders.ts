@@ -79,11 +79,17 @@ export async function updateOrderStatus(
       'Content-Type': 'application/json',
       apikey: SUPABASE_KEY,
       Authorization: `Bearer ${await freshToken(adminToken)}`,
-      Prefer: 'return=minimal',
+      // return=representation: se la RLS blocca l'update, PostgREST torna 200
+      // ma con array vuoto. Così ce ne accorgiamo invece di fallire in silenzio.
+      Prefer: 'return=representation',
     },
     body: JSON.stringify({ status, status_history: history }),
   });
   if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
+  const rows = await res.json();
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new Error('Aggiornamento non salvato: manca il permesso di modifica sugli ordini (esegui la SQL delle policy).');
+  }
 }
 
 export async function updateOrderNotes(
